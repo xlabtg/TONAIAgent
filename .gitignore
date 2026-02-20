@@ -7,6 +7,11 @@ dist/
 # Log files
 *.log
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
 # IDE
 .idea/
 .vscode/
@@ -17,13 +22,15 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Environment
-.env
-.env.local
-.env.*.local
-
 # Test coverage
 coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Lock files (library - let consumers manage their own)
+package-lock.json

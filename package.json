@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
   "version": "0.3.0",
-  "description": "Multi-provider AI layer with production-grade security for autonomous agents on TON blockchain",
+  "description": "Multi-provider AI layer with production-grade security, plugin system, and strategy engine for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -21,6 +21,11 @@
       "require": "./dist/security/index.js",
       "types": "./dist/security/index.d.ts"
     },
+    "./plugins": {
+      "import": "./dist/plugins/index.mjs",
+      "require": "./dist/plugins/index.js",
+      "types": "./dist/plugins/index.d.ts"
+    },
     "./strategy": {
       "import": "./dist/strategy/index.mjs",
       "require": "./dist/strategy/index.js",
@@ -32,8 +37,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/strategy/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/strategy/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/strategy/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/strategy/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -63,6 +68,11 @@
     "hsm",
     "custody",
     "wallet",
+    "plugins",
+    "tools",
+    "function-calling",
+    "jettons",
+    "nft",
     "strategy-engine",
     "defi",
     "trading",
