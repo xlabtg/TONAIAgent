@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
-  "version": "0.10.0",
-  "description": "TON Super App with wallet, AI agents, marketplace, social layer, financial dashboard, Telegram integration, gamification, AI assistant, and monetization for autonomous finance on TON blockchain",
+  "version": "1.2.0",
+  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, and TON Super App (wallet, AI agents, social layer, Telegram integration) for autonomous finance on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -56,6 +56,16 @@
       "import": "./dist/institutional/index.mjs",
       "require": "./dist/institutional/index.js"
     },
+    "./omnichain": {
+      "types": "./dist/omnichain/index.d.ts",
+      "import": "./dist/omnichain/index.mjs",
+      "require": "./dist/omnichain/index.js"
+    },
+    "./launchpad": {
+      "types": "./dist/launchpad/index.d.ts",
+      "import": "./dist/launchpad/index.mjs",
+      "require": "./dist/launchpad/index.js"
+    },
     "./superapp": {
       "types": "./dist/superapp/index.d.ts",
       "import": "./dist/superapp/index.mjs",
@@ -67,8 +77,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/superapp/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/superapp/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/superapp/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/superapp/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -133,6 +143,20 @@
     "risk-management",
     "var",
     "regulatory",
+    "omnichain",
+    "cross-chain",
+    "bridge",
+    "changenow",
+    "arbitrage",
+    "yield-rotation",
+    "portfolio",
+    "multi-chain",
+    "launchpad",
+    "treasury",
+    "fund",
+    "investment",
+    "capital-pooling",
+    "autonomous-treasury",
     "superapp",
     "telegram",
     "mini-app",
