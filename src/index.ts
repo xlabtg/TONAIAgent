@@ -14,6 +14,7 @@
  * - Modular plugin and tooling system
  * - TON-native tools (wallet, jettons, NFT)
  * - AI function calling integration
+ * - Autonomous Strategy Engine for DeFi automation
  */
 
 export * from './ai';
@@ -21,3 +22,5 @@ export * from './security';
 
 // Re-export plugins with namespace to avoid naming conflicts with AI types
 export * as Plugins from './plugins';
+
+export * from './strategy';
