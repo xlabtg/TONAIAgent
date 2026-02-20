@@ -2,8 +2,9 @@
  * TONAIAgent Core
  *
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
- * no-code strategy builder, marketplace, copy trading, institutional compliance, and
- * autonomous hedge fund infrastructure for AI agents on TON blockchain.
+ * no-code strategy builder, marketplace, copy trading, institutional compliance,
+ * omnichain infrastructure, agent launchpad, and autonomous hedge fund infrastructure
+ * for AI agents on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -28,6 +29,10 @@
  * - Institutional compliance (KYC/AML, regulatory reporting)
  * - Portfolio risk management (VaR, stress testing)
  * - AI governance and explainability
+ * - Omnichain infrastructure (cross-chain capital movement, arbitrage, yield rotation)
+ * - ChangeNOW integration (200+ chains, 1200+ assets)
+ * - Cross-chain portfolio management and risk assessment
+ * - Agent Launchpad for DAOs, funds, and autonomous treasuries
  * - Autonomous Hedge Fund Architecture (portfolio, execution, risk agents)
  * - AI-driven investment framework (signals, predictions, RL)
  * - Institutional portfolio engine (diversification, rebalancing)
@@ -79,12 +84,23 @@ export {
 // Re-export marketplace types with namespace to avoid conflicts
 export type * as MarketplaceTypes from './marketplace/types';
 
-// Re-export hedgefund with namespace to avoid naming conflicts
-// (hedgefund module defines StrategyAllocation, PortfolioPerformance, etc.)
-export * as HedgeFund from './hedgefund';
+// Re-export omnichain with namespace to avoid naming conflicts
+// (omnichain defines its own ActionResult, ChainId, and other common types)
+export * as Omnichain from './omnichain';
 
 // Note: Import institutional module separately from '@tonaiagent/core/institutional'
 // to avoid naming conflicts with existing exports
+
+// Note: Import omnichain module separately from '@tonaiagent/core/omnichain'
+// for full access to all omnichain types and interfaces
+
+// Re-export launchpad with namespace to avoid naming conflicts
+// (launchpad has its own GovernanceConfig, CapitalPool, and similar types)
+export * as Launchpad from './launchpad';
+
+// Re-export hedgefund with namespace to avoid naming conflicts
+// (hedgefund module defines StrategyAllocation, PortfolioPerformance, etc.)
+export * as HedgeFund from './hedgefund';
 
 // Note: Import hedgefund module separately from '@tonaiagent/core/hedgefund'
 // for direct access to hedge fund types and managers
