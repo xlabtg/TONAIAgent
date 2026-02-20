@@ -1,7 +1,8 @@
 /**
  * TONAIAgent Core
  *
- * Multi-provider AI layer with production-grade security for autonomous agents on TON blockchain.
+ * Multi-provider AI layer with production-grade security and institutional compliance
+ * for autonomous agents on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -11,7 +12,12 @@
  * - Risk and fraud detection
  * - Emergency controls and recovery mechanisms
  * - Comprehensive audit logging
+ * - Institutional compliance (KYC/AML, regulatory reporting)
+ * - Portfolio risk management (VaR, stress testing)
+ * - AI governance and explainability
  */
 
 export * from './ai';
 export * from './security';
+// Note: Import institutional module separately from '@tonaiagent/core/institutional'
+// to avoid naming conflicts with existing exports
