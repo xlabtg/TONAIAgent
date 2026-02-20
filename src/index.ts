@@ -2,8 +2,8 @@
  * TONAIAgent Core
  *
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
- * no-code strategy builder, marketplace, copy trading, and institutional compliance
- * for autonomous agents on TON blockchain.
+ * no-code strategy builder, marketplace, copy trading, institutional compliance, and
+ * viral consumer growth engine for autonomous agents on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -28,6 +28,9 @@
  * - Institutional compliance (KYC/AML, regulatory reporting)
  * - Portfolio risk management (VaR, stress testing)
  * - AI governance and explainability
+ * - Viral consumer growth engine (referrals, social trading, gamification)
+ * - Growth analytics and A/B testing
+ * - Anti-abuse and sybil detection
  */
 
 export * from './ai';
@@ -77,3 +80,31 @@ export type * as MarketplaceTypes from './marketplace/types';
 
 // Note: Import institutional module separately from '@tonaiagent/core/institutional'
 // to avoid naming conflicts with existing exports
+
+// Growth Engine exports (referral, social trading, gamification, viral loops, analytics, anti-abuse)
+export {
+  // Main engine
+  createGrowthEngine,
+  DefaultGrowthEngine,
+  // Referral system
+  createReferralSystem,
+  DefaultReferralSystem,
+  // Social trading
+  createSocialTradingEngine,
+  DefaultSocialTradingEngine,
+  // Gamification
+  createGamificationEngine,
+  DefaultGamificationEngine,
+  // Viral loops
+  createViralLoopsEngine,
+  DefaultViralLoopsEngine,
+  // Growth analytics
+  createGrowthAnalyticsEngine,
+  DefaultGrowthAnalyticsEngine,
+  // Anti-abuse
+  createAntiAbuseSystem,
+  DefaultAntiAbuseSystem,
+} from './growth';
+
+// Re-export growth types with namespace to avoid conflicts
+export type * as GrowthTypes from './growth/types';
