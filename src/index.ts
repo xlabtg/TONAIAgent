@@ -2,8 +2,8 @@
  * TONAIAgent Core
  *
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
- * no-code strategy builder, marketplace, copy trading, and institutional compliance
- * for autonomous agents on TON blockchain.
+ * no-code strategy builder, marketplace, copy trading, institutional compliance, and
+ * Telegram-native mobile-first UX for autonomous agents on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -77,3 +77,6 @@ export type * as MarketplaceTypes from './marketplace/types';
 
 // Note: Import institutional module separately from '@tonaiagent/core/institutional'
 // to avoid naming conflicts with existing exports
+
+// Note: Import mobile-ux module separately from '@tonaiagent/core/mobile-ux'
+// for Telegram-native mobile-first UX features
