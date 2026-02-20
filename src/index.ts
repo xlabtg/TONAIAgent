@@ -3,7 +3,8 @@
  *
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
  * no-code strategy builder, marketplace, copy trading, institutional compliance,
- * omnichain infrastructure, agent launchpad, and viral consumer growth engine for autonomous agents on TON blockchain.
+ * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
+ * and viral consumer growth engine for AI agents on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -32,6 +33,10 @@
  * - ChangeNOW integration (200+ chains, 1200+ assets)
  * - Cross-chain portfolio management and risk assessment
  * - Agent Launchpad for DAOs, funds, and autonomous treasuries
+ * - Autonomous Hedge Fund Architecture (portfolio, execution, risk agents)
+ * - AI-driven investment framework (signals, predictions, RL)
+ * - Institutional portfolio engine (diversification, rebalancing)
+ * - Continuous learning system (backtesting, live adaptation)
  * - Viral consumer growth engine (referrals, social trading, gamification)
  * - Growth analytics and A/B testing
  * - Anti-abuse and sybil detection
@@ -95,6 +100,13 @@ export * as Omnichain from './omnichain';
 // Re-export launchpad with namespace to avoid naming conflicts
 // (launchpad has its own GovernanceConfig, CapitalPool, and similar types)
 export * as Launchpad from './launchpad';
+
+// Re-export hedgefund with namespace to avoid naming conflicts
+// (hedgefund module defines StrategyAllocation, PortfolioPerformance, etc.)
+export * as HedgeFund from './hedgefund';
+
+// Note: Import hedgefund module separately from '@tonaiagent/core/hedgefund'
+// for direct access to hedge fund types and managers
 
 // Growth Engine exports (referral, social trading, gamification, viral loops, analytics, anti-abuse)
 export {
