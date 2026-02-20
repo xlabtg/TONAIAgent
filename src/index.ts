@@ -11,7 +11,9 @@
  * - Risk and fraud detection
  * - Emergency controls and recovery mechanisms
  * - Comprehensive audit logging
+ * - Tokenomics and agent economy (staking, governance, rewards, reputation)
  */
 
 export * from './ai';
 export * from './security';
+export * from './tokenomics';
