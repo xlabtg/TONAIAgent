@@ -3,8 +3,9 @@
  *
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
  * no-code strategy builder, marketplace, copy trading, institutional compliance,
- * omnichain infrastructure, agent launchpad, and autonomous hedge fund infrastructure
- * for AI agents on TON blockchain.
+ * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
+ * and TON Super App (wallet, AI agents, social layer, Telegram Mini App)
+ * for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -39,6 +40,15 @@
  * - Continuous learning system (backtesting, live adaptation)
  * - Global data and signal platform for AI agents
  * - AI Safety, Alignment & Governance Framework
+ * - Super App: Smart Wallet with MPC recovery
+ * - Super App: Agent Dashboard for monitoring and automation
+ * - Super App: Social Layer with profiles, leaderboards, discussions
+ * - Super App: Financial Dashboard with portfolio, risk, analytics
+ * - Super App: Notifications and real-time alerts
+ * - Super App: Telegram Mini App integration
+ * - Super App: Gamification and growth mechanisms
+ * - Super App: Embedded AI Assistant powered by Groq
+ * - Super App: Premium subscriptions and monetization
  */
 
 export * from './ai';
@@ -114,3 +124,6 @@ export * as HedgeFund from './hedgefund';
 // Re-export data-platform with namespace to avoid naming conflicts
 // (data-platform defines MarketDataService which could conflict with other modules)
 export * as DataPlatform from './data-platform';
+
+// Note: Import superapp module separately from '@tonaiagent/core/superapp'
+// to access the full Super App functionality (wallet, agents, social, financial, etc.)
