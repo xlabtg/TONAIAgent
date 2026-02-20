@@ -4,8 +4,9 @@
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
  * no-code strategy builder, marketplace, copy trading, institutional compliance,
  * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
- * viral consumer growth engine, TON Super App (wallet, AI agents, social layer, Telegram Mini App),
- * Telegram-native mobile-first UX, and AI-native personal finance for autonomous finance on TON blockchain.
+ * viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App
+ * (wallet, AI agents, social layer, Telegram Mini App), Telegram-native mobile-first UX,
+ * and AI-native personal finance for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -43,6 +44,7 @@
  * - Growth analytics and A/B testing
  * - Anti-abuse and sybil detection
  * - AI Safety, Alignment & Governance Framework
+ * - Ecosystem fund (treasury, grants, investments, incubation, incentives)
  * - Super App: Smart Wallet with MPC recovery
  * - Super App: Agent Dashboard for monitoring and automation
  * - Super App: Social Layer with profiles, leaderboards, discussions
@@ -159,6 +161,9 @@ export {
 
 // Re-export growth types with namespace to avoid conflicts
 export type * as GrowthTypes from './growth/types';
+
+// Note: Import ecosystem fund module separately from '@tonaiagent/core/ecosystem-fund'
+// to avoid naming conflicts with existing exports (governance, treasury, etc.)
 
 // Note: Import superapp module separately from '@tonaiagent/core/superapp'
 // to access the full Super App functionality (wallet, agents, social, financial, etc.)
