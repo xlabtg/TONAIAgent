@@ -39,6 +39,7 @@
  * - AI-driven investment framework (signals, predictions, RL)
  * - Institutional portfolio engine (diversification, rebalancing)
  * - Continuous learning system (backtesting, live adaptation)
+ * - Global data and signal platform for AI agents
  * - Viral consumer growth engine (referrals, social trading, gamification)
  * - Growth analytics and A/B testing
  * - Anti-abuse and sybil detection
@@ -125,6 +126,10 @@ export * as HedgeFund from './hedgefund';
 
 // Note: Import hedgefund module separately from '@tonaiagent/core/hedgefund'
 // for direct access to hedge fund types and managers
+
+// Re-export data-platform with namespace to avoid naming conflicts
+// (data-platform defines MarketDataService which could conflict with other modules)
+export * as DataPlatform from './data-platform';
 
 // Growth Engine exports (referral, social trading, gamification, viral loops, analytics, anti-abuse)
 export {
