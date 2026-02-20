@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
-  "version": "0.2.0",
-  "description": "Multi-provider AI layer with production-grade security for autonomous agents on TON blockchain",
+  "version": "0.3.0",
+  "description": "Multi-provider AI layer with production-grade security and plugin system for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -20,6 +20,11 @@
       "import": "./dist/security/index.mjs",
       "require": "./dist/security/index.js",
       "types": "./dist/security/index.d.ts"
+    },
+    "./plugins": {
+      "import": "./dist/plugins/index.mjs",
+      "require": "./dist/plugins/index.js",
+      "types": "./dist/plugins/index.d.ts"
     }
   },
   "files": [
@@ -27,8 +32,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -57,7 +62,13 @@
     "mpc",
     "hsm",
     "custody",
-    "wallet"
+    "wallet",
+    "plugins",
+    "tools",
+    "function-calling",
+    "jettons",
+    "nft",
+    "defi"
   ],
   "author": "TONAIAgent Team",
   "license": "MIT",
