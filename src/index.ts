@@ -19,6 +19,9 @@
  * - No-code visual strategy builder
  * - AI-assisted strategy creation
  * - Historical backtesting and simulation
+ * - Strategy marketplace and copy trading
+ * - Reputation and scoring system
+ * - Performance analytics and monetization
  */
 
 export * from './ai';
@@ -33,3 +36,31 @@ export * as Plugins from './plugins';
 export * as Strategy from './strategy';
 
 // No-code module is available as separate import: '@tonaiagent/core/no-code'
+
+// Marketplace exports (with explicit exports to avoid conflicts)
+export {
+  // Marketplace service
+  createMarketplaceService,
+  DefaultMarketplaceService,
+  // Strategy
+  createStrategyManager,
+  DefaultStrategyManager,
+  // Copy trading
+  createCopyTradingEngine,
+  DefaultCopyTradingEngine,
+  // Reputation
+  createReputationManager,
+  DefaultReputationManager,
+  // Analytics
+  createAnalyticsEngine,
+  DefaultAnalyticsEngine,
+  // Monetization
+  createMonetizationManager,
+  DefaultMonetizationManager,
+  // Risk transparency
+  createRiskTransparencyManager,
+  DefaultRiskTransparencyManager,
+} from './marketplace';
+
+// Re-export marketplace types with namespace to avoid conflicts
+export type * as MarketplaceTypes from './marketplace/types';

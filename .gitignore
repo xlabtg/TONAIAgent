@@ -20,6 +20,7 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
+*~
 
 # OS files
 .DS_Store
