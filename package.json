@@ -27,9 +27,9 @@
       "require": "./dist/plugins/index.js"
     },
     "./multi-agent": {
+      "types": "./dist/multi-agent/index.d.ts",
       "import": "./dist/multi-agent/index.mjs",
-      "require": "./dist/multi-agent/index.js",
-      "types": "./dist/multi-agent/index.d.ts"
+      "require": "./dist/multi-agent/index.js"
     },
     "./strategy": {
       "types": "./dist/strategy/index.d.ts",
