@@ -37,9 +37,14 @@
  * - AI-driven investment framework (signals, predictions, RL)
  * - Institutional portfolio engine (diversification, rebalancing)
  * - Continuous learning system (backtesting, live adaptation)
+ * - AI Safety, Alignment & Governance Framework
  */
 
 export * from './ai';
+
+// Re-export ai-safety with namespace to avoid conflicts with AI types
+// (both modules define types like FraudPattern, PolicyCondition, RiskContext, etc.)
+export * as AISafety from './ai-safety';
 export * from './security';
 export * from './tokenomics';
 

@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
-  "version": "1.2.0",
-  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, and autonomous hedge fund infrastructure for AI agents on TON blockchain",
+  "version": "1.3.0",
+  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure, and AI safety/alignment framework for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -70,6 +70,11 @@
       "types": "./dist/hedgefund/index.d.ts",
       "import": "./dist/hedgefund/index.mjs",
       "require": "./dist/hedgefund/index.js"
+    },
+    "./ai-safety": {
+      "types": "./dist/ai-safety/index.d.ts",
+      "import": "./dist/ai-safety/index.mjs",
+      "require": "./dist/ai-safety/index.js"
     }
   },
   "files": [
@@ -77,8 +82,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/ai-safety/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/ai-safety/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -162,7 +167,12 @@
     "portfolio-management",
     "asset-management",
     "ai-trading",
-    "quantitative-finance"
+    "quantitative-finance",
+    "ai-safety",
+    "alignment",
+    "guardrails",
+    "anomaly-detection",
+    "human-oversight"
   ],
   "author": "TONAIAgent Team",
   "license": "MIT",
