@@ -12,8 +12,14 @@
  * - Emergency controls and recovery mechanisms
  * - Comprehensive audit logging
  * - Multi-agent coordination framework
+ * - Modular plugin and tooling system
+ * - TON-native tools (wallet, jettons, NFT)
+ * - AI function calling integration
  */
 
 export * from './ai';
 export * from './security';
 export * from './multi-agent';
+
+// Re-export plugins with namespace to avoid naming conflicts with AI types
+export * as Plugins from './plugins';
