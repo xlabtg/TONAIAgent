@@ -2,8 +2,8 @@
  * TONAIAgent Core
  *
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
- * no-code strategy builder, marketplace, copy trading, and institutional compliance
- * for autonomous agents on TON blockchain.
+ * no-code strategy builder, marketplace, copy trading, institutional compliance, and
+ * agent launchpad for autonomous agents on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -28,6 +28,7 @@
  * - Institutional compliance (KYC/AML, regulatory reporting)
  * - Portfolio risk management (VaR, stress testing)
  * - AI governance and explainability
+ * - Agent Launchpad for DAOs, funds, and autonomous treasuries
  */
 
 export * from './ai';
@@ -77,3 +78,7 @@ export type * as MarketplaceTypes from './marketplace/types';
 
 // Note: Import institutional module separately from '@tonaiagent/core/institutional'
 // to avoid naming conflicts with existing exports
+
+// Re-export launchpad with namespace to avoid naming conflicts
+// (launchpad has its own GovernanceConfig, CapitalPool, and similar types)
+export * as Launchpad from './launchpad';
