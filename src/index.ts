@@ -25,4 +25,6 @@ export * from './multi-agent';
 // Re-export plugins with namespace to avoid naming conflicts with AI types
 export * as Plugins from './plugins';
 
-export * from './strategy';
+// Re-export strategy with namespace to avoid naming conflicts with multi-agent types
+// (both modules define CapitalAllocation with different structures)
+export * as Strategy from './strategy';
