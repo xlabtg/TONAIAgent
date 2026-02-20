@@ -11,6 +11,9 @@
  * - Risk and fraud detection
  * - Emergency controls and recovery mechanisms
  * - Comprehensive audit logging
+ * - Modular plugin and tooling system
+ * - TON-native tools (wallet, jettons, NFT)
+ * - AI function calling integration
  * - Strategy marketplace and copy trading
  * - Reputation and scoring system
  * - Performance analytics and monetization
@@ -18,6 +21,9 @@
 
 export * from './ai';
 export * from './security';
+
+// Re-export plugins with namespace to avoid naming conflicts with AI types
+export * as Plugins from './plugins';
 
 // Marketplace exports (with explicit exports to avoid conflicts)
 export {
