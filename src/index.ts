@@ -11,7 +11,11 @@
  * - Risk and fraud detection
  * - Emergency controls and recovery mechanisms
  * - Comprehensive audit logging
+ * - No-code visual strategy builder
+ * - AI-assisted strategy creation
+ * - Historical backtesting and simulation
  */
 
 export * from './ai';
 export * from './security';
+// No-code module is available as separate import: '@tonaiagent/core/no-code'
