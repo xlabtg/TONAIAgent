@@ -26,7 +26,7 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Test coverage
+# Test and debug output
 coverage/
 
 # TypeScript cache
