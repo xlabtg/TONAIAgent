@@ -4,7 +4,8 @@
  * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
  * no-code strategy builder, marketplace, copy trading, institutional compliance,
  * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
- * AI safety/alignment framework, and ecosystem fund for autonomous agents on TON blockchain.
+ * AI safety/alignment framework, ecosystem fund, and TON Super App (wallet, AI agents,
+ * social layer, Telegram Mini App) for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -39,6 +40,15 @@
  * - Continuous learning system (backtesting, live adaptation)
  * - AI Safety, Alignment & Governance Framework
  * - Ecosystem fund (treasury, grants, investments, incubation, incentives)
+ * - Super App: Smart Wallet with MPC recovery
+ * - Super App: Agent Dashboard for monitoring and automation
+ * - Super App: Social Layer with profiles, leaderboards, discussions
+ * - Super App: Financial Dashboard with portfolio, risk, analytics
+ * - Super App: Notifications and real-time alerts
+ * - Super App: Telegram Mini App integration
+ * - Super App: Gamification and growth mechanisms
+ * - Super App: Embedded AI Assistant powered by Groq
+ * - Super App: Premium subscriptions and monetization
  */
 
 export * from './ai';
@@ -113,3 +123,6 @@ export * as HedgeFund from './hedgefund';
 
 // Note: Import ecosystem fund module separately from '@tonaiagent/core/ecosystem-fund'
 // to avoid naming conflicts with existing exports (governance, treasury, etc.)
+
+// Note: Import superapp module separately from '@tonaiagent/core/superapp'
+// to access the full Super App functionality (wallet, agents, social, financial, etc.)
