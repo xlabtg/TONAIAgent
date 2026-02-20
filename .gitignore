@@ -4,31 +4,34 @@ node_modules/
 # Build output
 dist/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment files
+# Environment variables
 .env
 .env.local
 .env.*.local
 
-# Coverage
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
 coverage/
 
 # Temporary files
 *.tmp
 *.temp
 .cache/
+
+# Lock files (library - let consumers manage their own)
+package-lock.json

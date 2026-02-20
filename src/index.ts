@@ -11,6 +11,9 @@
  * - Risk and fraud detection
  * - Emergency controls and recovery mechanisms
  * - Comprehensive audit logging
+ * - Modular plugin and tooling system
+ * - TON-native tools (wallet, jettons, NFT)
+ * - AI function calling integration
  * - No-code visual strategy builder
  * - AI-assisted strategy creation
  * - Historical backtesting and simulation
@@ -18,4 +21,8 @@
 
 export * from './ai';
 export * from './security';
+
+// Re-export plugins with namespace to avoid naming conflicts with AI types
+export * as Plugins from './plugins';
+
 // No-code module is available as separate import: '@tonaiagent/core/no-code'
