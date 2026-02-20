@@ -23,9 +23,7 @@ import {
   AIEventType,
   SafetyCheckResult,
   StreamCallback,
-  StreamChunk,
   AIError,
-  MemoryConfig,
 } from '../types';
 import { AIRouter, createAIRouter } from '../routing';
 import { MemoryManager, createMemoryManager } from '../memory';

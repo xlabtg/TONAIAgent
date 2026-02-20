@@ -314,7 +314,7 @@ export class GroqProvider extends BaseProvider {
       throw this.handleError(response.status, errorBody);
     }
 
-    const groqResponse: GroqCompletionResponse = await response.json();
+    const groqResponse = (await response.json()) as GroqCompletionResponse;
     const latencyMs = Date.now() - startTime;
 
     return this.convertResponse(groqResponse, latencyMs);

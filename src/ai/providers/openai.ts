@@ -289,7 +289,7 @@ export class OpenAIProvider extends BaseProvider {
       throw this.handleError(response.status, errorBody);
     }
 
-    const openaiResponse: OpenAICompletionResponse = await response.json();
+    const openaiResponse = (await response.json()) as OpenAICompletionResponse;
     const latencyMs = Date.now() - startTime;
 
     return this.convertResponse(openaiResponse, latencyMs);

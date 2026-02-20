@@ -252,7 +252,7 @@ export class XAIProvider extends BaseProvider {
       throw this.handleError(response.status, errorBody);
     }
 
-    const xaiResponse: XAICompletionResponse = await response.json();
+    const xaiResponse = (await response.json()) as XAICompletionResponse;
     const latencyMs = Date.now() - startTime;
 
     return this.convertResponse(xaiResponse, latencyMs);

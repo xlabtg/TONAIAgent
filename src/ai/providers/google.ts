@@ -254,7 +254,7 @@ export class GoogleProvider extends BaseProvider {
       throw this.handleError(response.status, errorBody);
     }
 
-    const googleResponse: GoogleCompletionResponse = await response.json();
+    const googleResponse = (await response.json()) as GoogleCompletionResponse;
     const latencyMs = Date.now() - startTime;
 
     return this.convertResponse(googleResponse, modelId, latencyMs);

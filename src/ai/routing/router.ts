@@ -682,7 +682,7 @@ export class AIRouter {
 
   private createDecision(
     model: ModelInfo,
-    provider: BaseProvider,
+    _provider: BaseProvider,
     reason: string,
     alternatives: RoutingDecision['alternatives']
   ): RoutingDecision {

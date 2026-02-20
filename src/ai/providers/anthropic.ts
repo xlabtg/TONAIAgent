@@ -233,7 +233,7 @@ export class AnthropicProvider extends BaseProvider {
       throw this.handleError(response.status, errorBody);
     }
 
-    const anthropicResponse: AnthropicCompletionResponse = await response.json();
+    const anthropicResponse = (await response.json()) as AnthropicCompletionResponse;
     const latencyMs = Date.now() - startTime;
 
     return this.convertResponse(anthropicResponse, latencyMs);

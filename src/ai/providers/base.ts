@@ -15,7 +15,6 @@ import {
   ProviderStatus,
   ProviderType,
   StreamCallback,
-  StreamChunk,
   CircuitState,
 } from '../types';
 

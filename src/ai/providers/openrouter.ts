@@ -324,8 +324,8 @@ export class OpenRouterProvider extends BaseProvider {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        const liveModels: ModelInfo[] = (data.data as OpenRouterModel[]).slice(0, 50).map((m) => ({
+        const data = (await response.json()) as { data: OpenRouterModel[] };
+        const liveModels: ModelInfo[] = data.data.slice(0, 50).map((m) => ({
           id: m.id,
           provider: 'openrouter' as const,
           name: m.name,
@@ -403,7 +403,7 @@ export class OpenRouterProvider extends BaseProvider {
       throw this.handleError(response.status, errorBody);
     }
 
-    const orResponse: OpenRouterCompletionResponse = await response.json();
+    const orResponse = (await response.json()) as OpenRouterCompletionResponse;
     const latencyMs = Date.now() - startTime;
 
     return this.convertResponse(orResponse, latencyMs);

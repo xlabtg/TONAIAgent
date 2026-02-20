@@ -487,7 +487,7 @@ export class MemoryManager {
 
   private extractPreferences(content: string): string[] {
     const preferences: string[] = [];
-    const lower = content.toLowerCase();
+    // Content is matched against patterns directly
 
     // Look for preference indicators
     const preferencePatterns = [
