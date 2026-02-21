@@ -6,7 +6,9 @@
  * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
  * viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App
  * (wallet, AI agents, social layer, Telegram Mini App), Telegram-native mobile-first UX,
- * and AI-native personal finance for autonomous finance on TON blockchain.
+ * AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform,
+ * AI-native payments and commerce layer, global regulatory strategy framework, and
+ * global institutional network for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -58,12 +60,19 @@
  * - AI-native personal finance (savings automation, wealth management)
  * - Life-stage personalization and behavioral finance
  * - Financial education with gamification
+ * - Open Agent Protocol for universal agent interoperability
+ * - Enterprise SDK & Developer Platform
  * - AI-native payments and commerce layer (autonomous payments, subscriptions)
  * - Smart spending with AI optimization
  * - Merchant infrastructure (SDK, checkout, webhooks)
  * - Agent-driven commerce (negotiations, procurement, B2B)
  * - Cross-border payments with route optimization
  * - Payment analytics and fraud detection
+ * - Global regulatory strategy and jurisdictional framework
+ * - Tiered KYC/AML compliance for retail, professional, and institutional clients
+ * - EU AI Act alignment with AI governance and system classification
+ * - Cross-border compliance architecture
+ * - Regulatory risk monitoring and SAR detection
  * - Global institutional network (partner registry, custody, liquidity, treasury)
  * - Institutional onboarding framework with due diligence
  * - Global expansion strategy and roadmap
@@ -207,6 +216,37 @@ export {
 
 // Note: Import payments module separately from '@tonaiagent/core/payments'
 // for AI-native payments and commerce features (gateway, subscriptions, merchants, agents)
+
+// Global Regulatory Strategy & Jurisdictional Framework
+// Provides comprehensive compliance infrastructure for AI-native autonomous finance
+export * as Regulatory from './regulatory';
+export {
+  // Main regulatory manager
+  RegulatoryManager,
+  createRegulatoryManager,
+  // Jurisdiction analyzer
+  JurisdictionAnalyzer,
+  createJurisdictionAnalyzer,
+  // KYC/AML manager
+  KycAmlManager,
+  createKycAmlManager,
+  // AI governance
+  AiGovernanceManager,
+  createAiGovernanceManager,
+  // Regulatory risk engine
+  RegulatoryRiskEngine,
+  createRegulatoryRiskEngine,
+  // Types
+  type RegulatoryManagerConfig,
+  type JurisdictionCode,
+  type ComplianceStatus,
+  type KycResult,
+  type RiskLevel,
+  type AiSystemClassification,
+} from './regulatory';
+
+// Note: Import regulatory module separately from '@tonaiagent/core/regulatory'
+// for full access to all regulatory features (jurisdiction analysis, KYC/AML, AI governance, risk engine)
 
 // Note: Import institutional-network module separately from '@tonaiagent/core/institutional-network'
 // for global institutional network features (partner registry, custody infrastructure, liquidity network,
