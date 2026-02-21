@@ -251,3 +251,7 @@ export {
 // Note: Import institutional-network module separately from '@tonaiagent/core/institutional-network'
 // for global institutional network features (partner registry, custody infrastructure, liquidity network,
 // treasury interoperability, institutional onboarding, reporting, global expansion, AI advantage, governance)
+
+// Note: Import ai-credit module separately from '@tonaiagent/core/ai-credit'
+// for AI-native credit, lending, and underwriting features (CoinRabbit integration,
+// credit scoring, collateral management, underwriting engine, lending strategies)
