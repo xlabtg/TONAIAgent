@@ -58,6 +58,12 @@
  * - AI-native personal finance (savings automation, wealth management)
  * - Life-stage personalization and behavioral finance
  * - Financial education with gamification
+ * - AI-native payments and commerce layer (autonomous payments, subscriptions)
+ * - Smart spending with AI optimization
+ * - Merchant infrastructure (SDK, checkout, webhooks)
+ * - Agent-driven commerce (negotiations, procurement, B2B)
+ * - Cross-border payments with route optimization
+ * - Payment analytics and fraud detection
  */
 
 export * from './ai';
@@ -193,3 +199,6 @@ export {
 
 // Note: Import SDK module separately from '@tonaiagent/core/sdk'
 // for Enterprise SDK & Developer Platform (agent management, extensions, sandbox)
+
+// Note: Import payments module separately from '@tonaiagent/core/payments'
+// for AI-native payments and commerce features (gateway, subscriptions, merchants, agents)
