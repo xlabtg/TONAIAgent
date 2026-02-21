@@ -173,3 +173,6 @@ export type * as GrowthTypes from './growth/types';
 
 // Note: Import personal-finance module separately from '@tonaiagent/core/personal-finance'
 // for AI-native personal finance features (savings, investments, education, dashboard)
+
+// Note: Import SDK module separately from '@tonaiagent/core/sdk'
+// for Enterprise SDK & Developer Platform (agent management, extensions, sandbox)
