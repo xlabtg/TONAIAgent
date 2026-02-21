@@ -63,6 +63,12 @@
  * - Open Agent Protocol (OAP) for autonomous agent interoperability
  * - Enterprise SDK & Developer Platform
  * - Token strategy (launch, liquidity flywheel, valuation, simulation)
+ * - AI-native payments and commerce layer (autonomous payments, subscriptions)
+ * - Smart spending with AI optimization
+ * - Merchant infrastructure (SDK, checkout, webhooks)
+ * - Agent-driven commerce (negotiations, procurement, B2B)
+ * - Cross-border payments with route optimization
+ * - Payment analytics and fraud detection
  */
 
 export * from './ai';
@@ -201,3 +207,6 @@ export {
 
 // Note: Import token-strategy module separately from '@tonaiagent/core/token-strategy'
 // for strategic token launch, liquidity flywheel, valuation modeling, and simulation
+
+// Note: Import payments module separately from '@tonaiagent/core/payments'
+// for AI-native payments and commerce features (gateway, subscriptions, merchants, agents)
