@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
-  "version": "2.4.0",
-  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, token strategy (launch, liquidity flywheel, valuation, simulation), institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform, AI-native payments and commerce layer, and global institutional network (funds, banks, custodians, liquidity providers, strategic partnerships) for autonomous agents on TON blockchain",
+  "version": "2.5.0",
+  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, token strategy (launch, liquidity flywheel, valuation, simulation), institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform, AI-native payments and commerce layer, global institutional network (funds, banks, custodians, liquidity providers, strategic partnerships), and AI-native credit/lending/underwriting (powered by CoinRabbit) for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -130,6 +130,11 @@
       "types": "./dist/institutional-network/index.d.ts",
       "import": "./dist/institutional-network/index.mjs",
       "require": "./dist/institutional-network/index.js"
+    },
+    "./ai-credit": {
+      "types": "./dist/ai-credit/index.d.ts",
+      "import": "./dist/ai-credit/index.mjs",
+      "require": "./dist/ai-credit/index.js"
     }
   },
   "files": [
@@ -137,8 +142,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/institutional-network/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/institutional-network/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/institutional-network/index.ts src/ai-credit/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/institutional-network/index.ts src/ai-credit/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -296,7 +301,14 @@
     "institutional-reporting",
     "global-expansion",
     "ai-advantage",
-    "institutional-governance"
+    "institutional-governance",
+    "ai-credit",
+    "lending",
+    "underwriting",
+    "coinrabbit",
+    "crypto-loans",
+    "collateral-management",
+    "credit-scoring"
   ],
   "author": "TONAIAgent Team",
   "license": "MIT",
