@@ -173,3 +173,7 @@ export type * as GrowthTypes from './growth/types';
 
 // Note: Import personal-finance module separately from '@tonaiagent/core/personal-finance'
 // for AI-native personal finance features (savings, investments, education, dashboard)
+
+// Note: Import ai-credit module separately from '@tonaiagent/core/ai-credit'
+// for AI-native credit, lending, and underwriting features (CoinRabbit integration,
+// credit scoring, collateral management, underwriting engine, lending strategies)
