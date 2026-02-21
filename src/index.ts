@@ -7,8 +7,8 @@
  * viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App
  * (wallet, AI agents, social layer, Telegram Mini App), Telegram-native mobile-first UX,
  * AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform,
- * AI-native payments and commerce layer, and global regulatory strategy framework
- * for autonomous finance on TON blockchain.
+ * AI-native payments and commerce layer, global regulatory strategy framework, and
+ * global institutional network for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -73,6 +73,11 @@
  * - EU AI Act alignment with AI governance and system classification
  * - Cross-border compliance architecture
  * - Regulatory risk monitoring and SAR detection
+ * - Global institutional network (partner registry, custody, liquidity, treasury)
+ * - Institutional onboarding framework with due diligence
+ * - Global expansion strategy and roadmap
+ * - AI-powered institutional advantage (risk modeling, anomaly detection)
+ * - Institutional governance (advisory boards, committees, policies)
  */
 
 export * from './ai';
@@ -242,3 +247,7 @@ export {
 
 // Note: Import regulatory module separately from '@tonaiagent/core/regulatory'
 // for full access to all regulatory features (jurisdiction analysis, KYC/AML, AI governance, risk engine)
+
+// Note: Import institutional-network module separately from '@tonaiagent/core/institutional-network'
+// for global institutional network features (partner registry, custody infrastructure, liquidity network,
+// treasury interoperability, institutional onboarding, reporting, global expansion, AI advantage, governance)
