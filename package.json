@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
-  "version": "1.9.0",
-  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, and AI-native personal finance for autonomous agents on TON blockchain",
+  "version": "2.0.0",
+  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, and Open Agent Protocol for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -105,6 +105,11 @@
       "types": "./dist/personal-finance/index.d.ts",
       "import": "./dist/personal-finance/index.mjs",
       "require": "./dist/personal-finance/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol/index.d.ts",
+      "import": "./dist/protocol/index.mjs",
+      "require": "./dist/protocol/index.js"
     }
   },
   "files": [
@@ -112,8 +117,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
