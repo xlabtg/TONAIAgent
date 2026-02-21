@@ -6,7 +6,9 @@
  * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
  * viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App
  * (wallet, AI agents, social layer, Telegram Mini App), Telegram-native mobile-first UX,
- * and AI-native personal finance for autonomous finance on TON blockchain.
+ * AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform,
+ * and token strategy (launch, liquidity flywheel, valuation, simulation) for autonomous
+ * finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -58,6 +60,8 @@
  * - AI-native personal finance (savings automation, wealth management)
  * - Life-stage personalization and behavioral finance
  * - Financial education with gamification
+ * - Open Agent Protocol (OAP) for autonomous agent interoperability
+ * - Enterprise SDK & Developer Platform
  * - Token strategy (launch, liquidity flywheel, valuation, simulation)
  */
 
@@ -174,6 +178,26 @@ export type * as GrowthTypes from './growth/types';
 
 // Note: Import personal-finance module separately from '@tonaiagent/core/personal-finance'
 // for AI-native personal finance features (savings, investments, education, dashboard)
+
+// Open Agent Protocol - Universal standard for autonomous agents
+// Provides identity, capabilities, messaging, security, reputation, plugins, cross-chain, and governance
+export * as Protocol from './protocol';
+export {
+  // Main protocol class
+  OpenAgentProtocol,
+  createAgent,
+  // Types
+  type OpenAgentProtocolConfig,
+  type CreateAgentInput,
+  type ProtocolAgent,
+  type ProtocolEventHandler,
+} from './protocol';
+
+// Note: Import protocol module separately from '@tonaiagent/core/protocol'
+// for full access to all protocol features (identity, capabilities, messaging, etc.)
+
+// Note: Import SDK module separately from '@tonaiagent/core/sdk'
+// for Enterprise SDK & Developer Platform (agent management, extensions, sandbox)
 
 // Note: Import token-strategy module separately from '@tonaiagent/core/token-strategy'
 // for strategic token launch, liquidity flywheel, valuation modeling, and simulation
