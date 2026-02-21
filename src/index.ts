@@ -64,6 +64,11 @@
  * - Agent-driven commerce (negotiations, procurement, B2B)
  * - Cross-border payments with route optimization
  * - Payment analytics and fraud detection
+ * - Global institutional network (partner registry, custody, liquidity, treasury)
+ * - Institutional onboarding framework with due diligence
+ * - Global expansion strategy and roadmap
+ * - AI-powered institutional advantage (risk modeling, anomaly detection)
+ * - Institutional governance (advisory boards, committees, policies)
  */
 
 export * from './ai';
@@ -202,6 +207,10 @@ export {
 
 // Note: Import payments module separately from '@tonaiagent/core/payments'
 // for AI-native payments and commerce features (gateway, subscriptions, merchants, agents)
+
+// Note: Import institutional-network module separately from '@tonaiagent/core/institutional-network'
+// for global institutional network features (partner registry, custody infrastructure, liquidity network,
+// treasury interoperability, institutional onboarding, reporting, global expansion, AI advantage, governance)
 
 // Note: Import ai-credit module separately from '@tonaiagent/core/ai-credit'
 // for AI-native credit, lending, and underwriting features (CoinRabbit integration,
