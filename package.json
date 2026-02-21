@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
   "version": "2.3.0",
-  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform, AI-native payments and commerce layer, and AI-native credit/lending/underwriting (powered by CoinRabbit) for autonomous agents on TON blockchain"
+  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform, AI-native payments and commerce layer, and AI-native credit/lending/underwriting (powered by CoinRabbit) for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
