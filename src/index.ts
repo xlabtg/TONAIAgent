@@ -6,7 +6,8 @@
  * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
  * viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App
  * (wallet, AI agents, social layer, Telegram Mini App), Telegram-native mobile-first UX,
- * and AI-native personal finance for autonomous finance on TON blockchain.
+ * AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform,
+ * and global regulatory strategy framework for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -58,6 +59,13 @@
  * - AI-native personal finance (savings automation, wealth management)
  * - Life-stage personalization and behavioral finance
  * - Financial education with gamification
+ * - Open Agent Protocol for universal agent interoperability
+ * - Enterprise SDK & Developer Platform
+ * - Global regulatory strategy and jurisdictional framework
+ * - Tiered KYC/AML compliance for retail, professional, and institutional clients
+ * - EU AI Act alignment with AI governance and system classification
+ * - Cross-border compliance architecture
+ * - Regulatory risk monitoring and SAR detection
  */
 
 export * from './ai';
@@ -173,3 +181,54 @@ export type * as GrowthTypes from './growth/types';
 
 // Note: Import personal-finance module separately from '@tonaiagent/core/personal-finance'
 // for AI-native personal finance features (savings, investments, education, dashboard)
+
+// Open Agent Protocol - Universal standard for autonomous agents
+// Provides identity, capabilities, messaging, security, reputation, plugins, cross-chain, and governance
+export * as Protocol from './protocol';
+export {
+  // Main protocol class
+  OpenAgentProtocol,
+  createAgent,
+  // Types
+  type OpenAgentProtocolConfig,
+  type CreateAgentInput,
+  type ProtocolAgent,
+  type ProtocolEventHandler,
+} from './protocol';
+
+// Note: Import protocol module separately from '@tonaiagent/core/protocol'
+// for full access to all protocol features (identity, capabilities, messaging, etc.)
+
+// Note: Import SDK module separately from '@tonaiagent/core/sdk'
+// for Enterprise SDK & Developer Platform (agent management, extensions, sandbox)
+
+// Global Regulatory Strategy & Jurisdictional Framework
+// Provides comprehensive compliance infrastructure for AI-native autonomous finance
+export * as Regulatory from './regulatory';
+export {
+  // Main regulatory manager
+  RegulatoryManager,
+  createRegulatoryManager,
+  // Jurisdiction analyzer
+  JurisdictionAnalyzer,
+  createJurisdictionAnalyzer,
+  // KYC/AML manager
+  KycAmlManager,
+  createKycAmlManager,
+  // AI governance
+  AiGovernanceManager,
+  createAiGovernanceManager,
+  // Regulatory risk engine
+  RegulatoryRiskEngine,
+  createRegulatoryRiskEngine,
+  // Types
+  type RegulatoryManagerConfig,
+  type JurisdictionCode,
+  type ComplianceStatus,
+  type KycResult,
+  type RiskLevel,
+  type AiSystemClassification,
+} from './regulatory';
+
+// Note: Import regulatory module separately from '@tonaiagent/core/regulatory'
+// for full access to all regulatory features (jurisdiction analysis, KYC/AML, AI governance, risk engine)

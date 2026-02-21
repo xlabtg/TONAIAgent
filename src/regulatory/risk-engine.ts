@@ -5,7 +5,6 @@
  */
 
 import {
-  RegulatoryRiskConfig,
   EntityRiskAssessment,
   TransactionRiskAssessment,
   RiskFactor,
@@ -112,14 +111,24 @@ const DEFAULT_SAR_PATTERNS = [
 ];
 
 export class RegulatoryRiskEngine {
-  private config: Required<RegulatoryRiskEngineConfig>;
+  private readonly _config: Required<RegulatoryRiskEngineConfig>;
   private entityAssessments: Map<string, EntityRiskAssessment> = new Map();
   private regulatoryChanges: Map<string, RegulatoryChange> = new Map();
-  private sarPatterns: typeof DEFAULT_SAR_PATTERNS;
+  private _sarPatterns: typeof DEFAULT_SAR_PATTERNS;
   private eventListeners: RegulatoryEventCallback[] = [];
 
+  /** Get the current configuration */
+  get config(): Required<RegulatoryRiskEngineConfig> {
+    return this._config;
+  }
+
+  /** Get the configured SAR patterns */
+  get sarPatterns(): typeof DEFAULT_SAR_PATTERNS {
+    return this._sarPatterns;
+  }
+
   constructor(config: RegulatoryRiskEngineConfig = {}) {
-    this.config = {
+    this._config = {
       enabled: config.enabled ?? true,
       aiPowered: config.aiPowered ?? true,
       realTimeMonitoring: config.realTimeMonitoring ?? true,
@@ -132,12 +141,12 @@ export class RegulatoryRiskEngine {
       sarAutoFile: config.sarAutoFile ?? false,
       regulatoryMonitoring: {
         enabled: config.regulatoryMonitoring?.enabled ?? true,
-        jurisdictions: config.regulatoryMonitoring?.jurisdictions ?? ['EU', 'US', 'SG', 'UK'],
+        jurisdictions: config.regulatoryMonitoring?.jurisdictions ?? ['CH', 'US', 'SG', 'GB'],
         alertOnChange: config.regulatoryMonitoring?.alertOnChange ?? true,
       },
     };
 
-    this.sarPatterns = [...DEFAULT_SAR_PATTERNS];
+    this._sarPatterns = [...DEFAULT_SAR_PATTERNS];
   }
 
   // ============================================================================
@@ -274,7 +283,7 @@ export class RegulatoryRiskEngine {
 
   async configureSarDetection(config: Partial<SarDetectionConfig>): Promise<void> {
     if (config.patterns) {
-      this.sarPatterns = config.patterns.map((p) => ({
+      this._sarPatterns = config.patterns.map((p) => ({
         name: p.name,
         description: p.description,
         riskScore: p.riskScore,

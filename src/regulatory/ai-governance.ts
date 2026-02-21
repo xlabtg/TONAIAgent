@@ -19,8 +19,6 @@ import {
   OversightCheckResult,
   AlgorithmicAudit,
   AuditResults,
-  AuditFinding,
-  RemediationPlan,
   TrainingDataInfo,
   ModelLimitations,
   ModelPerformance,
@@ -29,17 +27,6 @@ import {
   RegulatoryEventCallback,
   RiskLevel,
 } from './types';
-
-// ============================================================================
-// AI Risk Classification Criteria
-// ============================================================================
-
-interface RiskClassificationCriteria {
-  domain: string;
-  autonomyLevel: string;
-  affectedParties: string[];
-  capabilities: string[];
-}
 
 const HIGH_RISK_DOMAINS = [
   'financial_services',
@@ -123,7 +110,7 @@ export interface RecordDecisionParams {
 }
 
 export class AiGovernanceManager {
-  private config: Required<AiGovernanceManagerConfig>;
+  private readonly _config: Required<AiGovernanceManagerConfig>;
   private models: Map<string, AiModelRegistration> = new Map();
   private classifications: Map<string, AiSystemClassification> = new Map();
   private explainabilityConfigs: Map<string, ExplainabilityConfig> = new Map();
@@ -132,8 +119,13 @@ export class AiGovernanceManager {
   private decisions: Map<string, RecordDecisionParams> = new Map();
   private eventListeners: RegulatoryEventCallback[] = [];
 
+  /** Get the current configuration */
+  get config(): Required<AiGovernanceManagerConfig> {
+    return this._config;
+  }
+
   constructor(config: AiGovernanceManagerConfig = {}) {
-    this.config = {
+    this._config = {
       enabled: config.enabled ?? true,
       frameworks: config.frameworks ?? ['eu_ai_act', 'nist_ai_rmf', 'oecd_principles'],
       riskClassification: config.riskClassification ?? 'automatic',
@@ -547,7 +539,7 @@ export class AiGovernanceManager {
 
   async getDecisionAnalytics(
     modelId: string,
-    period: string
+    _period: string // Reserved for future time-filtered analytics
   ): Promise<{
     totalDecisions: number;
     approvalRate: number;

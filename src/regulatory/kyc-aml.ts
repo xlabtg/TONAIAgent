@@ -25,7 +25,6 @@ import {
   RegulatoryEvent,
   RegulatoryEventCallback,
   RiskLevel,
-  PersonalInfo,
 } from './types';
 
 // ============================================================================
@@ -444,14 +443,14 @@ export class KycAmlManager {
     };
   }
 
-  async screenUser(userInfo: {
+  async screenUser(_userInfo: {
     firstName: string;
     lastName: string;
     dateOfBirth: Date;
     nationality: string;
     countries?: string[];
   }): Promise<UserScreeningResult> {
-    // Simulate user screening
+    // Simulate user screening (userInfo would be used in production)
     const pepStatus = {
       isPep: false,
       riskLevel: 'low' as RiskLevel,

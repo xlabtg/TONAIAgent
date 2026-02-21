@@ -1143,7 +1143,8 @@ export class JurisdictionAnalyzer {
     this.eventListeners.push(callback);
   }
 
-  private emitEvent(event: RegulatoryEvent): void {
+  /** Emit an event to all registered listeners */
+  emitEvent(event: RegulatoryEvent): void {
     this.eventListeners.forEach((listener) => listener(event));
   }
 

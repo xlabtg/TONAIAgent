@@ -16,13 +16,13 @@
  */
 
 import {
-  RegulatoryConfig,
   RegulatoryEvent,
   RegulatoryEventCallback,
   ComplianceStatusReport,
   ComplianceStatus,
   RiskLevel,
   JurisdictionCode,
+  ComplianceGap,
 } from './types';
 
 import {
@@ -80,7 +80,7 @@ export interface RegulatoryManagerConfig {
 }
 
 export class RegulatoryManager {
-  private config: RegulatoryManagerConfig;
+  private readonly _config: RegulatoryManagerConfig;
   private eventListeners: RegulatoryEventCallback[] = [];
 
   public readonly jurisdiction: JurisdictionAnalyzer;
@@ -88,10 +88,15 @@ export class RegulatoryManager {
   public readonly aiGovernance: AiGovernanceManager;
   public readonly riskEngine: RegulatoryRiskEngine;
 
+  /** Get the current configuration */
+  get config(): RegulatoryManagerConfig {
+    return this._config;
+  }
+
   constructor(config: RegulatoryManagerConfig = {}) {
-    this.config = {
+    this._config = {
       enabled: config.enabled ?? true,
-      primaryJurisdiction: config.primaryJurisdiction ?? 'EU' as JurisdictionCode,
+      primaryJurisdiction: config.primaryJurisdiction ?? 'CH',
       operationalRegions: config.operationalRegions ?? ['EU', 'APAC'],
       complianceLevel: config.complianceLevel ?? 'standard',
       ...config,
@@ -223,14 +228,7 @@ export class RegulatoryManager {
     };
   }
 
-  async identifyGaps(): Promise<
-    Array<{
-      requirement: string;
-      currentCompliance: ComplianceStatus;
-      gapDescription: string;
-      remediationRequired: boolean;
-    }>
-  > {
+  async identifyGaps(): Promise<ComplianceGap[]> {
     // This would be populated based on actual compliance checks
     return [];
   }
