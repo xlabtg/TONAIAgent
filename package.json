@@ -1,7 +1,7 @@
 {
   "name": "@tonaiagent/core",
-  "version": "2.2.0",
-  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform, and global institutional network (funds, banks, custodians, liquidity providers, strategic partnerships) for autonomous agents on TON blockchain",
+  "version": "2.3.0",
+  "description": "Multi-provider AI layer with production-grade security, multi-agent coordination, strategy engine, plugin system, no-code visual builder, marketplace, copy trading, tokenomics, institutional compliance, omnichain infrastructure, agent launchpad, autonomous hedge fund, global data platform, viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social layer, Telegram integration), Telegram-native mobile-first UX, AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform, AI-native payments and commerce layer, and global institutional network (funds, banks, custodians, liquidity providers, strategic partnerships) for autonomous agents on TON blockchain",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -116,6 +116,11 @@
       "import": "./dist/sdk/index.mjs",
       "require": "./dist/sdk/index.js"
     },
+    "./payments": {
+      "types": "./dist/payments/index.d.ts",
+      "import": "./dist/payments/index.mjs",
+      "require": "./dist/payments/index.js"
+    },
     "./institutional-network": {
       "types": "./dist/institutional-network/index.d.ts",
       "import": "./dist/institutional-network/index.mjs",
@@ -127,8 +132,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/institutional-network/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/institutional-network/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/payments/index.ts src/institutional-network/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/payments/index.ts src/institutional-network/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -261,6 +266,17 @@
     "sandbox",
     "paper-trading",
     "developer-experience",
+    "payments",
+    "commerce",
+    "autonomous-payments",
+    "smart-subscriptions",
+    "merchant-sdk",
+    "agent-commerce",
+    "cross-border-payments",
+    "payment-gateway",
+    "fraud-detection",
+    "escrow",
+    "checkout",
     "institutional-network",
     "global-partnerships",
     "custody-infrastructure",
