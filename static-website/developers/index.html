@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!-- Primary Meta Tags -->
+  <title>Developers - TON AI Agent | Build Autonomous AI Agents</title>
+  <meta name="title" content="Developers - TON AI Agent | Build Autonomous AI Agents">
+  <meta name="description" content="Build powerful AI agents on TON with our comprehensive SDK, REST API, and developer tools. Get started in minutes with documentation, examples, and quick start guides.">
+  <meta name="keywords" content="TON, AI Agent, SDK, API, Developer Tools, Blockchain Development, Smart Contracts, DeFi, Documentation">
+  <meta name="author" content="TON AI Agent">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tonaiagent.com/developers/">
+  <meta property="og:title" content="Developers - TON AI Agent | Build Autonomous AI Agents">
+  <meta property="og:description" content="Build powerful AI agents on TON with our comprehensive SDK, REST API, and developer tools. Get started in minutes with documentation, examples, and quick start guides.">
+  <meta property="og:image" content="https://tonaiagent.com/images/og-developers.png">
+  <meta property="og:site_name" content="TON AI Agent">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://tonaiagent.com/developers/">
+  <meta name="twitter:title" content="Developers - TON AI Agent | Build Autonomous AI Agents">
+  <meta name="twitter:description" content="Build powerful AI agents on TON with our comprehensive SDK, REST API, and developer tools. Get started in minutes with documentation, examples, and quick start guides.">
+  <meta name="twitter:image" content="https://tonaiagent.com/images/og-developers.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+  <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+
+  <!-- Fonts - Using system fonts for performance, with fallback -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="../css/main.css">
+
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "TON AI Agent Developers",
+    "url": "https://tonaiagent.com/developers/",
+    "description": "Developer resources for building AI agents on TON blockchain.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "TON AI Agent",
+      "url": "https://tonaiagent.com"
+    }
+  }
+  </script>
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://tonaiagent.com/developers/">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header header-transparent" id="header">
+    <div class="container">
+      <div class="header-inner">
+        <!-- Logo -->
+        <a href="../" class="header-logo">
+          <svg class="header-logo-icon" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M28 56C43.464 56 56 43.464 56 28C56 12.536 43.464 0 28 0C12.536 0 0 12.536 0 28C0 43.464 12.536 56 28 56Z" fill="#0088CC"/>
+            <path d="M37.5603 15.6298H18.4386C14.9228 15.6298 12.6944 19.4354 14.4632 22.4656L26.2644 42.9582C27.0432 44.2977 28.9542 44.2977 29.7329 42.9582L41.5348 22.4656C43.3029 19.4354 41.0752 15.6298 37.5603 15.6298ZM26.2657 36.2057L24.1653 32.4372L17.8328 21.4876C17.3721 20.7085 17.9249 19.7113 18.8382 19.7113H26.2657V36.2057ZM38.1644 21.4876L31.832 32.4372L29.7322 36.2057V19.7106H37.1597C38.0737 19.7106 38.6258 20.7078 38.1651 21.4869L38.1644 21.4876Z" fill="white"/>
+          </svg>
+          <span class="header-logo-text">TON AI Agent</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="header-nav">
+          <div class="dropdown">
+            <a href="../product/" class="nav-link">
+              Product
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </a>
+            <div class="dropdown-menu">
+              <a href="../product/agents.html" class="dropdown-item">
+                <span class="dropdown-item-title">Agents</span>
+                <span class="dropdown-item-desc">Autonomous AI agents for finance</span>
+              </a>
+              <a href="../product/strategy-engine.html" class="dropdown-item">
+                <span class="dropdown-item-title">Strategy Engine</span>
+                <span class="dropdown-item-desc">Strategy DSL and AI generation</span>
+              </a>
+              <a href="../product/marketplace.html" class="dropdown-item">
+                <span class="dropdown-item-title">Marketplace</span>
+                <span class="dropdown-item-desc">Discover and copy strategies</span>
+              </a>
+              <a href="../product/security.html" class="dropdown-item">
+                <span class="dropdown-item-title">Security</span>
+                <span class="dropdown-item-desc">Institutional-grade security</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="dropdown">
+            <a href="./" class="nav-link active">
+              Developers
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </a>
+            <div class="dropdown-menu">
+              <a href="docs.html" class="dropdown-item">
+                <span class="dropdown-item-title">Documentation</span>
+                <span class="dropdown-item-desc">Complete developer guides</span>
+              </a>
+              <a href="sdk.html" class="dropdown-item">
+                <span class="dropdown-item-title">SDK</span>
+                <span class="dropdown-item-desc">SDK reference and examples</span>
+              </a>
+              <a href="api.html" class="dropdown-item">
+                <span class="dropdown-item-title">API</span>
+                <span class="dropdown-item-desc">REST API documentation</span>
+              </a>
+              <a href="quickstart.html" class="dropdown-item">
+                <span class="dropdown-item-title">Quick Start</span>
+                <span class="dropdown-item-desc">Get started in 5 minutes</span>
+              </a>
+            </div>
+          </div>
+
+          <a href="../institutional/" class="nav-link">Institutional</a>
+          <a href="../ecosystem/" class="nav-link">Ecosystem</a>
+          <a href="../token/" class="nav-link">Token</a>
+        </nav>
+
+        <!-- Desktop Actions -->
+        <div class="header-actions">
+          <a href="quickstart.html" class="btn btn-ghost btn-sm">Start Building</a>
+          <a href="https://t.me/tonaiagent_bot" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">Launch App</a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+          <svg id="menuIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg id="closeIcon" class="hidden" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <nav class="mobile-menu-nav">
+        <a href="../product/" class="mobile-menu-link">Product</a>
+        <div class="mobile-menu-submenu">
+          <a href="../product/agents.html">Agents</a>
+          <a href="../product/strategy-engine.html">Strategy Engine</a>
+          <a href="../product/marketplace.html">Marketplace</a>
+          <a href="../product/security.html">Security</a>
+        </div>
+
+        <a href="./" class="mobile-menu-link active">Developers</a>
+        <div class="mobile-menu-submenu">
+          <a href="docs.html">Documentation</a>
+          <a href="sdk.html">SDK</a>
+          <a href="api.html">API</a>
+          <a href="quickstart.html">Quick Start</a>
+        </div>
+
+        <a href="../institutional/" class="mobile-menu-link">Institutional</a>
+        <a href="../ecosystem/" class="mobile-menu-link">Ecosystem</a>
+        <a href="../token/" class="mobile-menu-link">Token</a>
+      </nav>
+
+      <div class="mobile-menu-actions">
+        <a href="quickstart.html" class="btn btn-outline btn-md w-full">Start Building</a>
+        <a href="https://t.me/tonaiagent_bot" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-md w-full">Launch App</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-bg-radial"></div>
+      <div class="hero-grid"></div>
+      <div class="hero-floating-element hero-floating-1 animate-float"></div>
+      <div class="hero-floating-element hero-floating-2 animate-float delay-1000"></div>
+
+      <div class="container hero-content">
+        <div class="hero-inner">
+          <!-- Badge -->
+          <div class="mb-6 animate-fade-down">
+            <span class="badge badge-primary badge-lg">Developer Resources</span>
+          </div>
+
+          <!-- Headline -->
+          <h1 class="hero-headline animate-fade-up">
+            <span class="text-foreground">Build Powerful</span>
+            <br>
+            <span class="gradient-text">AI Agents on TON</span>
+          </h1>
+
+          <!-- Subheadline -->
+          <p class="hero-subheadline animate-fade-up stagger-2">
+            Everything you need to create, deploy, and manage autonomous AI agents.
+            Comprehensive SDK, REST API, and developer tools at your fingertips.
+          </p>
+
+          <!-- CTAs -->
+          <div class="hero-cta animate-fade-up stagger-3">
+            <a href="quickstart.html" class="btn btn-primary btn-xl">
+              Quick Start
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+            <a href="docs.html" class="btn btn-outline btn-xl">Read the Docs</a>
+            <a href="https://github.com/xlabtg/TONAIAgent" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-xl">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+
+          <!-- Trust Signals -->
+          <div class="hero-trust animate-fade-up stagger-4">
+            <span class="hero-trust-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Open Source
+            </span>
+            <span class="hero-trust-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              TypeScript &amp; Python SDKs
+            </span>
+            <span class="hero-trust-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Active Community
+            </span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-stats animate-fade-up stagger-5">
+          <div class="hero-stats-grid">
+            <div class="hero-stat">
+              <div class="hero-stat-value">1,000+</div>
+              <div class="hero-stat-label">Active Developers</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">500+</div>
+              <div class="hero-stat-label">Integrations Built</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">50+</div>
+              <div class="hero-stat-label">API Endpoints</div>
+            </div>
+            <div class="hero-stat">
+              <div class="hero-stat-value">99.9%</div>
+              <div class="hero-stat-label">API Uptime</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section class="value-prop" id="documentation">
+      <div class="container">
+        <div class="value-prop-header">
+          <h2>Comprehensive Documentation</h2>
+          <p class="text-lg text-foreground-secondary">
+            Everything you need to understand, integrate, and extend TON AI Agent.
+            From quick starts to deep dives into architecture.
+          </p>
+        </div>
+
+        <div class="value-prop-grid">
+          <!-- Doc Category 1 -->
+          <a href="docs.html#getting-started" class="feature-card animate-fade-up stagger-1">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Getting Started</h3>
+            <p class="feature-card-desc">
+              Installation guides, environment setup, and your first AI agent in under 5 minutes.
+            </p>
+          </a>
+
+          <!-- Doc Category 2 -->
+          <a href="docs.html#concepts" class="feature-card animate-fade-up stagger-2">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Core Concepts</h3>
+            <p class="feature-card-desc">
+              Understand agents, strategies, execution pipelines, and the AI orchestration layer.
+            </p>
+          </a>
+
+          <!-- Doc Category 3 -->
+          <a href="docs.html#architecture" class="feature-card animate-fade-up stagger-3">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Architecture</h3>
+            <p class="feature-card-desc">
+              Deep dive into system architecture, security model, and infrastructure design.
+            </p>
+          </a>
+
+          <!-- Doc Category 4 -->
+          <a href="docs.html#guides" class="feature-card animate-fade-up stagger-4">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Guides &amp; Tutorials</h3>
+            <p class="feature-card-desc">
+              Step-by-step tutorials for common use cases, integrations, and best practices.
+            </p>
+          </a>
+
+          <!-- Doc Category 5 -->
+          <a href="docs.html#security" class="feature-card animate-fade-up stagger-5">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Security</h3>
+            <p class="feature-card-desc">
+              Security best practices, authentication, authorization, and audit guidelines.
+            </p>
+          </a>
+
+          <!-- Doc Category 6 -->
+          <a href="docs.html#troubleshooting" class="feature-card animate-fade-up stagger-6">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Troubleshooting</h3>
+            <p class="feature-card-desc">
+              Common issues, debugging tips, and how to get help from the community.
+            </p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SDK Section -->
+    <section class="how-it-works" id="sdk">
+      <div class="container">
+        <div class="how-it-works-header">
+          <h2>Powerful SDK Libraries</h2>
+          <p class="text-lg text-foreground-secondary">
+            Build AI agents in your favorite language. Type-safe, well-documented, and battle-tested.
+          </p>
+        </div>
+
+        <div class="steps-container">
+          <div class="steps-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <!-- TypeScript SDK -->
+            <div class="step-card">
+              <div class="step-header">
+                <div class="step-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <h3 class="step-title">TypeScript SDK</h3>
+              <p class="step-desc">
+                Full TypeScript support with comprehensive type definitions. Perfect for Node.js and browser environments.
+              </p>
+              <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 0.5rem; font-family: monospace; font-size: 0.875rem; color: var(--foreground-secondary);">
+                npm install @tonaiagent/sdk
+              </div>
+              <div style="margin-top: 1rem;">
+                <a href="sdk.html#typescript" class="btn btn-outline btn-sm">View TypeScript Docs</a>
+              </div>
+            </div>
+
+            <!-- Python SDK -->
+            <div class="step-card">
+              <div class="step-header">
+                <div class="step-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a9 9 0 0 1 9 9c0 3.6-3.6 6.3-9 11-5.4-4.7-9-7.4-9-11a9 9 0 0 1 9-9z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                </div>
+              </div>
+              <h3 class="step-title">Python SDK</h3>
+              <p class="step-desc">
+                Pythonic interface with async support. Ideal for data science, ML integration, and backend services.
+              </p>
+              <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 0.5rem; font-family: monospace; font-size: 0.875rem; color: var(--foreground-secondary);">
+                pip install tonaiagent
+              </div>
+              <div style="margin-top: 1rem;">
+                <a href="sdk.html#python" class="btn btn-outline btn-sm">View Python Docs</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SDK Features -->
+        <div class="value-prop-grid" style="margin-top: 3rem;">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Type Safety</h3>
+            <p class="feature-card-desc">
+              Full type definitions and autocomplete support for faster development.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Async Support</h3>
+            <p class="feature-card-desc">
+              Native async/await patterns for optimal performance in concurrent operations.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h3 class="feature-card-title">Auto-Retry</h3>
+            <p class="feature-card-desc">
+              Built-in retry logic with exponential backoff for resilient applications.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API Section -->
+    <section class="flywheel" id="api">
+      <div class="container">
+        <div class="flywheel-grid">
+          <!-- Content -->
+          <div class="flywheel-content">
+            <h2>RESTful API</h2>
+            <p>
+              A comprehensive REST API for complete control over your AI agents.
+              Authenticate, configure, execute, and monitor - all via simple HTTP requests.
+            </p>
+
+            <div class="flywheel-steps">
+              <div class="flywheel-step flywheel-step-1">
+                <div class="flywheel-step-number">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </div>
+                <div class="flywheel-step-content">
+                  <h4>Authentication</h4>
+                  <p>API key and JWT token authentication with fine-grained permissions.</p>
+                </div>
+              </div>
+
+              <div class="flywheel-step flywheel-step-2">
+                <div class="flywheel-step-number">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="6" width="16" height="12" rx="2"></rect>
+                    <circle cx="9" cy="11" r="1.5"></circle>
+                    <circle cx="15" cy="11" r="1.5"></circle>
+                    <path d="M10 14h4"></path>
+                  </svg>
+                </div>
+                <div class="flywheel-step-content">
+                  <h4>Agent Management</h4>
+                  <p>Create, configure, start, stop, and monitor your AI agents.</p>
+                </div>
+              </div>
+
+              <div class="flywheel-step flywheel-step-3">
+                <div class="flywheel-step-number">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                  </svg>
+                </div>
+                <div class="flywheel-step-content">
+                  <h4>Strategy Execution</h4>
+                  <p>Deploy and manage trading strategies with real-time execution.</p>
+                </div>
+              </div>
+
+              <div class="flywheel-step flywheel-step-4">
+                <div class="flywheel-step-number">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                    <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                  </svg>
+                </div>
+                <div class="flywheel-step-content">
+                  <h4>Analytics &amp; Monitoring</h4>
+                  <p>Real-time metrics, performance tracking, and detailed logs.</p>
+                </div>
+              </div>
+            </div>
+
+            <a href="api.html" class="btn btn-outline btn-lg">
+              Explore API Reference
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Visual - Code Example -->
+          <div class="flywheel-visual" style="align-items: flex-start;">
+            <div style="width: 100%; background: rgba(0,0,0,0.4); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+              <div style="padding: 0.75rem 1rem; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 0.5rem;">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;"></span>
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></span>
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #27ca40;"></span>
+                <span style="margin-left: auto; font-size: 0.75rem; color: var(--foreground-secondary);">api-example.sh</span>
+              </div>
+              <pre style="margin: 0; padding: 1.5rem; font-family: monospace; font-size: 0.8rem; line-height: 1.6; color: var(--foreground-secondary); overflow-x: auto;"><code><span style="color: #6b7280;"># Create a new agent</span>
+curl -X POST https://api.tonaiagent.com/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Trading Agent",
+    "strategy": "momentum",
+    "config": {
+      "risk_level": "medium",
+      "max_position_size": 1000
+    }
+  }'
+
+<span style="color: #6b7280;"># Response</span>
+{
+  "id": "agent_abc123",
+  "status": "active",
+  "created_at": "2024-01-15T10:30:00Z"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Start Section -->
+    <section class="how-it-works" id="quickstart">
+      <div class="container">
+        <div class="how-it-works-header">
+          <h2>Get Started in 5 Minutes</h2>
+          <p class="text-lg text-foreground-secondary">
+            From zero to your first AI agent in four simple steps. No prior blockchain experience required.
+          </p>
+        </div>
+
+        <div class="steps-container">
+          <div class="steps-line"></div>
+          <div class="steps-grid">
+            <!-- Step 1 -->
+            <div class="step-card">
+              <div class="step-header">
+                <div class="step-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </div>
+                <span class="step-number">1</span>
+              </div>
+              <h3 class="step-title">Install SDK</h3>
+              <p class="step-desc">
+                Install the SDK in your preferred language using npm or pip.
+              </p>
+              <div class="step-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card">
+              <div class="step-header">
+                <div class="step-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </div>
+                <span class="step-number">2</span>
+              </div>
+              <h3 class="step-title">Get API Key</h3>
+              <p class="step-desc">
+                Generate your API key from the developer dashboard or via CLI.
+              </p>
+              <div class="step-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card">
+              <div class="step-header">
+                <div class="step-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                </div>
+                <span class="step-number">3</span>
+              </div>
+              <h3 class="step-title">Write Code</h3>
+              <p class="step-desc">
+                Initialize the client and create your first agent with a few lines of code.
+              </p>
+              <div class="step-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-card">
+              <div class="step-header">
+                <div class="step-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                </div>
+                <span class="step-number">4</span>
+              </div>
+              <h3 class="step-title">Deploy &amp; Monitor</h3>
+              <p class="step-desc">
+                Deploy your agent and watch it execute in real-time via the dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="text-center mt-12">
+          <a href="quickstart.html" class="btn btn-primary btn-lg">
+            Start the Tutorial
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Examples Section -->
+    <section class="multi-agent" id="examples">
+      <div class="container">
+        <div class="multi-agent-grid">
+          <!-- Content -->
+          <div class="multi-agent-content">
+            <span class="badge badge-primary mb-4">Code Examples</span>
+            <h2>Learn by Example</h2>
+            <p>
+              Explore real-world examples and templates to accelerate your development.
+              From simple trading bots to complex multi-agent systems.
+            </p>
+
+            <div class="multi-agent-list">
+              <div class="multi-agent-list-item">
+                <div class="multi-agent-list-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 3L4.5 8.5L2 6"></path>
+                  </svg>
+                </div>
+                <span class="multi-agent-list-text">Simple trading bot with stop-loss</span>
+              </div>
+              <div class="multi-agent-list-item">
+                <div class="multi-agent-list-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 3L4.5 8.5L2 6"></path>
+                  </svg>
+                </div>
+                <span class="multi-agent-list-text">DCA (Dollar Cost Averaging) strategy</span>
+              </div>
+              <div class="multi-agent-list-item">
+                <div class="multi-agent-list-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 3L4.5 8.5L2 6"></path>
+                  </svg>
+                </div>
+                <span class="multi-agent-list-text">Arbitrage detection agent</span>
+              </div>
+              <div class="multi-agent-list-item">
+                <div class="multi-agent-list-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 3L4.5 8.5L2 6"></path>
+                  </svg>
+                </div>
+                <span class="multi-agent-list-text">Portfolio rebalancing automation</span>
+              </div>
+              <div class="multi-agent-list-item">
+                <div class="multi-agent-list-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 3L4.5 8.5L2 6"></path>
+                  </svg>
+                </div>
+                <span class="multi-agent-list-text">Telegram notification integration</span>
+              </div>
+              <div class="multi-agent-list-item">
+                <div class="multi-agent-list-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 3L4.5 8.5L2 6"></path>
+                  </svg>
+                </div>
+                <span class="multi-agent-list-text">Custom strategy with AI signals</span>
+              </div>
+            </div>
+
+            <a href="examples.html" class="btn btn-outline btn-lg">
+              Browse All Examples
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Visual - Example Cards -->
+          <div class="agent-cards">
+            <div class="agent-card animate-fade-up stagger-1">
+              <div class="agent-card-icon bg-blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </div>
+              <h4 class="agent-card-title">Trading Bot</h4>
+              <p class="agent-card-desc">Basic trading agent with market orders</p>
+            </div>
+
+            <div class="agent-card animate-fade-up stagger-2">
+              <div class="agent-card-icon bg-purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                  <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                </svg>
+              </div>
+              <h4 class="agent-card-title">Analytics</h4>
+              <p class="agent-card-desc">Portfolio tracking and reporting</p>
+            </div>
+
+            <div class="agent-card animate-fade-up stagger-3">
+              <div class="agent-card-icon bg-cyan">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </div>
+              <h4 class="agent-card-title">Multi-DEX</h4>
+              <p class="agent-card-desc">Cross-exchange arbitrage detection</p>
+            </div>
+
+            <div class="agent-card animate-fade-up stagger-4">
+              <div class="agent-card-icon bg-green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </div>
+              <h4 class="agent-card-title">Alerts</h4>
+              <p class="agent-card-desc">Price and event notifications</p>
+            </div>
+
+            <!-- Central Element -->
+            <div class="agent-central animate-pulse-glow">
+              <div class="agent-central-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+              </div>
+              <div class="agent-central-label">Examples</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Community Section -->
+    <section class="social-proof">
+      <div class="container">
+        <!-- Community Stats -->
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-value gradient-text">1,000+</div>
+            <div class="metric-label">Active Developers</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value gradient-text">5,000+</div>
+            <div class="metric-label">Discord Members</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value gradient-text">200+</div>
+            <div class="metric-label">GitHub Contributors</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value gradient-text">50+</div>
+            <div class="metric-label">Community Plugins</div>
+          </div>
+        </div>
+
+        <!-- Developer Testimonials -->
+        <div class="testimonials">
+          <div class="testimonial-card animate-fade-up stagger-1">
+            <svg class="testimonial-quote-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5 3.871 3.871 0 01-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5 3.871 3.871 0 01-2.748-1.179z"/>
+            </svg>
+            <p class="testimonial-text">
+              The SDK is incredibly well-designed. I was able to build a custom trading strategy in just a few hours. The TypeScript types are comprehensive and the docs are excellent.
+            </p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">M</div>
+              <div class="testimonial-author-info">
+                <span class="testimonial-author-name">Maria Santos</span>
+                <span class="testimonial-author-role">Blockchain Developer</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card animate-fade-up stagger-2">
+            <svg class="testimonial-quote-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5 3.871 3.871 0 01-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5 3.871 3.871 0 01-2.748-1.179z"/>
+            </svg>
+            <p class="testimonial-text">
+              Coming from traditional finance, I was amazed how easy it was to get started. The API is intuitive and the community support on Discord is fantastic.
+            </p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">D</div>
+              <div class="testimonial-author-info">
+                <span class="testimonial-author-name">David Kim</span>
+                <span class="testimonial-author-role">Quantitative Developer</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card animate-fade-up stagger-3">
+            <svg class="testimonial-quote-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5 3.871 3.871 0 01-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5 3.871 3.871 0 01-2.748-1.179z"/>
+            </svg>
+            <p class="testimonial-text">
+              The Python SDK integrates perfectly with my ML pipeline. I can train models and deploy them as agents seamlessly. Best developer experience in DeFi.
+            </p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">S</div>
+              <div class="testimonial-author-info">
+                <span class="testimonial-author-name">Sarah Chen</span>
+                <span class="testimonial-author-role">ML Engineer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section relative">
+      <div class="cta-bg-elements">
+        <div class="cta-bg-circle cta-bg-circle-1"></div>
+        <div class="cta-bg-circle cta-bg-circle-2"></div>
+      </div>
+
+      <div class="container">
+        <div class="cta-content">
+          <h2>Ready to Start Building?</h2>
+          <p>
+            Join 1,000+ developers building the future of autonomous finance.
+            Get started in minutes with our comprehensive SDK and documentation.
+          </p>
+
+          <div class="cta-buttons">
+            <a href="quickstart.html" class="btn btn-white btn-xl">
+              Quick Start Guide
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+            <a href="https://discord.gg/tonaiagent" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-xl" style="border-color:rgba(255,255,255,0.3);color:white;">
+              Join Discord
+            </a>
+          </div>
+
+          <div class="cta-benefits">
+            <span class="cta-benefit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              Comprehensive docs
+            </span>
+            <span class="cta-benefit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              Open source
+            </span>
+            <span class="cta-benefit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Active community
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decorative Elements -->
+      <div class="cta-decor cta-decor-1 animate-float"></div>
+      <div class="cta-decor cta-decor-2 animate-float delay-1000"></div>
+      <div class="cta-decor cta-decor-3 animate-float delay-500"></div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container py-12">
+      <!-- Newsletter -->
+      <div class="footer-newsletter">
+        <div class="footer-newsletter-content">
+          <h3 class="footer-newsletter-title">Stay updated</h3>
+          <p class="footer-newsletter-desc">Get the latest news, updates, and insights from TON AI Agent.</p>
+        </div>
+        <form class="footer-newsletter-form" action="../api/subscribe.php" method="POST">
+          <input type="email" name="email" placeholder="Enter your email" class="form-input footer-newsletter-input" required>
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+      </div>
+
+      <!-- Links Grid -->
+      <div class="footer-links">
+        <div class="footer-links-section">
+          <h4>Product</h4>
+          <ul class="footer-links-list">
+            <li><a href="../product/agents.html">Agents</a></li>
+            <li><a href="../product/strategy-engine.html">Strategy Engine</a></li>
+            <li><a href="../product/marketplace.html">Marketplace</a></li>
+            <li><a href="../product/security.html">Security</a></li>
+            <li><a href="../product/ai-layer.html">AI Layer</a></li>
+            <li><a href="../product/multi-agent.html">Multi-Agent</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-section">
+          <h4>Developers</h4>
+          <ul class="footer-links-list">
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="sdk.html">SDK</a></li>
+            <li><a href="api.html">API Reference</a></li>
+            <li><a href="quickstart.html">Quick Start</a></li>
+            <li><a href="examples.html">Examples</a></li>
+            <li><a href="https://github.com/xlabtg/TONAIAgent" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-section">
+          <h4>Ecosystem</h4>
+          <ul class="footer-links-list">
+            <li><a href="../ecosystem/strategies.html">Strategies</a></li>
+            <li><a href="../ecosystem/partners.html">Partners</a></li>
+            <li><a href="../ecosystem/builders.html">Builders Program</a></li>
+            <li><a href="../ecosystem/grants.html">Grants</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-section">
+          <h4>Company</h4>
+          <ul class="footer-links-list">
+            <li><a href="../company/about.html">About</a></li>
+            <li><a href="../resources/blog.html">Blog</a></li>
+            <li><a href="../company/careers.html">Careers</a></li>
+            <li><a href="../company/press.html">Press</a></li>
+            <li><a href="../company/contact.html">Contact</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-section">
+          <h4>Legal</h4>
+          <ul class="footer-links-list">
+            <li><a href="../legal/terms.html">Terms of Service</a></li>
+            <li><a href="../legal/privacy.html">Privacy Policy</a></li>
+            <li><a href="../legal/disclaimers.html">Risk Disclaimers</a></li>
+            <li><a href="../security/">Security</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom Section -->
+      <div class="footer-bottom">
+        <div class="footer-brand">
+          <a href="../" class="footer-logo">
+            <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28 56C43.464 56 56 43.464 56 28C56 12.536 43.464 0 28 0C12.536 0 0 12.536 0 28C0 43.464 12.536 56 28 56Z" fill="#0088CC"/>
+              <path d="M37.5603 15.6298H18.4386C14.9228 15.6298 12.6944 19.4354 14.4632 22.4656L26.2644 42.9582C27.0432 44.2977 28.9542 44.2977 29.7329 42.9582L41.5348 22.4656C43.3029 19.4354 41.0752 15.6298 37.5603 15.6298ZM26.2657 36.2057L24.1653 32.4372L17.8328 21.4876C17.3721 20.7085 17.9249 19.7113 18.8382 19.7113H26.2657V36.2057ZM38.1644 21.4876L31.832 32.4372L29.7322 36.2057V19.7106H37.1597C38.0737 19.7106 38.6258 20.7078 38.1651 21.4869L38.1644 21.4876Z" fill="white"/>
+            </svg>
+            <span>TON AI Agent</span>
+          </a>
+          <span class="footer-copyright">2024 TON AI Agent. All rights reserved.</span>
+        </div>
+
+        <div class="footer-social">
+          <a href="https://t.me/tonaiagent" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+          </a>
+          <a href="https://twitter.com/tonaiagent" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
+          <a href="https://github.com/xlabtg/TONAIAgent" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </a>
+          <a href="https://discord.gg/tonaiagent" target="_blank" rel="noopener noreferrer" aria-label="Discord">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Bar -->
+    <div class="footer-bar">
+      <p>
+        Built with precision for the TON Ecosystem. Powered by
+        <a href="https://ton.org" target="_blank" rel="noopener noreferrer">The Open Network</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Minimal JavaScript for Mobile Menu and Header Scroll -->
+  <script>
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuIcon = document.getElementById('menuIcon');
+    const closeIcon = document.getElementById('closeIcon');
+
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', function() {
+        const isOpen = mobileMenu.classList.toggle('open');
+        menuIcon.classList.toggle('hidden', isOpen);
+        closeIcon.classList.toggle('hidden', !isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+      });
+    }
+
+    // Header Scroll Effect
+    const header = document.getElementById('header');
+
+    function handleScroll() {
+      if (window.scrollY > 10) {
+        header.classList.remove('header-transparent');
+        header.classList.add('header-solid');
+      } else {
+        header.classList.remove('header-solid');
+        header.classList.add('header-transparent');
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+  </script>
+</body>
+</html>
