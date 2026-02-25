@@ -135,7 +135,7 @@ export class AgentRuntimeOrchestrator {
     if (this.running) return;
     this.running = true;
     this.log('info', 'AgentRuntimeOrchestrator started');
-    this.emitEvent('orchestrator.started', {}, {});
+    this.emitEvent('orchestrator.started', undefined, {});
   }
 
   /** Stop the runtime orchestrator (graceful shutdown) */
@@ -143,7 +143,7 @@ export class AgentRuntimeOrchestrator {
     if (!this.running) return;
     this.running = false;
     this.log('info', 'AgentRuntimeOrchestrator stopped');
-    this.emitEvent('orchestrator.stopped', {}, {});
+    this.emitEvent('orchestrator.stopped', undefined, {});
   }
 
   /** Whether the orchestrator is running */
