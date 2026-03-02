@@ -326,7 +326,8 @@ export {
 // modules into a cohesive product. One call provisions runtime, wallet,
 // Telegram bot, strategy, persistence, and security.
 // Note: Import separately from '@tonaiagent/core/agent-orchestrator' for full access.
-export * as AgentOrchestrator from './agent-orchestrator';
+// Note: Namespace is exported as AgentOrchestratorModule to avoid conflict with the AgentOrchestrator class.
+export * as AgentOrchestratorModule from './agent-orchestrator';
 export {
   // Orchestrator
   AgentOrchestrator,
@@ -338,7 +339,9 @@ export {
   // Error
   AgentOrchestratorError,
   // Types
-  type CreateAgentInput,
+  // Note: CreateAgentInput from agent-orchestrator is exported as OrchestratorCreateAgentInput
+  // to avoid conflict with CreateAgentInput from ./protocol (Open Agent Protocol)
+  type CreateAgentInput as OrchestratorCreateAgentInput,
   type CreateAgentResult,
   type AgentMetadata,
   type AgentStatus,
