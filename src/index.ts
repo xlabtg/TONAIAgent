@@ -360,3 +360,66 @@ export {
   type OrchestratorApiResponse,
   type AgentOrchestratorErrorCode,
 } from './agent-orchestrator';
+
+// Agent Lifecycle Cloud Orchestrator (Issue #92)
+// Cloud-native orchestration layer that manages the full lifecycle of autonomous
+// agents at scale. Provides the core control plane of the TON AI platform with
+// lifecycle state machine (Created/Active/Running/Paused/Suspended/Terminated),
+// distributed scheduler (cron, event, market, on-chain triggers), runtime allocator,
+// health monitor with anomaly detection, scaling engine, alerting engine with
+// auto-shutdown, admin control interface with governance, audit trails, and
+// migration support for cloud provider/runtime/wallet/multi-chain migrations.
+// Note: Import separately from '@tonaiagent/core/lifecycle-orchestrator' for full access.
+export * as LifecycleOrchestratorModule from './lifecycle-orchestrator';
+export {
+  // Orchestrator
+  LifecycleOrchestrator,
+  createLifecycleOrchestrator,
+  DEFAULT_LIFECYCLE_CONFIG,
+  // API
+  LifecycleOrchestratorApi,
+  createLifecycleOrchestratorApi,
+  // Error
+  LifecycleOrchestratorError,
+  // State machine
+  LIFECYCLE_TRANSITIONS,
+  // Types
+  type LifecycleState,
+  type StateTransition,
+  type ScheduleConfig,
+  type ScheduledJob,
+  type RuntimeAllocation,
+  type ResourceTier,
+  type ComputeEnvironment,
+  type CloudProvider,
+  type HealthCheckResult,
+  type HealthStatus,
+  type AgentPerformanceMetrics,
+  type AnomalyReport,
+  type ScalingPolicy,
+  type Alert,
+  type AlertSeverity,
+  type AlertChannel,
+  type GovernancePermission,
+  type PermissionScope,
+  type AuditEntry,
+  type MigrationRecord,
+  type MigrationType,
+  type AgentLifecycleRecord,
+  type TerminationReport,
+  type RegisterAgentInput,
+  type RegisterAgentResult,
+  type TransitionStateInput,
+  type ScheduleJobInput,
+  type ScaleAgentInput,
+  type LifecycleOrchestratorConfig,
+  type LifecycleOrchestratorHealth,
+  type LifecycleOrchestratorMetrics,
+  type LifecycleEvent,
+  type LifecycleEventType,
+  type LifecycleEventHandler,
+  type LifecycleUnsubscribe,
+  type LifecycleApiRequest,
+  type LifecycleApiResponse,
+  type LifecycleOrchestratorErrorCode,
+} from './lifecycle-orchestrator';
