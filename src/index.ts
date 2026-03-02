@@ -301,3 +301,22 @@ export {
   type AgentRegistryEntry,
   type FeeRecord,
 } from './ton-factory';
+
+// Investor-Ready End-to-End Demo Flow (Issue #90)
+// Orchestrates all 7 demo steps: Landing, Agent Creation, Telegram Integration,
+// TON Wallet Creation, Strategy Activation, Live Dashboard, Social & Viral.
+// Note: Import separately from '@tonaiagent/core/investor-demo' for full access.
+export * as InvestorDemo from './investor-demo';
+export {
+  InvestorDemoManager,
+  createInvestorDemoManager,
+  defaultInvestorDemoConfig,
+  type InvestorDemoConfig,
+  type DemoSession,
+  type DemoStep,
+  type DemoStepId,
+  type DemoSummary,
+  type InvestorDemoService,
+  type InvestorDemoEvent,
+  type InvestorDemoEventCallback,
+} from './investor-demo';
