@@ -9,26 +9,84 @@
 
 TON AI Agent is a production-grade platform for deploying autonomous AI agents on the TON blockchain. The platform combines multi-provider AI orchestration (Groq-first), institutional-grade security, and a comprehensive strategy engine to enable intelligent, self-operating financial agents.
 
+> **🚀 MVP Status**: The current development focus is the MVP — delivering the core demo flow end-to-end. See the [MVP Architecture](docs/mvp-architecture.md) and [MVP Feature Checklist](docs/mvp-checklist.md) for scope and priorities.
+
 ---
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Key Features](#key-features)
-3. [System Architecture](#system-architecture)
-4. [Core Modules](#core-modules)
-5. [Technology Stack](#technology-stack)
-6. [Prerequisites](#prerequisites)
-7. [Installation](#installation)
-8. [Configuration](#configuration)
-9. [Quick Start](#quick-start)
-10. [Telegram Integration](#telegram-integration)
-11. [Admin Dashboard](#admin-dashboard)
-12. [Security Best Practices](#security-best-practices)
-13. [Contributing](#contributing)
-14. [Roadmap](#roadmap)
-15. [Community](#community)
-16. [License](#license)
+1. [MVP Overview](#mvp-overview)
+2. [Overview](#overview)
+3. [Key Features](#key-features)
+4. [System Architecture](#system-architecture)
+5. [Core Modules](#core-modules)
+6. [Technology Stack](#technology-stack)
+7. [Prerequisites](#prerequisites)
+8. [Installation](#installation)
+9. [Configuration](#configuration)
+10. [Quick Start](#quick-start)
+11. [Telegram Integration](#telegram-integration)
+12. [Admin Dashboard](#admin-dashboard)
+13. [Security Best Practices](#security-best-practices)
+14. [Contributing](#contributing)
+15. [Roadmap](#roadmap)
+16. [Community](#community)
+17. [License](#license)
+
+---
+
+## MVP Overview
+
+> **MVP Vision**: "Create and deploy your own AI crypto agent in under 3 minutes."
+
+The TON AI Agent MVP is a focused, end-to-end demo of the core agent creation and execution flow. It is designed to be demo-ready, investor-ready, and deployable without any Phase 2+ features.
+
+### MVP Demo Flow
+
+```
+User
+  │
+  ▼ POST /agent/create (name, strategy, budget, risk)
+Agent Created (simulation mode)
+  │
+  ▼ POST /agent/start
+Agent Running — 9-step execution pipeline:
+  fetch_data → call_ai (Groq) → validate_risk → execute_strategy
+  │
+  ▼ Telegram notification sent
+  ▼ Trade logged to history
+  ▼ Metrics updated (PnL, drawdown)
+  │
+  ▼ GET /agent/status | GET /agent/metrics
+Agent Dashboard (Admin panel, status, trade history)
+```
+
+### MVP Architecture Documents
+
+| Document | Description |
+|---|---|
+| [MVP Feature Checklist](docs/mvp-checklist.md) | Finalized list of in-scope and out-of-scope features |
+| [MVP Architecture Diagram](docs/mvp-architecture.md) | System diagram, data flow, deployment topology |
+| [MVP Module List](docs/mvp-modules.md) | Module-by-module inclusion/exclusion table |
+| [MVP Refactoring Plan](docs/mvp-refactoring.md) | Required refactoring before production |
+
+### MVP Scope Summary
+
+**In scope (MVP)**:
+- Single-command agent creation via REST API
+- 4 strategy templates: DCA, Yield, Grid, Arbitrage
+- Agent runtime with 9-step execution pipeline
+- Simulation mode (no real funds required)
+- TON wallet creation and basic payments
+- Telegram bot: commands + notifications
+- Admin dashboard: monitoring + risk controls + RBAC
+
+**Out of scope (Phase 2+)**:
+- Strategy Marketplace, Copy Trading, Multi-Agent Swarms
+- Institutional Suite, Hedge Fund, Ecosystem Fund
+- TONAI Tokenomics and Governance
+- Omnichain / Multi-chain support
+- AI Credit, Regulatory Compliance, Super App
 
 ---
 
@@ -175,34 +233,42 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 
 ## Core Modules
 
-| Module | Description | Documentation |
-|--------|-------------|---------------|
-| **AI Layer** | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
-| **Security** | MPC wallets, HSM, authorization pipeline, audit logging | [docs/security.md](docs/security.md) |
-| **Strategy Engine** | DSL parser, backtesting, optimization, risk controls | [docs/strategy.md](docs/strategy.md) |
-| **Multi-Agent** | Swarm coordination, shared memory, task delegation | [docs/multi-agent.md](docs/multi-agent.md) |
-| **Marketplace** | Strategy discovery, copy trading, creator monetization | [docs/marketplace.md](docs/marketplace.md) |
-| **Tokenomics** | TONAI token, staking, governance, reputation | [docs/tokenomics.md](docs/tokenomics.md) |
-| **No-Code Builder** | Visual strategy construction without coding | [docs/no-code.md](docs/no-code.md) |
-| **Plugins** | Extensible tool and integration system | [docs/plugins.md](docs/plugins.md) |
-| **Institutional** | KYC/AML, compliance, reporting, custody | [docs/institutional.md](docs/institutional.md) |
-| **Omnichain** | Cross-chain operations via ChangeNOW integration | [docs/omnichain.md](docs/omnichain.md) |
-| **Launchpad** | Agent creation, funding, treasury management | [docs/launchpad.md](docs/launchpad.md) |
-| **Hedge Fund** | Autonomous fund management with AI strategies | [docs/hedgefund.md](docs/hedgefund.md) |
-| **Data Platform** | Market data, signals, oracles, analytics | [docs/data-platform.md](docs/data-platform.md) |
-| **Growth** | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
-| **AI Safety** | Alignment, guardrails, anomaly detection | [docs/ai-safety.md](docs/ai-safety.md) |
-| **Ecosystem Fund** | Grants, incubation, capital allocation | [docs/ecosystem-fund.md](docs/ecosystem-fund.md) |
-| **Super App** | Wallet, agents, social layer, Telegram integration | [docs/superapp.md](docs/superapp.md) |
-| **Mobile UX** | Telegram-native mobile-first experience | [docs/mobile-ux.md](docs/mobile-ux.md) |
-| **Personal Finance** | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
-| **Protocol** | Open Agent Protocol (OAP) specification | [docs/protocol.md](docs/protocol.md) |
-| **SDK** | Enterprise SDK and developer platform | [docs/protocol-sdk.md](docs/protocol-sdk.md) |
-| **Token Strategy** | Launch, liquidity flywheel, valuation modeling | [docs/token-strategy.md](docs/token-strategy.md) |
-| **Payments** | AI-native payments and commerce layer | [docs/payments.md](docs/payments.md) |
-| **Regulatory** | Global compliance and jurisdictional framework | [docs/regulatory-strategy.md](docs/regulatory-strategy.md) |
-| **Institutional Network** | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
-| **AI Credit** | Lending, underwriting, CoinRabbit integration | [docs/ai-credit.md](docs/ai-credit.md) |
+> **Legend**: ✅ MVP Core — 🔧 MVP Support — 🚧 Partial (limited MVP scope) — ❌ Phase 2+
+>
+> See [docs/mvp-modules.md](docs/mvp-modules.md) for the full module inclusion/exclusion list.
+
+| Module | MVP Status | Description | Documentation |
+|--------|-----------|-------------|---------------|
+| **Demo Agent** | ✅ MVP Core | Agent REST API, 4 strategies, risk manager | (src/demo-agent) |
+| **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine | (src/agent-runtime) |
+| **AI Layer** | ✅ MVP Core | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
+| **TON Factory** | ✅ MVP Core | Wallet creation, smart contracts, transactions | (src/ton-factory) |
+| **Admin Dashboard** | ✅ MVP Core | Agent monitoring, risk controls, RBAC | (src/mvp/admin-dashboard) |
+| **Security** | 🔧 MVP Support | Key management, auth, audit logging | [docs/security.md](docs/security.md) |
+| **SDK** | 🔧 MVP Support | TypeScript types and client helpers | [docs/protocol-sdk.md](docs/protocol-sdk.md) |
+| **Strategy Engine** | 🚧 Partial (MVP) | DCA, Yield, Grid, Arbitrage strategies | [docs/strategy.md](docs/strategy.md) |
+| **Payments** | 🚧 Partial (MVP) | Agent funding and basic payment logic | [docs/payments.md](docs/payments.md) |
+| **Multi-Agent** | ❌ Phase 2 | Swarm coordination, shared memory, task delegation | [docs/multi-agent.md](docs/multi-agent.md) |
+| **Marketplace** | ❌ Phase 2 | Strategy discovery, copy trading, creator monetization | [docs/marketplace.md](docs/marketplace.md) |
+| **Tokenomics** | ❌ Phase 2 | TONAI token, staking, governance, reputation | [docs/tokenomics.md](docs/tokenomics.md) |
+| **Institutional** | ❌ Phase 2 | KYC/AML, compliance, reporting, custody | [docs/institutional.md](docs/institutional.md) |
+| **Hedge Fund** | ❌ Phase 2 | Autonomous fund management with AI strategies | [docs/hedgefund.md](docs/hedgefund.md) |
+| **Ecosystem Fund** | ❌ Phase 2 | Grants, incubation, capital allocation | [docs/ecosystem-fund.md](docs/ecosystem-fund.md) |
+| **AI Credit** | ❌ Phase 2 | Lending, underwriting, CoinRabbit integration | [docs/ai-credit.md](docs/ai-credit.md) |
+| **No-Code Builder** | ❌ Phase 2 | Visual strategy construction without coding | [docs/no-code.md](docs/no-code.md) |
+| **Mobile UX** | ❌ Phase 2 | Telegram-native mobile-first experience | [docs/mobile-ux.md](docs/mobile-ux.md) |
+| **Omnichain** | ❌ Phase 3 | Cross-chain operations via ChangeNOW integration | [docs/omnichain.md](docs/omnichain.md) |
+| **Protocol** | ❌ Phase 3 | Open Agent Protocol (OAP) specification | [docs/protocol.md](docs/protocol.md) |
+| **Plugins** | ❌ Phase 3 | Extensible tool and integration system | [docs/plugins.md](docs/plugins.md) |
+| **Data Platform** | ❌ Phase 3 | Market data, signals, oracles, analytics | [docs/data-platform.md](docs/data-platform.md) |
+| **Launchpad** | ❌ Phase 3 | Agent creation, funding, treasury management | [docs/launchpad.md](docs/launchpad.md) |
+| **AI Safety** | ❌ Phase 3 | Alignment, guardrails, anomaly detection | [docs/ai-safety.md](docs/ai-safety.md) |
+| **Super App** | ❌ Phase 3 | Wallet, agents, social layer, Telegram integration | [docs/superapp.md](docs/superapp.md) |
+| **Regulatory** | ❌ Phase 3 | Global compliance and jurisdictional framework | [docs/regulatory-strategy.md](docs/regulatory-strategy.md) |
+| **Token Strategy** | ❌ Phase 3 | Launch, liquidity flywheel, valuation modeling | [docs/token-strategy.md](docs/token-strategy.md) |
+| **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
+| **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
+| **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
 
 ---
 
@@ -722,37 +788,60 @@ We welcome contributions from the community! Please read our contributing guidel
 
 ## Roadmap
 
-### Phase 1: Foundation (Current)
+### MVP (Current Focus)
 
-- [x] Multi-provider AI layer
+> "Create and deploy your own AI crypto agent in under 3 minutes."
+
+- [x] Agent creation REST API (single entrypoint)
+- [x] 4 strategy templates: DCA, Yield, Grid, Arbitrage
+- [x] 9-step agent execution pipeline
+- [x] Simulation mode (no real funds)
+- [x] TON wallet creation and basic payments
+- [x] Telegram bot: commands + status notifications
+- [x] Admin dashboard: monitoring, risk controls, RBAC
+- [ ] Unified MVP entrypoint (`src/index.ts`)
+- [ ] Complete unit test coverage for MVP modules
+- [ ] End-to-end demo scenario (#90)
+- [ ] One-click agent creation API (#91)
+- [ ] Production deployment framework (#93)
+
+See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and acceptance criteria.
+
+### Phase 1: Foundation (Completed)
+
+- [x] Multi-provider AI layer (Groq-first)
 - [x] Security and key management
 - [x] Strategy engine and DSL
-- [x] Multi-agent coordination
-- [x] Marketplace and copy trading
-- [x] Tokenomics framework
+- [x] Agent runtime orchestrator
+- [x] Demo agent with simulation mode
+- [x] Build system and CI/CD pipeline
 
 ### Phase 2: Expansion (Q2 2026)
 
-- [ ] Mobile app release
-- [ ] Additional blockchain support
-- [ ] Advanced AI models
-- [ ] Institutional partnerships
-- [ ] Regulatory compliance expansion
+- [ ] Strategy Marketplace (public)
+- [ ] Copy Trading
+- [ ] Multi-Agent Swarms
+- [ ] Institutional Suite
+- [ ] TONAI Token and Governance
+- [ ] AI Credit and Lending
+- [ ] Mobile UX / Telegram Mini App
 
 ### Phase 3: Scale (Q3-Q4 2026)
 
-- [ ] Million-user milestone
-- [ ] Cross-chain bridges
-- [ ] Autonomous hedge fund
-- [ ] DAO governance activation
-- [ ] Global market expansion
+- [ ] Omnichain / Multi-chain support
+- [ ] Protocol layer (Open Agent Protocol)
+- [ ] Plugin marketplace
+- [ ] Launchpad
+- [ ] Super App layer
+- [ ] Regulatory compliance engine
 
 ### Phase 4: Ecosystem (2027+)
 
+- [ ] Institutional Network
+- [ ] Personal Finance AI
+- [ ] Growth and referral engine
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
-- [ ] Custom model fine-tuning
-- [ ] Enterprise white-label
 - [ ] Full decentralization
 
 ---

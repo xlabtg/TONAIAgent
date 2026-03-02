@@ -313,6 +313,7 @@ export class AgentRuntimeOrchestrator {
     const executionId = this.generateId('exec');
     const isSimulation = config.simulation.enabled;
     const startedAt = new Date();
+    const startedAtHrTime = performance.now();
 
     this.log('info', `Pipeline started: ${executionId} for agent ${agentId}${strategyId ? ` strategy ${strategyId}` : ''} (simulation=${isSimulation})`);
 
@@ -357,7 +358,7 @@ export class AgentRuntimeOrchestrator {
     }
 
     const completedAt = new Date();
-    const totalDurationMs = completedAt.getTime() - startedAt.getTime();
+    const totalDurationMs = performance.now() - startedAtHrTime;
 
     const execution: PipelineExecution = {
       executionId,
