@@ -423,3 +423,66 @@ export {
   type LifecycleApiResponse,
   type LifecycleOrchestratorErrorCode,
 } from './lifecycle-orchestrator';
+
+// Distributed Scheduler & Event Engine (Issue #93)
+// Fault-tolerant distributed cron engine with event-driven execution,
+// on-chain TON blockchain event listeners, worker pool, and retry/DLQ engine.
+// Architecture: EventBus → Scheduler → TaskQueue → WorkerPool → RetryEngine → DeadLetterQueue
+// Note: Import separately from '@tonaiagent/core/distributed-scheduler' for full access.
+export * as DistributedSchedulerModule from './distributed-scheduler';
+export {
+  // Scheduler
+  DistributedScheduler,
+  createDistributedScheduler,
+  DEFAULT_SCHEDULER_CONFIG,
+  // Event Bus
+  EventBus,
+  createEventBus,
+  // Worker Pool
+  WorkerPool,
+  createWorkerPool,
+  DEFAULT_WORKER_POOL_CONFIG,
+  // Retry Engine
+  RetryEngine,
+  createRetryEngine,
+  DEFAULT_RETRY_POLICY,
+  // On-Chain Listener
+  OnChainListenerManager,
+  createOnChainListenerManager,
+  // API
+  DistributedSchedulerApi,
+  createDistributedSchedulerApi,
+  // Error
+  DistributedSchedulerError,
+  // Types
+  type ExecutionMode,
+  type JobPriority,
+  type JobStatus,
+  type CreateJobInput,
+  type ScheduledJob as DistributedSchedulerJob,
+  type ExecutionRecord,
+  type BusEvent,
+  type EventSubscriberCallback,
+  type EventUnsubscribe,
+  type SubscribeOptions,
+  type WorkerStatus,
+  type WorkerInfo,
+  type WorkerPoolConfig,
+  type OnChainEventType,
+  type CreateListenerInput,
+  type OnChainListener,
+  type OnChainEvent,
+  type RetryPolicy,
+  type DeadLetterEntry,
+  type DistributedSchedulerConfig,
+  type SchedulerHealth,
+  type SchedulerMetrics,
+  type SchedulerEventType,
+  type SchedulerEvent,
+  type SchedulerEventHandler,
+  type SchedulerUnsubscribe,
+  type DistributedSchedulerErrorCode,
+  type SchedulerApiRequest,
+  type SchedulerApiResponse,
+  type SystemEventTopic,
+} from './distributed-scheduler';
