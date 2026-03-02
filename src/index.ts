@@ -320,3 +320,43 @@ export {
   type InvestorDemoEvent,
   type InvestorDemoEventCallback,
 } from './investor-demo';
+
+// One-Click Agent Creation Orchestrator (Issue #91)
+// Single orchestration layer that transforms the platform from a collection of
+// modules into a cohesive product. One call provisions runtime, wallet,
+// Telegram bot, strategy, persistence, and security.
+// Note: Import separately from '@tonaiagent/core/agent-orchestrator' for full access.
+// Note: Namespace is exported as AgentOrchestratorModule to avoid conflict with the AgentOrchestrator class.
+export * as AgentOrchestratorModule from './agent-orchestrator';
+export {
+  // Orchestrator
+  AgentOrchestrator,
+  createAgentOrchestrator,
+  DEFAULT_ORCHESTRATOR_CONFIG,
+  // API
+  AgentOrchestratorApi,
+  createAgentOrchestratorApi,
+  // Error
+  AgentOrchestratorError,
+  // Types
+  // Note: CreateAgentInput from agent-orchestrator is exported as OrchestratorCreateAgentInput
+  // to avoid conflict with CreateAgentInput from ./protocol (Open Agent Protocol)
+  type CreateAgentInput as OrchestratorCreateAgentInput,
+  type CreateAgentResult,
+  type AgentMetadata,
+  type AgentStatus,
+  type AgentStrategy,
+  type AgentEnvironment,
+  type AgentProvisioningSummary,
+  type SubsystemResult,
+  type AgentOrchestratorConfig,
+  type OrchestratorHealth,
+  type OrchestratorMetrics,
+  type OrchestratorEvent,
+  type OrchestratorEventType,
+  type OrchestratorEventHandler,
+  type OrchestratorUnsubscribe,
+  type OrchestratorApiRequest,
+  type OrchestratorApiResponse,
+  type AgentOrchestratorErrorCode,
+} from './agent-orchestrator';
