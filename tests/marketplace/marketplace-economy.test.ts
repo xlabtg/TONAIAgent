@@ -655,7 +655,6 @@ describe('RevenueDistributionEngine', () => {
     it('should generate revenue statement', async () => {
       const start = new Date();
       start.setDate(start.getDate() - 30);
-      const end = new Date();
 
       // Create some revenue
       await engine.processRevenue({
@@ -680,6 +679,8 @@ describe('RevenueDistributionEngine', () => {
 
       await engine.processPendingDistributions();
 
+      // Set end date after all processing to ensure all events are included
+      const end = new Date();
       const statement = await engine.getRevenueStatement('agent_123', start, end);
 
       expect(statement.agentId).toBe('agent_123');
@@ -694,7 +695,6 @@ describe('RevenueDistributionEngine', () => {
     it('should calculate total creator revenue', async () => {
       const start = new Date();
       start.setDate(start.getDate() - 30);
-      const end = new Date();
 
       await engine.createDistributionRule({
         creatorId: 'creator_1',
@@ -719,6 +719,8 @@ describe('RevenueDistributionEngine', () => {
 
       await engine.processPendingDistributions();
 
+      // Set end date after all processing to ensure all distributions are included
+      const end = new Date();
       const revenue = await engine.getCreatorRevenue('creator_1', start, end);
       expect(revenue).toBe(750); // 75% of 1000
     });
