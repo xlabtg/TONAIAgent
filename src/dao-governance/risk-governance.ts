@@ -455,6 +455,6 @@ export class DefaultRiskGovernanceManager implements RiskGovernanceManager {
   }
 }
 
-export function createRiskGovernanceManager(config?: RiskGovernanceConfig): RiskGovernanceManager {
+export function createRiskGovernanceManager(config?: RiskGovernanceConfig): DefaultRiskGovernanceManager {
   return new DefaultRiskGovernanceManager(config);
 }

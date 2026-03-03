@@ -655,7 +655,6 @@ describe('RevenueDistributionEngine', () => {
     it('should generate revenue statement', async () => {
       const start = new Date();
       start.setDate(start.getDate() - 30);
-      const end = new Date();
 
       // Create some revenue
       await engine.processRevenue({
@@ -680,6 +679,8 @@ describe('RevenueDistributionEngine', () => {
 
       await engine.processPendingDistributions();
 
+      // Set end date after all processing to ensure all events are included
+      const end = new Date();
       const statement = await engine.getRevenueStatement('agent_123', start, end);
 
       expect(statement.agentId).toBe('agent_123');

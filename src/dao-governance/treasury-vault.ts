@@ -523,6 +523,6 @@ export class DefaultTreasuryVaultManager implements TreasuryVaultManager {
   }
 }
 
-export function createTreasuryVaultManager(config?: Partial<TreasuryVaultConfig>): TreasuryVaultManager {
+export function createTreasuryVaultManager(config?: Partial<TreasuryVaultConfig>): DefaultTreasuryVaultManager {
   return new DefaultTreasuryVaultManager(config);
 }

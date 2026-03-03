@@ -288,6 +288,6 @@ export class DefaultMultiSigManager implements MultiSigManager {
   }
 }
 
-export function createMultiSigManager(config?: MultiSigManagerConfig): MultiSigManager {
+export function createMultiSigManager(config?: MultiSigManagerConfig): DefaultMultiSigManager {
   return new DefaultMultiSigManager(config);
 }

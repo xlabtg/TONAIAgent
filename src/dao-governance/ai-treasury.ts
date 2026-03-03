@@ -413,6 +413,6 @@ export class DefaultAiTreasuryManager implements AiTreasuryManager {
   }
 }
 
-export function createAiTreasuryManager(config?: Partial<AiTreasuryConfig>): AiTreasuryManager {
+export function createAiTreasuryManager(config?: Partial<AiTreasuryConfig>): DefaultAiTreasuryManager {
   return new DefaultAiTreasuryManager(config);
 }

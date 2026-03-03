@@ -244,6 +244,6 @@ export class DefaultMarketplaceGovernanceManager implements MarketplaceGovernanc
   }
 }
 
-export function createMarketplaceGovernanceManager(): MarketplaceGovernanceManager {
+export function createMarketplaceGovernanceManager(): DefaultMarketplaceGovernanceManager {
   return new DefaultMarketplaceGovernanceManager();
 }

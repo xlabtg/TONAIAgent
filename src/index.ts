@@ -775,7 +775,8 @@ export {
   type RiskGovernanceManager,
   type RiskGovernanceConfig,
   type RiskCheckReport,
-  type RiskViolation,
+  // Note: exported as DaoRiskViolation to avoid conflict with investment module's RiskViolation
+  type RiskViolation as DaoRiskViolation,
   type AiTreasuryManager,
   type AiTreasuryConfig,
   type AiRebalanceRecommendation,

@@ -272,6 +272,6 @@ export class DefaultDelegatedGovernanceManager implements DelegatedGovernanceMan
   }
 }
 
-export function createDelegatedGovernanceManager(): DelegatedGovernanceManager {
+export function createDelegatedGovernanceManager(): DefaultDelegatedGovernanceManager {
   return new DefaultDelegatedGovernanceManager();
 }

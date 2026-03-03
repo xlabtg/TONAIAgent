@@ -622,6 +622,6 @@ export class DefaultGovernanceEngine implements GovernanceEngine {
   }
 }
 
-export function createGovernanceEngine(config?: Partial<GovernanceEngineConfig>): GovernanceEngine {
+export function createGovernanceEngine(config?: Partial<GovernanceEngineConfig>): DefaultGovernanceEngine {
   return new DefaultGovernanceEngine(config);
 }
