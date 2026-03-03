@@ -963,3 +963,346 @@ export type InstitutionalEventType =
   | 'compliance_review';
 
 export type InstitutionalEventCallback = (event: InstitutionalEvent) => void;
+
+// ============================================================================
+// Custody Integration Types
+// ============================================================================
+
+export type CustodyProvider =
+  | 'fireblocks'
+  | 'copper'
+  | 'anchorage'
+  | 'bitgo'
+  | 'ledger_enterprise'
+  | 'internal'
+  | 'custom';
+
+export type CustodyType = 'mpc' | 'multi_sig' | 'hsm' | 'cold_storage' | 'warm_storage' | 'hot_wallet';
+
+export interface CustodyConfig {
+  accountId: string;
+  provider: CustodyProvider;
+  custodyType: CustodyType;
+  enabled: boolean;
+  wallets: CustodyWallet[];
+  mpcConfig?: MpcConfig;
+  multiSigConfig?: MultiSigConfig;
+  hsmConfig?: HsmConfig;
+  withdrawalPolicy: WithdrawalPolicy;
+  whitelistedAddresses: WhitelistedAddress[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CustodyWallet {
+  id: string;
+  accountId: string;
+  name: string;
+  type: CustodyType;
+  address: string;
+  network: string;
+  asset: string;
+  balance: number;
+  status: 'active' | 'inactive' | 'frozen';
+  custodyProvider: CustodyProvider;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface MpcConfig {
+  threshold: number;
+  parties: MpcParty[];
+  keyShares: number;
+  refreshInterval: number;
+  enabled: boolean;
+}
+
+export interface MpcParty {
+  id: string;
+  name: string;
+  publicKey: string;
+  role: 'primary' | 'backup' | 'recovery';
+  status: 'active' | 'inactive';
+}
+
+export interface MultiSigConfig {
+  requiredSignatures: number;
+  totalSigners: number;
+  signers: MultiSigSigner[];
+  scriptType: 'p2sh' | 'p2wsh' | 'p2sh_p2wsh';
+}
+
+export interface MultiSigSigner {
+  id: string;
+  userId: string;
+  publicKey: string;
+  role: InstitutionalRole;
+  approved: boolean;
+}
+
+export interface HsmConfig {
+  provider: string;
+  deviceId: string;
+  slot: number;
+  requiresPhysicalPresence: boolean;
+  pin?: string;
+}
+
+export interface WithdrawalPolicy {
+  requiresApproval: boolean;
+  approvalThreshold: number;
+  approverRoles: InstitutionalRole[];
+  coolingPeriodHours: number;
+  dailyLimit: number;
+  whitelistOnly: boolean;
+  travelRuleRequired: boolean;
+}
+
+export interface WhitelistedAddress {
+  id: string;
+  address: string;
+  network: string;
+  label: string;
+  addedBy: string;
+  addedAt: Date;
+  approvedBy?: string;
+  approvedAt?: Date;
+  status: 'pending' | 'approved' | 'rejected' | 'removed';
+}
+
+export interface CustodyTransaction {
+  id: string;
+  accountId: string;
+  walletId: string;
+  type: 'deposit' | 'withdrawal' | 'internal_transfer';
+  asset: string;
+  amount: number;
+  fromAddress: string;
+  toAddress: string;
+  network: string;
+  status: CustodyTransactionStatus;
+  txHash?: string;
+  approvals: CustodyApproval[];
+  requiredApprovals: number;
+  initiatedBy: string;
+  initiatedAt: Date;
+  completedAt?: Date;
+  failureReason?: string;
+  metadata: Record<string, unknown>;
+}
+
+export type CustodyTransactionStatus =
+  | 'pending_approval'
+  | 'approved'
+  | 'broadcasting'
+  | 'confirming'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export interface CustodyApproval {
+  approverId: string;
+  approverRole: InstitutionalRole;
+  decision: 'approved' | 'rejected';
+  timestamp: Date;
+  signature?: string;
+  comments?: string;
+}
+
+// ============================================================================
+// Segregated Vault Types
+// ============================================================================
+
+export type VaultType =
+  | 'institutional'
+  | 'strategy_restricted'
+  | 'compliance_locked'
+  | 'collateral'
+  | 'reserve'
+  | 'operational';
+
+export type VaultStatus = 'active' | 'locked' | 'frozen' | 'closed' | 'pending_setup';
+
+export interface InstitutionalVault {
+  id: string;
+  accountId: string;
+  name: string;
+  type: VaultType;
+  status: VaultStatus;
+  description: string;
+  assets: VaultAsset[];
+  accessControl: VaultAccessControl;
+  exposureLimits: ExposureLimits;
+  strategyRestrictions: StrategyRestriction[];
+  complianceConfig: VaultComplianceConfig;
+  performanceTracking: VaultPerformanceTracking;
+  auditLog: VaultAuditEntry[];
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  metadata: Record<string, unknown>;
+}
+
+export interface VaultAsset {
+  asset: string;
+  network: string;
+  balance: number;
+  allocatedAmount: number;
+  availableAmount: number;
+  lockedAmount: number;
+  valueUSD: number;
+  lastUpdated: Date;
+}
+
+export interface VaultAccessControl {
+  authorizedRoles: InstitutionalRole[];
+  authorizedUsers: string[];
+  requireMultiSig: boolean;
+  multiSigThreshold: number;
+  restrictedHours?: VaultAccessHours;
+  ipWhitelist: string[];
+}
+
+export interface VaultAccessHours {
+  enabled: boolean;
+  allowedDays: number[];
+  startHour: number;
+  endHour: number;
+  timezone: string;
+}
+
+export interface ExposureLimits {
+  maxTotalExposure: number;
+  maxSingleAssetExposure: number;
+  maxSingleCounterpartyExposure: number;
+  maxLeverage: number;
+  maxDrawdown: number;
+  assetClassLimits: Record<string, number>;
+  protocolLimits: Record<string, number>;
+}
+
+export interface StrategyRestriction {
+  strategyId: string;
+  strategyName: string;
+  permission: 'allowed' | 'restricted' | 'prohibited';
+  maxAllocation?: number;
+  reason?: string;
+  approvedBy?: string;
+  approvedAt?: Date;
+}
+
+export interface VaultComplianceConfig {
+  jurisdictions: string[];
+  regulatoryClassification: string;
+  reportingRequired: boolean;
+  auditFrequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
+  requiresSegregation: boolean;
+  counterpartyKycRequired: boolean;
+}
+
+export interface VaultPerformanceTracking {
+  enabled: boolean;
+  benchmarkId?: string;
+  reportingCurrency: string;
+  performanceMetrics: VaultPerformanceMetric[];
+  lastCalculatedAt?: Date;
+}
+
+export interface VaultPerformanceMetric {
+  name: string;
+  value: number;
+  period: string;
+  calculatedAt: Date;
+}
+
+export interface VaultAuditEntry {
+  id: string;
+  action: string;
+  actorId: string;
+  actorRole: InstitutionalRole;
+  details: Record<string, unknown>;
+  timestamp: Date;
+  ipAddress?: string;
+}
+
+// ============================================================================
+// Jurisdiction & Regulatory Profile Types
+// ============================================================================
+
+export type Jurisdiction =
+  | 'EU'
+  | 'US'
+  | 'UK'
+  | 'Asia'
+  | 'Middle_East'
+  | 'North_America'
+  | 'APAC'
+  | 'Global';
+
+export type RegulatoryFramework =
+  | 'MiCA'
+  | 'MiFID_II'
+  | 'GDPR'
+  | 'AIFMD'
+  | 'SEC_regulations'
+  | 'CFTC'
+  | 'FCA'
+  | 'MAS'
+  | 'VARA'
+  | 'FATF_TRAVEL_RULE'
+  | 'custom';
+
+export interface JurisdictionProfile {
+  id: string;
+  accountId: string;
+  jurisdiction: Jurisdiction;
+  frameworks: RegulatoryFramework[];
+  dataResidency: DataResidencyConfig;
+  reportingRequirements: RegulatoryReportingRequirement[];
+  restrictions: JurisdictionRestriction[];
+  kycRequirements: JurisdictionKycRequirements;
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DataResidencyConfig {
+  primaryRegion: string;
+  allowedRegions: string[];
+  prohibitedRegions: string[];
+  encryptionRequired: boolean;
+  dataRetentionDays: number;
+  crossBorderTransferAllowed: boolean;
+  adequacyDecisionCountries: string[];
+}
+
+export interface RegulatoryReportingRequirement {
+  framework: RegulatoryFramework;
+  reportType: string;
+  frequency: ReportFrequency;
+  deadline: string;
+  recipient: string;
+  format: string;
+  enabled: boolean;
+}
+
+export interface JurisdictionRestriction {
+  type: 'asset' | 'service' | 'counterparty' | 'transaction';
+  description: string;
+  prohibitedItems: string[];
+  requiresLicense: boolean;
+  licenseType?: string;
+  effectiveDate: Date;
+  expiryDate?: Date;
+}
+
+export interface JurisdictionKycRequirements {
+  minimumKycLevel: KycLevel;
+  additionalDocuments: DocumentType[];
+  localIdRequired: boolean;
+  businessRegistrationRequired: boolean;
+  beneficialOwnershipThreshold: number;
+  pepScreeningRequired: boolean;
+  adverseMediaRequired: boolean;
+  enhancedDueDiligenceThreshold: number;
+}
