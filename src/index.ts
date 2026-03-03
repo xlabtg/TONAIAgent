@@ -624,3 +624,86 @@ export {
   type GlobalInfraEventCallback,
   type GlobalInfrastructureConfig,
 } from './global-infrastructure';
+
+// Autonomous AI Investment Layer (Issue #102)
+// Programmable, AI-native financial layer on TON for managing capital through
+// investment vaults, risk management, dynamic allocation, portfolio optimization,
+// and institutional compliance with full audit trails.
+// Architecture: User/Institution → Investment Vault → Capital Allocation Engine
+//               → AI Strategy Agents → TON Smart Contracts
+// Note: Import separately from '@tonaiagent/core/investment' for full access.
+export * as InvestmentLayerModule from './investment';
+export {
+  // Unified layer
+  DefaultInvestmentLayer,
+  createInvestmentLayer,
+  DEFAULT_INVESTMENT_LAYER_CONFIG,
+  // Vault manager
+  DefaultVaultManager,
+  createVaultManager,
+  // Risk engine
+  DefaultRiskEngine,
+  createRiskEngine,
+  // Allocation engine
+  DefaultAllocationEngine,
+  createAllocationEngine,
+  // Portfolio optimizer
+  DefaultPortfolioOptimizer,
+  createPortfolioOptimizer,
+  // Institutional mode
+  DefaultInstitutionalModeManager,
+  createInstitutionalModeManager,
+  // Performance analytics
+  DefaultPerformanceAnalyticsEngine,
+  createPerformanceAnalyticsEngine,
+  // Types
+  type InvestmentLayerService,
+  type InvestmentLayerConfig,
+  type InvestmentLayerHealth,
+  type VaultManager,
+  type Vault,
+  type VaultType,
+  type VaultStatus,
+  type VaultRiskParameters,
+  type VaultAllocationLimits,
+  type CreateVaultInput,
+  type DepositResult,
+  type WithdrawalRequest,
+  type RiskEngine,
+  type AgentRiskProfile,
+  // Note: exported as InvestmentRiskLevel to avoid conflict with regulatory module's RiskLevel
+  type RiskLevel as InvestmentRiskLevel,
+  type RiskCheckResult,
+  type RiskViolation,
+  type CircuitBreakerEvent,
+  type EmergencyStopEvent,
+  type AllocationEngine,
+  type AllocationPlan,
+  type AllocationStrategy,
+  type StrategyAllocation,
+  type CreateAllocationPlanInput,
+  type RebalanceResult,
+  type PortfolioOptimizer,
+  type StrategyPerformanceScore,
+  type OptimizationResult,
+  type OptimizationObjective,
+  type VolatilityMetrics,
+  type InstitutionalModeManager,
+  type ManagedVault,
+  type InstitutionalTier,
+  // Note: exported as VaultComplianceStatus to avoid conflict with regulatory module's ComplianceStatus
+  type ComplianceStatus as VaultComplianceStatus,
+  type ComplianceConstraint,
+  // Note: exported as InvestmentAuditEntry to avoid conflict with lifecycle-orchestrator's AuditEntry
+  type AuditEntry as InvestmentAuditEntry,
+  type DelegationPermission,
+  type CreateManagedVaultInput,
+  type PerformanceAnalyticsEngine,
+  type VaultPerformanceMetrics,
+  type PerformanceSnapshot,
+  type HistoricalReturn,
+  type PerformanceDashboardData,
+  type InvestmentEvent,
+  type InvestmentEventType,
+  type InvestmentEventCallback,
+} from './investment';
