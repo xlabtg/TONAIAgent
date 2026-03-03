@@ -709,6 +709,47 @@ export {
   type InvestmentEventCallback,
 } from './investment';
 
+// AI Prime Brokerage (Issue #108)
+// Institutional-grade prime brokerage infrastructure for autonomous AI funds and agents on TON.
+// Provides multi-fund custody & clearing, margin & leverage engine, risk aggregation,
+// capital efficiency, institutional reporting, securities lending, and cross-chain prime brokerage.
+// Architecture: Investors → Tokenized Fund → Prime Brokerage Layer → AI Risk Engine → Agent Strategies → Execution
+// Note: Import separately from '@tonaiagent/core/prime-brokerage' for full access.
+export * as PrimeBrokerage from './prime-brokerage';
+export {
+  // Unified manager
+  DefaultPrimeBrokerageManager,
+  createPrimeBrokerageManager,
+  // Custody & Clearing
+  DefaultCustodyAndClearingManager,
+  createCustodyAndClearingManager,
+  // Margin & Leverage
+  DefaultMarginAndLeverageEngine,
+  createMarginAndLeverageEngine,
+  // Risk Aggregation
+  DefaultRiskAggregationLayer,
+  createRiskAggregationLayer,
+  DEFAULT_STRESS_SCENARIOS,
+  // Capital Efficiency
+  DefaultCapitalEfficiencyModule,
+  createCapitalEfficiencyModule,
+  // Institutional Reporting
+  DefaultInstitutionalReportingSuite,
+  createInstitutionalReportingSuite,
+  // Securities Lending
+  DefaultSecuritiesLendingManager,
+  createSecuritiesLendingManager,
+  // Cross-Chain Prime Brokerage
+  DefaultCrossChainPrimeBrokerageManager,
+  createCrossChainPrimeBrokerageManager,
+  // Types
+  type PrimeBrokerageManager,
+  type PrimeBrokerageSystemStatus,
+  type PrimeBrokerageConfig,
+  type PrimeBrokerageEvent,
+  type PrimeBrokerageEventCallback,
+} from './prime-brokerage';
+
 // DAO Governance & Treasury Layer (Issue #103)
 // Self-governing AI financial protocol with on-chain treasury management,
 // multi-tier voting, AI-driven capital allocation within governance constraints,
