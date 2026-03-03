@@ -27,6 +27,10 @@ import {
   DefaultRiskAgent,
   STRESS_SCENARIOS,
 
+  // Strategy Agent
+  createStrategyAgent,
+  DefaultStrategyAgent,
+
   // Types
   FundType,
   FundStatus,
@@ -1254,5 +1258,483 @@ describe('Hedge Fund Integration', () => {
     // 550000 / 10000000 = 0.055 approximately
     expect(riskCheck.metrics.concentration).toBeGreaterThan(0);
     expect(riskCheck.metrics.concentration).toBeLessThan(1);
+  });
+});
+
+// ============================================================================
+// Strategy Agent (Continuous Learning Engine) Tests
+// ============================================================================
+
+describe('Strategy Agent', () => {
+  let strategyAgent: DefaultStrategyAgent;
+
+  beforeEach(() => {
+    strategyAgent = createStrategyAgent();
+  });
+
+  describe('Configuration', () => {
+    it('should create strategy agent with default config', () => {
+      expect(strategyAgent).toBeDefined();
+      expect(strategyAgent.config.enabled).toBe(true);
+      expect(strategyAgent.config.strategyTypes.length).toBeGreaterThan(0);
+      expect(strategyAgent.config.optimization.method).toBe('bayesian');
+      expect(strategyAgent.config.backtesting.enabled).toBe(true);
+      expect(strategyAgent.config.liveAdaptation.enabled).toBe(true);
+    });
+
+    it('should allow custom configuration', async () => {
+      await strategyAgent.configure({
+        strategyTypes: ['delta_neutral', 'arbitrage'],
+        optimization: {
+          method: 'genetic',
+          targetMetric: 'sortino',
+          frequency: 'daily',
+          lookbackPeriod: 60,
+        },
+        liveAdaptation: {
+          enabled: false,
+          learningRate: 0.05,
+          adaptationFrequency: 'daily',
+          minDataPoints: 50,
+          confidenceThreshold: 0.90,
+          rollbackEnabled: false,
+        },
+      });
+
+      expect(strategyAgent.config.strategyTypes).toContain('delta_neutral');
+      expect(strategyAgent.config.optimization.method).toBe('genetic');
+      expect(strategyAgent.config.optimization.targetMetric).toBe('sortino');
+      expect(strategyAgent.config.liveAdaptation.enabled).toBe(false);
+      expect(strategyAgent.config.liveAdaptation.learningRate).toBe(0.05);
+    });
+  });
+
+  describe('Strategy Management', () => {
+    it('should list active strategies', () => {
+      const strategies = strategyAgent.getActiveStrategies();
+      expect(strategies.length).toBeGreaterThan(0);
+      expect(strategies).toContain('delta_neutral');
+    });
+
+    it('should get strategy allocation', () => {
+      const allocation = strategyAgent.getStrategyAllocation();
+      expect(allocation.allocations.length).toBeGreaterThan(0);
+      expect(allocation.rebalanceThreshold).toBeGreaterThan(0);
+    });
+
+    it('should update strategy allocation', async () => {
+      await strategyAgent.updateStrategyAllocation({
+        rebalanceThreshold: 0.03,
+      });
+      // No error thrown means success
+    });
+  });
+
+  describe('Backtesting', () => {
+    it('should run backtest for a strategy', async () => {
+      const result = await strategyAgent.runBacktest('delta_neutral');
+
+      expect(result.id).toContain('backtest_');
+      expect(result.strategy).toBe('delta_neutral');
+      expect(result.timestamp).toBeDefined();
+      expect(result.sharpeRatio).toBeGreaterThanOrEqual(0);
+      expect(result.maxDrawdown).toBeGreaterThanOrEqual(0);
+      expect(result.winRate).toBeGreaterThanOrEqual(0);
+      expect(result.winRate).toBeLessThanOrEqual(1);
+      expect(result.tradesCount).toBeGreaterThan(0);
+      expect(typeof result.passed).toBe('boolean');
+      expect(Array.isArray(result.failureReasons)).toBe(true);
+    });
+
+    it('should run backtest with custom params', async () => {
+      const result = await strategyAgent.runBacktest('trend_following', {
+        initialCapital: 500000,
+        customConfig: { lookbackDays: 180 },
+      });
+
+      expect(result.strategy).toBe('trend_following');
+      expect(result.params.initialCapital).toBe(500000);
+    });
+
+    it('should fail backtest with very strict criteria', async () => {
+      await strategyAgent.configure({
+        backtesting: {
+          enabled: true,
+          minSharpe: 10.0, // Impossibly high Sharpe
+          maxDrawdown: 0.001, // Near-zero drawdown
+          minWinRate: 0.99, // Near-perfect win rate
+          lookbackPeriod: 365,
+        },
+      });
+
+      const result = await strategyAgent.runBacktest('momentum');
+      expect(result.passed).toBe(false);
+      expect(result.failureReasons.length).toBeGreaterThan(0);
+    });
+
+    it('should store backtest history', async () => {
+      await strategyAgent.runBacktest('arbitrage');
+      await strategyAgent.runBacktest('arbitrage');
+
+      const history = strategyAgent.getBacktestHistory('arbitrage');
+      expect(history.length).toBe(2);
+    });
+
+    it('should return empty history for strategy without backtests', () => {
+      const history = strategyAgent.getBacktestHistory('momentum');
+      expect(history).toEqual([]);
+    });
+  });
+
+  describe('Strategy Optimization', () => {
+    it('should optimize a single strategy', async () => {
+      const result = await strategyAgent.optimizeStrategy('trend_following');
+
+      expect(result.strategy).toBe('trend_following');
+      expect(result.method).toBe('bayesian');
+      expect(result.bestParams).toBeDefined();
+      expect(result.iterations).toBeGreaterThan(0);
+      expect(result.currentMetric).toBeGreaterThanOrEqual(0);
+      expect(result.optimizedMetric).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should optimize with custom params', async () => {
+      const result = await strategyAgent.optimizeStrategy('arbitrage', {
+        method: 'genetic',
+        targetMetric: 'sortino',
+        iterations: 100,
+      });
+
+      expect(result.method).toBe('genetic');
+      expect(result.iterations).toBe(100);
+    });
+
+    it('should optimize all strategies', async () => {
+      const results = await strategyAgent.optimizeAllStrategies();
+      expect(results.length).toBe(strategyAgent.config.strategyTypes.length);
+      for (const result of results) {
+        expect(result.bestParams).toBeDefined();
+      }
+    });
+  });
+
+  describe('Reinforcement Learning Agents', () => {
+    it('should register RL agent', async () => {
+      const state = await strategyAgent.registerRLAgent({
+        id: 'rl_agent_1',
+        algorithm: 'ppo',
+        environment: 'ton_market',
+        rewardFunction: 'sharpe_improvement',
+        state: 'training',
+        updateFrequency: 'daily',
+        enabled: true,
+      });
+
+      expect(state.id).toBe('rl_agent_1');
+      expect(state.config.algorithm).toBe('ppo');
+      expect(state.state).toBe('training');
+      expect(state.totalEpisodes).toBe(0);
+      expect(state.explorationRate).toBe(1.0);
+    });
+
+    it('should update RL agent with experience', async () => {
+      await strategyAgent.registerRLAgent({
+        id: 'rl_agent_2',
+        algorithm: 'dqn',
+        environment: 'portfolio_env',
+        rewardFunction: 'profit',
+        state: 'training',
+        updateFrequency: 'daily',
+        enabled: true,
+      });
+
+      await strategyAgent.updateRLAgent('rl_agent_2', {
+        state: { price: 5.0, volume: 1000, rsi: 55 },
+        action: 'buy',
+        reward: 0.05,
+        nextState: { price: 5.25, volume: 1100, rsi: 60 },
+        done: true,
+      });
+
+      const agentState = strategyAgent.getRLAgentState('rl_agent_2');
+      expect(agentState?.totalEpisodes).toBe(1);
+      expect(agentState?.totalReward).toBe(0.05);
+      expect(agentState?.performance.recentReward).toBe(0.05);
+      expect(agentState?.explorationRate).toBeLessThan(1.0);
+    });
+
+    it('should throw when updating unknown RL agent', async () => {
+      await expect(
+        strategyAgent.updateRLAgent('unknown_agent', {
+          state: {},
+          action: 'hold',
+          reward: 0,
+          nextState: {},
+          done: false,
+        })
+      ).rejects.toThrow('RL agent unknown_agent not found');
+    });
+
+    it('should list all RL agents', async () => {
+      await strategyAgent.registerRLAgent({
+        id: 'rl_1', algorithm: 'ppo', environment: 'env1',
+        rewardFunction: 'returns', state: 'training', updateFrequency: 'daily', enabled: true,
+      });
+      await strategyAgent.registerRLAgent({
+        id: 'rl_2', algorithm: 'sac', environment: 'env2',
+        rewardFunction: 'sharpe', state: 'evaluation', updateFrequency: 'weekly', enabled: true,
+      });
+
+      const agents = strategyAgent.listRLAgents();
+      expect(agents.length).toBe(2);
+    });
+
+    it('should decay exploration rate over multiple episodes', async () => {
+      await strategyAgent.registerRLAgent({
+        id: 'rl_decay', algorithm: 'dqn', environment: 'env',
+        rewardFunction: 'returns', state: 'training', updateFrequency: 'daily', enabled: true,
+      });
+
+      const initialRate = strategyAgent.getRLAgentState('rl_decay')!.explorationRate;
+
+      // Update with multiple non-terminal steps (done=false)
+      for (let i = 0; i < 10; i++) {
+        await strategyAgent.updateRLAgent('rl_decay', {
+          state: { price: i }, action: 'hold', reward: 0.01,
+          nextState: { price: i + 0.1 }, done: false,
+        });
+      }
+
+      const decayedRate = strategyAgent.getRLAgentState('rl_decay')!.explorationRate;
+      expect(decayedRate).toBeLessThan(initialRate);
+    });
+  });
+
+  describe('Performance Tracking', () => {
+    it('should record strategy performance', () => {
+      strategyAgent.recordPerformance('delta_neutral', {
+        totalReturn: 0.15,
+        sharpeRatio: 1.8,
+        sortinoRatio: 2.1,
+        maxDrawdown: 0.08,
+        winRate: 0.60,
+        profitFactor: 1.5,
+        tradesCount: 120,
+        avgTradeReturn: 0.001,
+        period: 'Q1-2024',
+      });
+
+      const perf = strategyAgent.getPerformance('delta_neutral');
+      expect(perf).toBeDefined();
+      expect(perf?.sharpeRatio).toBe(1.8);
+      expect(perf?.winRate).toBe(0.60);
+      expect(perf?.period).toBe('Q1-2024');
+    });
+
+    it('should get all strategy performances', () => {
+      strategyAgent.recordPerformance('trend_following', {
+        totalReturn: 0.20, sharpeRatio: 1.5, sortinoRatio: 1.8,
+        maxDrawdown: 0.15, winRate: 0.45, profitFactor: 1.3,
+        tradesCount: 80, avgTradeReturn: 0.0025, period: 'YTD',
+      });
+      strategyAgent.recordPerformance('arbitrage', {
+        totalReturn: 0.10, sharpeRatio: 2.2, sortinoRatio: 2.5,
+        maxDrawdown: 0.04, winRate: 0.72, profitFactor: 2.0,
+        tradesCount: 300, avgTradeReturn: 0.0003, period: 'YTD',
+      });
+
+      const all = strategyAgent.getAllPerformance();
+      expect(all.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('Live Adaptation', () => {
+    it('should check adaptation not needed when insufficient data', () => {
+      const check = strategyAgent.checkAdaptationNeeded('delta_neutral');
+
+      // Initially no data points collected, so adaptation should not be needed
+      expect(check.needed).toBe(false);
+      expect(check.dataPointsAvailable).toBe(0);
+      expect(check.minRequired).toBeGreaterThan(0);
+    });
+
+    it('should check adaptation needed after performance degradation', () => {
+      // Add enough data points
+      for (let i = 0; i < 110; i++) {
+        strategyAgent.recordPerformance('trend_following', {
+          sharpeRatio: 0.5, // Low Sharpe
+          winRate: 0.35,    // Low win rate
+          maxDrawdown: 0.25, // High drawdown
+          totalReturn: -0.05,
+          sortinoRatio: 0.6,
+          profitFactor: 0.9,
+          tradesCount: i,
+          avgTradeReturn: -0.001,
+          period: 'live',
+        });
+      }
+
+      const check = strategyAgent.checkAdaptationNeeded('trend_following');
+      expect(check.needed).toBe(true);
+      expect(check.suggestedChanges.length).toBeGreaterThan(0);
+    });
+
+    it('should apply adaptation and return snapshot', async () => {
+      const result = await strategyAgent.applyAdaptation('delta_neutral', {
+        learningRate: 0.02,
+        signalWeightUpdates: [
+          { signalType: 'momentum', weight: 0.35 },
+          { signalType: 'technical', weight: 0.25 },
+        ],
+        reason: 'Performance optimization',
+      });
+
+      expect(result.applied).toBe(true);
+      expect(result.snapshotId).toContain('snap_');
+      expect(result.strategy).toBe('delta_neutral');
+      expect(Object.keys(result.changes).length).toBeGreaterThan(0);
+      expect(result.rollbackAvailable).toBe(true);
+    });
+
+    it('should rollback adaptation to snapshot', async () => {
+      // Apply adaptation first
+      const adaptation = await strategyAgent.applyAdaptation('arbitrage', {
+        signalWeightUpdates: [{ signalType: 'onchain', weight: 0.50 }],
+      });
+
+      // Then rollback
+      await strategyAgent.rollbackAdaptation('arbitrage', adaptation.snapshotId);
+
+      // Rollback should not throw
+    });
+
+    it('should throw when rolling back with invalid snapshot', async () => {
+      await expect(
+        strategyAgent.rollbackAdaptation('delta_neutral', 'invalid_snap_id')
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('Signal Weights', () => {
+    it('should get default signal weights', () => {
+      const weights = strategyAgent.getSignalWeights('trend_following');
+
+      expect(weights).toBeDefined();
+      expect(typeof weights.technical).toBe('number');
+      expect(typeof weights.momentum).toBe('number');
+    });
+
+    it('should update signal weights', async () => {
+      await strategyAgent.updateSignalWeights('delta_neutral', [
+        { signalType: 'technical', weight: 0.40 },
+        { signalType: 'sentiment', weight: 0.20 },
+      ]);
+
+      const weights = strategyAgent.getSignalWeights('delta_neutral');
+      expect(weights.technical).toBe(0.40);
+      expect(weights.sentiment).toBe(0.20);
+    });
+
+    it('should clamp signal weights to [0, 1]', async () => {
+      await strategyAgent.updateSignalWeights('arbitrage', [
+        { signalType: 'onchain', weight: 1.5 },  // Should be clamped to 1
+        { signalType: 'momentum', weight: -0.1 }, // Should be clamped to 0
+      ]);
+
+      const weights = strategyAgent.getSignalWeights('arbitrage');
+      expect(weights.onchain).toBe(1.0);
+      expect(weights.momentum).toBe(0.0);
+    });
+  });
+
+  describe('Meta-Strategy Optimization', () => {
+    beforeEach(() => {
+      // Record performance for multiple strategies
+      strategyAgent.recordPerformance('delta_neutral', {
+        strategyType: 'delta_neutral',
+        totalReturn: 0.12, sharpeRatio: 1.8, sortinoRatio: 2.0,
+        maxDrawdown: 0.08, winRate: 0.60, profitFactor: 1.6,
+        tradesCount: 100, avgTradeReturn: 0.0012, period: 'YTD',
+      });
+      strategyAgent.recordPerformance('trend_following', {
+        strategyType: 'trend_following',
+        totalReturn: 0.18, sharpeRatio: 1.5, sortinoRatio: 1.7,
+        maxDrawdown: 0.15, winRate: 0.45, profitFactor: 1.3,
+        tradesCount: 80, avgTradeReturn: 0.0025, period: 'YTD',
+      });
+      strategyAgent.recordPerformance('arbitrage', {
+        strategyType: 'arbitrage',
+        totalReturn: 0.09, sharpeRatio: 2.2, sortinoRatio: 2.5,
+        maxDrawdown: 0.04, winRate: 0.72, profitFactor: 2.1,
+        tradesCount: 350, avgTradeReturn: 0.0003, period: 'YTD',
+      });
+    });
+
+    it('should run meta-strategy optimization', async () => {
+      const result = await strategyAgent.runMetaOptimization();
+
+      expect(result.strategiesAnalyzed).toBeGreaterThan(0);
+      expect(result.recommendedAllocations).toBeDefined();
+      expect(result.expectedPortfolioSharpe).toBeGreaterThanOrEqual(0);
+      expect(result.currentPortfolioSharpe).toBeGreaterThanOrEqual(0);
+      expect(result.insights.length).toBeGreaterThan(0);
+      expect(result.timestamp).toBeDefined();
+    });
+
+    it('should recommend allocations summing to approximately 1', async () => {
+      const result = await strategyAgent.runMetaOptimization();
+
+      const totalAllocation = Object.values(result.recommendedAllocations)
+        .reduce((sum, v) => sum + v, 0);
+
+      // Should sum to ~1.0 (within floating point tolerance)
+      expect(Math.abs(totalAllocation - 1.0)).toBeLessThan(0.01);
+    });
+
+    it('should provide capital allocation recommendations', () => {
+      const recommendations = strategyAgent.getCapitalRecommendations();
+
+      expect(Array.isArray(recommendations)).toBe(true);
+      for (const rec of recommendations) {
+        expect(rec.strategy).toBeDefined();
+        expect(rec.recommendedPercent).toBeGreaterThanOrEqual(0);
+        expect(rec.reason).toBeDefined();
+        expect(rec.confidence).toBeGreaterThanOrEqual(0);
+        expect(rec.confidence).toBeLessThanOrEqual(1);
+        expect(rec.expectedImpact).toBeDefined();
+      }
+    });
+  });
+
+  describe('Events', () => {
+    it('should emit events on backtest', async () => {
+      const events: any[] = [];
+      strategyAgent.onEvent(event => events.push(event));
+
+      await strategyAgent.runBacktest('delta_neutral');
+
+      expect(events.length).toBeGreaterThan(0);
+      expect(events.some(e => e.source === 'strategy_agent')).toBe(true);
+    });
+
+    it('should emit events on optimization', async () => {
+      const events: any[] = [];
+      strategyAgent.onEvent(event => events.push(event));
+
+      await strategyAgent.optimizeStrategy('arbitrage');
+
+      expect(events.some(e => e.message.includes('Optimizing strategy'))).toBe(true);
+    });
+
+    it('should emit events on adaptation', async () => {
+      const events: any[] = [];
+      strategyAgent.onEvent(event => events.push(event));
+
+      await strategyAgent.applyAdaptation('trend_following', {
+        signalWeightUpdates: [{ signalType: 'momentum', weight: 0.40 }],
+      });
+
+      expect(events.some(e => e.message.includes('Adaptation applied'))).toBe(true);
+    });
   });
 });

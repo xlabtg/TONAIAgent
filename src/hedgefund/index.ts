@@ -104,6 +104,26 @@ export {
   type AlertFilters,
 } from './risk-agent';
 
+// Export Strategy Agent (Continuous Learning Engine)
+export {
+  DefaultStrategyAgent,
+  createStrategyAgent,
+  type StrategyAgent,
+  type BacktestParams,
+  type BacktestResult,
+  type OptimizationParams,
+  type OptimizationResult,
+  type RLAgentState,
+  type RLExperience,
+  type AdaptationCheck,
+  type AdaptationParams,
+  type AdaptationResult,
+  type SignalWeightUpdate,
+  type SignalWeightMap,
+  type MetaOptimizationResult,
+  type CapitalAllocationRecommendation,
+} from './strategy-agent';
+
 // Export Fund Manager
 export {
   DefaultHedgeFundManager,

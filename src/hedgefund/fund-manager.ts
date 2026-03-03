@@ -29,6 +29,7 @@ import {
 import { DefaultPortfolioAgent, createPortfolioAgent, PortfolioAgent } from './portfolio-agent';
 import { DefaultExecutionAgent, createExecutionAgent, ExecutionAgent } from './execution-agent';
 import { DefaultRiskAgent, createRiskAgent, RiskAgent } from './risk-agent';
+import { DefaultStrategyAgent, createStrategyAgent, StrategyAgent } from './strategy-agent';
 
 // Re-export FundRiskConfig from types for convenience
 export type { FundRiskConfig } from './types';
@@ -45,6 +46,7 @@ export interface HedgeFundManager {
   readonly portfolio: PortfolioAgent;
   readonly execution: ExecutionAgent;
   readonly risk: RiskAgent;
+  readonly strategy: StrategyAgent;
 
   // Fund lifecycle
   initialize(config: FundInitConfig): Promise<FundConfig>;
@@ -219,6 +221,7 @@ export class DefaultHedgeFundManager implements HedgeFundManager {
   readonly portfolio: DefaultPortfolioAgent;
   readonly execution: DefaultExecutionAgent;
   readonly risk: DefaultRiskAgent;
+  readonly strategy: DefaultStrategyAgent;
 
   private readonly eventCallbacks: HedgeFundEventCallback[] = [];
   private readonly investors: Map<string, FundInvestor> = new Map();
@@ -236,6 +239,7 @@ export class DefaultHedgeFundManager implements HedgeFundManager {
     this.portfolio = createPortfolioAgent();
     this.execution = createExecutionAgent();
     this.risk = createRiskAgent();
+    this.strategy = createStrategyAgent();
 
     // Wire up event forwarding
     this.setupEventForwarding();
@@ -992,6 +996,7 @@ export class DefaultHedgeFundManager implements HedgeFundManager {
     this.portfolio.onEvent(forwardEvent);
     this.execution.onEvent(forwardEvent);
     this.risk.onEvent(forwardEvent);
+    this.strategy.onEvent(forwardEvent);
   }
 
   private startOperations(): void {
