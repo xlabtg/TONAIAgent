@@ -77,6 +77,7 @@
  * - Regulatory risk monitoring and SAR detection
  * - Global institutional network (partner registry, custody, liquidity, treasury)
  * - Institutional onboarding framework with due diligence
+ * - DAO Governance & Treasury Layer (proposals, voting, delegation, AI treasury, multi-sig)
  * - Global expansion strategy and roadmap
  * - AI-powered institutional advantage (risk modeling, anomaly detection)
  * - Institutional governance (advisory boards, committees, policies)
@@ -707,3 +708,94 @@ export {
   type InvestmentEventType,
   type InvestmentEventCallback,
 } from './investment';
+
+// DAO Governance & Treasury Layer (Issue #103)
+// Self-governing AI financial protocol with on-chain treasury management,
+// multi-tier voting, AI-driven capital allocation within governance constraints,
+// and institutional-grade governance comparable to MakerDAO/Aave.
+// Architecture: Token Holders → Governance Layer → Treasury Policies
+//               → AI Treasury Manager → AI Investment Agents → Execution Layer
+// Note: Import separately from '@tonaiagent/core/dao-governance' for full access.
+export * as DaoGovernanceModule from './dao-governance';
+export {
+  // Unified layer
+  DefaultDaoGovernanceLayer,
+  createDaoGovernanceLayer,
+  DEFAULT_DAO_GOVERNANCE_CONFIG,
+  // Governance engine
+  DefaultGovernanceEngine,
+  createGovernanceEngine,
+  // Treasury vault
+  DefaultTreasuryVaultManager,
+  createTreasuryVaultManager,
+  // Risk governance
+  DefaultRiskGovernanceManager,
+  createRiskGovernanceManager,
+  // AI treasury
+  DefaultAiTreasuryManager,
+  createAiTreasuryManager,
+  // Multi-sig
+  DefaultMultiSigManager,
+  createMultiSigManager,
+  // Marketplace governance
+  DefaultMarketplaceGovernanceManager,
+  createMarketplaceGovernanceManager,
+  // Delegated governance
+  DefaultDelegatedGovernanceManager,
+  createDelegatedGovernanceManager,
+  // Types
+  type DaoGovernanceLayerService,
+  type DaoGovernanceConfig,
+  type DaoGovernanceHealth,
+  type GovernanceEngine,
+  type GovernanceEngineConfig,
+  type DaoProposal,
+  type DaoProposalType,
+  type DaoProposalStatus,
+  type CreateDaoProposalInput,
+  type DaoVote,
+  type DaoVoteType,
+  type DaoVoteResult,
+  type VotingDelegation,
+  type VotingPowerSnapshot,
+  type CreateDelegationInput,
+  type TreasuryVaultManager,
+  type TreasuryVaultConfig,
+  type TreasuryVault,
+  type TreasuryAsset,
+  type TreasuryAssetType,
+  type TreasuryAllocation,
+  type TreasuryAllocationRequest,
+  type TreasuryTransaction,
+  type TreasuryReport,
+  type TreasuryRiskParameters,
+  type TreasuryRiskAssessment,
+  type CircuitBreakerState,
+  type EmergencyAction,
+  type RiskGovernanceManager,
+  type RiskGovernanceConfig,
+  type RiskCheckReport,
+  type RiskViolation,
+  type AiTreasuryManager,
+  type AiTreasuryConfig,
+  type AiRebalanceRecommendation,
+  type TreasuryRebalanceAction,
+  type YieldOptimizationResult,
+  type EmergencyExitPlan,
+  type MultiSigManager,
+  type MultiSigManagerConfig,
+  type MultiSigConfig,
+  type MultiSigOperation,
+  type MultiSigSignature,
+  type MarketplaceGovernanceManager,
+  type MarketplaceGovernanceStats,
+  type GovernedStrategyListing,
+  type StrategyVote,
+  type DelegatedGovernanceManager,
+  type DelegatedGovernanceStats,
+  type InstitutionalDelegate,
+  type DelegateVotingRecord,
+  type DaoEvent,
+  type DaoEventType,
+  type DaoEventCallback,
+} from './dao-governance';
