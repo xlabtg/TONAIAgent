@@ -343,7 +343,7 @@ export class DefaultSecuritiesLendingManager implements SecuritiesLendingManager
     // Check collateralization ratio
     // Compare collateral USD value against loan quantity (unit: tokens)
     // Ratio = collateralValueUsd / loanQuantity (higher is better)
-    const collateralValue = params.collateral.valueUsd;
+    const collateralValue = params.collateral.value;
     const collRatio = collateralValue / params.quantity;
 
     if (collRatio < this.config.minCollateralizationRatio) {
@@ -358,7 +358,7 @@ export class DefaultSecuritiesLendingManager implements SecuritiesLendingManager
     const collateralPosition: CollateralPosition = {
       ...params.collateral,
       id: `col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      adjustedValue: params.collateral.valueUsd * (1 - 0.1), // 10% haircut
+      adjustedValue: params.collateral.value * (1 - 0.1), // 10% haircut
       isLocked: true,
       lockedFor: `lending_${Date.now()}`,
       depositedAt: new Date(),
@@ -513,7 +513,7 @@ export class DefaultSecuritiesLendingManager implements SecuritiesLendingManager
     const collateral: CollateralPosition = {
       ...params.collateral,
       id: `col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      adjustedValue: params.collateral.valueUsd * 0.9, // 10% haircut
+      adjustedValue: params.collateral.value * 0.9, // 10% haircut
       isLocked: true,
       lockedFor: `agent_loan_${Date.now()}`,
       depositedAt: new Date(),
