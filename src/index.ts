@@ -551,3 +551,76 @@ export {
   type SchedulerApiResponse,
   type SystemEventTopic,
 } from './distributed-scheduler';
+
+// Global Infrastructure & Edge Deployment (Issue #100)
+// Production-grade global infrastructure with edge runtime, geo-distributed orchestration,
+// compliance-aware regional deployment, global scheduler, cost optimization, and edge intelligence.
+// Architecture: EdgeNodeRegistry → GeoRouter → ComplianceEngine → GlobalScheduler →
+//               CostOptimizer → GlobalMonitor → EdgeIntelligenceLayer
+// Note: Import separately from '@tonaiagent/core/global-infrastructure' for full access.
+export * as GlobalInfrastructureModule from './global-infrastructure';
+export {
+  // Manager
+  GlobalInfrastructureManager,
+  createGlobalInfrastructureManager,
+  DEFAULT_GLOBAL_INFRA_CONFIG,
+  // Node Registry
+  EdgeNodeRegistry,
+  createEdgeNodeRegistry,
+  DEFAULT_EDGE_FEATURES,
+  REGION_ZONE_MAP,
+  REGION_COMPLIANCE_MAP,
+  // Geo Router
+  GeoRouter,
+  createGeoRouter,
+  // Compliance Engine
+  ComplianceEngine,
+  createComplianceEngine,
+  REGIONAL_COMPLIANCE_PROFILES,
+  // Global Scheduler
+  GlobalScheduler,
+  createGlobalScheduler,
+  // Cost Optimizer
+  CostOptimizer,
+  createCostOptimizer,
+  DEFAULT_PRICING,
+  // Global Monitor
+  GlobalMonitor,
+  createGlobalMonitor,
+  // Edge Intelligence
+  EdgeIntelligenceLayer,
+  createEdgeIntelligenceLayer,
+  // Types
+  type CloudProvider as GlobalCloudProvider,
+  type RegionCode,
+  type GeographicZone,
+  type NodeStatus,
+  type DeploymentModel,
+  type EdgeNode,
+  type EdgeNodeFeatures,
+  type EdgeNodeMetrics,
+  type RoutingStrategy,
+  type RoutingRule,
+  type AgentPlacementRequest,
+  type AgentPlacementResult,
+  type InferenceModel,
+  type EdgeInferenceTask,
+  type EdgeCacheConfig,
+  type GlobalJobTrigger,
+  type GlobalScheduledJob,
+  type GlobalJobExecution,
+  type ComplianceFramework,
+  type RegionalComplianceProfile,
+  type ComplianceCheckRequest,
+  type ComplianceCheckResult,
+  type ComputePricing,
+  type CostAllocation,
+  type CostOptimizationRecommendation,
+  type GlobalHealthStatus,
+  type RegionHealthStatus,
+  type GlobalMetricsSummary,
+  type GlobalInfraEventType,
+  type GlobalInfraEvent,
+  type GlobalInfraEventCallback,
+  type GlobalInfrastructureConfig,
+} from './global-infrastructure';

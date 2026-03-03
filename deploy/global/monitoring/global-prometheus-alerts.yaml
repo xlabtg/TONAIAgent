@@ -1,0 +1,271 @@
+# TON AI Agent - Global Infrastructure Prometheus Alert Rules
+#
+# Alerts specific to the global edge deployment:
+# - Edge node health across all regions
+# - Cross-region latency and SLA violations
+# - Regional failover events
+# - Compliance violation detection
+# - Cost threshold breaches
+#
+# Issue #100: Global Infrastructure & Edge Deployment
+
+groups:
+  - name: global_edge.rules
+    interval: 30s
+    rules:
+
+      # -----------------------------------------------------------------------
+      # Edge Node Health
+      # -----------------------------------------------------------------------
+
+      - alert: EdgeNodeDown
+        expr: up{job=~"tonaiagent-edge-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Edge node down in {{ $labels.region }}"
+          description: "Edge node {{ $labels.instance }} in region {{ $labels.region }} has been unreachable for 2 minutes."
+          runbook: "https://docs.tonaiagent.io/runbooks/edge-node-down"
+
+      - alert: EdgeRegionDegraded
+        expr: |
+          (count by (region) (up{job=~"tonaiagent-edge-.*"} == 0))
+          /
+          (count by (region) (up{job=~"tonaiagent-edge-.*"}))
+          > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "More than 50% of edge nodes down in {{ $labels.region }}"
+          description: "Region {{ $labels.region }} has more than 50% edge nodes unreachable."
+
+      - alert: EdgeNodeHighCPU
+        expr: rate(container_cpu_usage_seconds_total{container="edge-runtime"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "Edge node CPU above 80% in {{ $labels.region }}"
+          description: "Edge node {{ $labels.pod }} CPU usage is {{ $value | humanize }}% for 10 minutes."
+
+      - alert: EdgeNodeHighMemory
+        expr: container_memory_working_set_bytes{container="edge-runtime"} / container_spec_memory_limit_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "Edge node memory above 85% in {{ $labels.region }}"
+          description: "Edge node {{ $labels.pod }} memory is {{ $value | humanizePercentage }}."
+
+      # -----------------------------------------------------------------------
+      # Global Latency & SLA
+      # -----------------------------------------------------------------------
+
+      - alert: GlobalLatencyP95High
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (
+              rate(http_request_duration_seconds_bucket{job=~"tonaiagent-edge-.*"}[5m])
+            )
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Global P95 latency exceeds 100ms"
+          description: "Global 95th percentile latency is {{ $value | humanizeDuration }}."
+
+      - alert: RegionalLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (region, le) (
+              rate(http_request_duration_seconds_bucket{job=~"tonaiagent-edge-.*"}[5m])
+            )
+          ) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High latency in region {{ $labels.region }}"
+          description: "Region {{ $labels.region }} P95 latency is {{ $value | humanizeDuration }}."
+
+      - alert: GlobalErrorRateHigh
+        expr: |
+          sum(rate(http_requests_total{job=~"tonaiagent-edge-.*", status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job=~"tonaiagent-edge-.*"}[5m]))
+          > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "Global error rate above 1%"
+          description: "Global HTTP error rate is {{ $value | humanizePercentage }}."
+
+      - alert: GlobalUptimeSLABreach
+        expr: |
+          (
+            sum(up{job=~"tonaiagent-edge-.*"})
+            /
+            count(up{job=~"tonaiagent-edge-.*"})
+          ) < 0.999
+        for: 1m
+        labels:
+          severity: critical
+          category: sla
+        annotations:
+          summary: "Global uptime SLA breach (< 99.9%)"
+          description: "Global uptime is {{ $value | humanizePercentage }}, below 99.9% SLA target."
+
+      # -----------------------------------------------------------------------
+      # Agent Execution
+      # -----------------------------------------------------------------------
+
+      - alert: AgentExecutionBacklog
+        expr: tonaiagent_global_job_queue_length > 5000
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "Global agent job queue backlog"
+          description: "Global job queue has {{ $value }} pending jobs."
+
+      - alert: RegionalAgentCapacityFull
+        expr: |
+          tonaiagent_active_agents{job=~"tonaiagent-edge-.*"}
+          /
+          tonaiagent_max_agents{job=~"tonaiagent-edge-.*"}
+          > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "Agent capacity above 90% in {{ $labels.region }}"
+          description: "Region {{ $labels.region }} is at {{ $value | humanizePercentage }} agent capacity."
+
+      # -----------------------------------------------------------------------
+      # Failover
+      # -----------------------------------------------------------------------
+
+      - alert: RegionalFailoverTriggered
+        expr: increase(tonaiagent_failover_events_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          category: availability
+        annotations:
+          summary: "Failover triggered in {{ $labels.region }}"
+          description: "{{ $value }} failover event(s) triggered in region {{ $labels.region }}."
+
+      - alert: AllRegionalFailoversExhausted
+        expr: tonaiagent_failover_nodes_available == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "No failover nodes available in {{ $labels.region }}"
+          description: "All failover nodes for region {{ $labels.region }} are exhausted."
+
+      # -----------------------------------------------------------------------
+      # Compliance
+      # -----------------------------------------------------------------------
+
+      - alert: ComplianceViolationDetected
+        expr: increase(tonaiagent_compliance_violations_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "Compliance violation detected in {{ $labels.region }}"
+          description: "{{ $value }} compliance violation(s) detected. Framework: {{ $labels.framework }}."
+          runbook: "https://docs.tonaiagent.io/runbooks/compliance-violation"
+
+      - alert: DataResidencyViolation
+        expr: tonaiagent_data_residency_violations_total > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "Data residency violation detected"
+          description: "Data stored outside required residency region."
+
+      # -----------------------------------------------------------------------
+      # Cost Optimization
+      # -----------------------------------------------------------------------
+
+      - alert: HourlyCostThresholdExceeded
+        expr: tonaiagent_infrastructure_cost_usd_per_hour > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: cost
+        annotations:
+          summary: "Hourly infrastructure cost exceeds $100"
+          description: "Current hourly infrastructure cost is ${{ $value | humanize }}."
+
+      - alert: RegionCostAnomaly
+        expr: |
+          tonaiagent_region_cost_usd_per_hour
+          > 2 * avg_over_time(tonaiagent_region_cost_usd_per_hour[1h])
+        for: 10m
+        labels:
+          severity: warning
+          category: cost
+        annotations:
+          summary: "Cost anomaly detected in {{ $labels.region }}"
+          description: "Region {{ $labels.region }} cost is {{ $value | humanize }} USD/hr, 2x above average."
+
+  # ---------------------------------------------------------------------------
+  # Global Scheduler Alerts
+  # ---------------------------------------------------------------------------
+
+  - name: global_scheduler.rules
+    rules:
+
+      - alert: GlobalSchedulerDown
+        expr: up{job="tonaiagent-global-scheduler"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Global scheduler is down"
+          description: "The global distributed scheduler has been unreachable for 2 minutes."
+
+      - alert: GlobalJobFailureRateHigh
+        expr: |
+          rate(tonaiagent_global_jobs_failed_total[5m])
+          /
+          rate(tonaiagent_global_jobs_total[5m])
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "Global job failure rate above 5%"
+          description: "Global job failure rate is {{ $value | humanizePercentage }}."
+
+      - alert: CrossRegionSyncLag
+        expr: tonaiagent_cross_region_sync_lag_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          category: consistency
+        annotations:
+          summary: "Cross-region sync lag above 30 seconds"
+          description: "Cross-region synchronization lag is {{ $value | humanizeDuration }}."
