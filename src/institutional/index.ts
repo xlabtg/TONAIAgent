@@ -12,6 +12,9 @@
  * - Regulatory Reporting System
  * - Portfolio Risk Controls (VaR, Stress Testing)
  * - AI Governance & Explainability
+ * - Institutional Custody Integration (MPC, Multi-sig, HSM)
+ * - Segregated Vault Architecture
+ * - Jurisdiction-Aware Deployment (EU, US, UK, Asia, Middle East)
  *
  * @example
  * ```typescript
@@ -32,6 +35,21 @@
  *
  * // Configure compliance
  * await institutional.kyc.createProfile(account.id, 'institutional');
+ *
+ * // Set up custody (MPC)
+ * await institutional.custody.configureCustomer(account.id, 'fireblocks', 'mpc');
+ *
+ * // Create segregated vault
+ * await institutional.vaults.createVault(
+ *   account.id,
+ *   'Main Trading Vault',
+ *   'institutional',
+ *   'Primary trading vault',
+ *   'admin_user_id'
+ * );
+ *
+ * // Configure jurisdiction compliance (EU/MiCA)
+ * await institutional.jurisdiction.createProfile(account.id, 'EU', ['MiCA', 'MiFID_II']);
  *
  * // Set up risk controls
  * await institutional.risk.configureRisk(account.id, {
@@ -151,6 +169,47 @@ export {
   type TypePerformance,
 } from './ai-governance';
 
+// Export custody integration
+export {
+  DefaultCustodyManager,
+  createCustodyManager,
+  type CustodyManager,
+  type CustodyConfigOptions,
+  type CustodyConfigUpdates,
+  type WalletOptions,
+  type WalletFilters,
+  type TransactionFilters,
+} from './custody';
+
+// Export vault management
+export {
+  DefaultVaultManager,
+  createVaultManager,
+  type VaultManager,
+  type CreateVaultOptions,
+  type VaultFilters,
+  type VaultUpdates,
+  type VaultAccessCheckResult,
+  type ExposureCheckResult,
+  type StrategyAllowanceResult,
+  type AuditFilters,
+} from './vault';
+
+// Export jurisdiction management
+export {
+  DefaultJurisdictionManager,
+  createJurisdictionManager,
+  DEFAULT_KYC_REQUIREMENTS,
+  type JurisdictionManager,
+  type JurisdictionProfileOptions,
+  type JurisdictionProfileUpdates,
+  type DataResidencyCheckResult,
+  type DueReport,
+  type AssetAllowanceResult,
+  type ServiceAllowanceResult,
+  type KycComplianceCheckResult,
+} from './jurisdiction';
+
 // ============================================================================
 // Unified Institutional Manager
 // ============================================================================
@@ -161,6 +220,9 @@ import { DefaultApprovalWorkflowManager, createApprovalWorkflowManager } from '.
 import { DefaultReportingManager, createReportingManager } from './reporting';
 import { DefaultRiskControlManager, createRiskControlManager } from './risk-controls';
 import { DefaultAIGovernanceManager, createAIGovernanceManager } from './ai-governance';
+import { DefaultCustodyManager, createCustodyManager } from './custody';
+import { DefaultVaultManager, createVaultManager } from './vault';
+import { DefaultJurisdictionManager, createJurisdictionManager } from './jurisdiction';
 import { InstitutionalEventCallback, InstitutionalEvent } from './types';
 
 export interface InstitutionalManager {
@@ -170,6 +232,9 @@ export interface InstitutionalManager {
   readonly reporting: DefaultReportingManager;
   readonly risk: DefaultRiskControlManager;
   readonly aiGovernance: DefaultAIGovernanceManager;
+  readonly custody: DefaultCustodyManager;
+  readonly vaults: DefaultVaultManager;
+  readonly jurisdiction: DefaultJurisdictionManager;
 
   // Unified event handling
   onEvent(callback: InstitutionalEventCallback): void;
@@ -199,6 +264,9 @@ export class DefaultInstitutionalManager implements InstitutionalManager {
   readonly reporting: DefaultReportingManager;
   readonly risk: DefaultRiskControlManager;
   readonly aiGovernance: DefaultAIGovernanceManager;
+  readonly custody: DefaultCustodyManager;
+  readonly vaults: DefaultVaultManager;
+  readonly jurisdiction: DefaultJurisdictionManager;
 
   private readonly eventCallbacks: InstitutionalEventCallback[] = [];
 
@@ -209,6 +277,9 @@ export class DefaultInstitutionalManager implements InstitutionalManager {
     this.reporting = createReportingManager();
     this.risk = createRiskControlManager();
     this.aiGovernance = createAIGovernanceManager();
+    this.custody = createCustodyManager();
+    this.vaults = createVaultManager();
+    this.jurisdiction = createJurisdictionManager();
 
     // Wire up event forwarding
     this.setupEventForwarding();
@@ -276,6 +347,9 @@ export class DefaultInstitutionalManager implements InstitutionalManager {
     this.reporting.onEvent(forwardEvent);
     this.risk.onEvent(forwardEvent);
     this.aiGovernance.onEvent(forwardEvent);
+    this.custody.onEvent(forwardEvent);
+    this.vaults.onEvent(forwardEvent);
+    this.jurisdiction.onEvent(forwardEvent);
   }
 }
 

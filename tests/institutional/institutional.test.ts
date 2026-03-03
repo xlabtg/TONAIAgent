@@ -34,6 +34,18 @@ import {
   createAIGovernanceManager,
   DefaultAIGovernanceManager,
 
+  // Custody
+  createCustodyManager,
+  DefaultCustodyManager,
+
+  // Vaults
+  createVaultManager,
+  DefaultVaultManager,
+
+  // Jurisdiction
+  createJurisdictionManager,
+  DefaultJurisdictionManager,
+
   // Unified Manager
   createInstitutionalManager,
   DefaultInstitutionalManager,
@@ -1177,6 +1189,9 @@ describe('Unified Institutional Manager', () => {
     expect(manager.reporting).toBeDefined();
     expect(manager.risk).toBeDefined();
     expect(manager.aiGovernance).toBeDefined();
+    expect(manager.custody).toBeDefined();
+    expect(manager.vaults).toBeDefined();
+    expect(manager.jurisdiction).toBeDefined();
   });
 
   it('should initialize account with all components', async () => {
@@ -1202,5 +1217,851 @@ describe('Unified Institutional Manager', () => {
     await manager.initializeAccount('Test Fund', 'hedge_fund', 'admin_user');
 
     expect(events.length).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================================
+// Custody Integration Tests
+// ============================================================================
+
+describe('Institutional Custody Integration', () => {
+  let custodyManager: DefaultCustodyManager;
+
+  beforeEach(() => {
+    custodyManager = createCustodyManager();
+  });
+
+  describe('Custody Configuration', () => {
+    it('should configure MPC custody for an account', async () => {
+      const config = await custodyManager.configureCustomer(
+        'account_123',
+        'fireblocks',
+        'mpc'
+      );
+
+      expect(config).toBeDefined();
+      expect(config.accountId).toBe('account_123');
+      expect(config.provider).toBe('fireblocks');
+      expect(config.custodyType).toBe('mpc');
+      expect(config.enabled).toBe(true);
+      expect(config.mpcConfig).toBeDefined();
+      expect(config.mpcConfig?.threshold).toBe(2);
+    });
+
+    it('should configure multi-sig custody', async () => {
+      const config = await custodyManager.configureCustomer(
+        'account_123',
+        'bitgo',
+        'multi_sig',
+        {
+          multiSigConfig: {
+            requiredSignatures: 3,
+            totalSigners: 5,
+            signers: [],
+            scriptType: 'p2wsh',
+          },
+        }
+      );
+
+      expect(config.custodyType).toBe('multi_sig');
+      expect(config.multiSigConfig).toBeDefined();
+      expect(config.multiSigConfig?.requiredSignatures).toBe(3);
+      expect(config.multiSigConfig?.totalSigners).toBe(5);
+    });
+
+    it('should configure HSM custody', async () => {
+      const config = await custodyManager.configureCustomer(
+        'account_123',
+        'internal',
+        'hsm',
+        {
+          hsmConfig: {
+            provider: 'thales',
+            deviceId: 'hsm_001',
+            slot: 1,
+            requiresPhysicalPresence: true,
+          },
+        }
+      );
+
+      expect(config.custodyType).toBe('hsm');
+      expect(config.hsmConfig).toBeDefined();
+      expect(config.hsmConfig?.provider).toBe('thales');
+    });
+
+    it('should retrieve custody config by account', async () => {
+      await custodyManager.configureCustomer('account_123', 'copper', 'mpc');
+      const config = await custodyManager.getCustodyConfig('account_123');
+
+      expect(config).toBeDefined();
+      expect(config?.provider).toBe('copper');
+    });
+
+    it('should enforce whitelist-only withdrawal policy by default', async () => {
+      await custodyManager.configureCustomer('account_123', 'fireblocks', 'mpc');
+
+      const config = await custodyManager.getCustodyConfig('account_123');
+      expect(config?.withdrawalPolicy.whitelistOnly).toBe(true);
+      expect(config?.withdrawalPolicy.requiresApproval).toBe(true);
+    });
+  });
+
+  describe('Wallet Management', () => {
+    beforeEach(async () => {
+      await custodyManager.configureCustomer('account_123', 'fireblocks', 'mpc');
+    });
+
+    it('should create a custody wallet', async () => {
+      const wallet = await custodyManager.createWallet(
+        'account_123',
+        'Main TON Wallet',
+        'mpc',
+        'TON',
+        'ton_mainnet'
+      );
+
+      expect(wallet).toBeDefined();
+      expect(wallet.id).toContain('wallet_');
+      expect(wallet.name).toBe('Main TON Wallet');
+      expect(wallet.asset).toBe('TON');
+      expect(wallet.network).toBe('ton_mainnet');
+      expect(wallet.status).toBe('active');
+      expect(wallet.balance).toBe(0);
+    });
+
+    it('should list wallets for account', async () => {
+      await custodyManager.createWallet('account_123', 'Wallet 1', 'mpc', 'TON', 'ton_mainnet');
+      await custodyManager.createWallet('account_123', 'Wallet 2', 'mpc', 'USDT', 'ton_mainnet');
+
+      const wallets = await custodyManager.listWallets('account_123');
+      expect(wallets.length).toBe(2);
+    });
+
+    it('should filter wallets by asset', async () => {
+      await custodyManager.createWallet('account_123', 'TON Wallet', 'mpc', 'TON', 'ton_mainnet');
+      await custodyManager.createWallet('account_123', 'USDT Wallet', 'mpc', 'USDT', 'ton_mainnet');
+
+      const tonWallets = await custodyManager.listWallets('account_123', { asset: 'TON' });
+      expect(tonWallets.length).toBe(1);
+      expect(tonWallets[0].asset).toBe('TON');
+    });
+
+    it('should freeze and unfreeze wallet', async () => {
+      const wallet = await custodyManager.createWallet(
+        'account_123', 'Main Wallet', 'mpc', 'TON', 'ton_mainnet'
+      );
+
+      await custodyManager.freezeWallet(wallet.id, 'Suspicious activity', 'admin');
+      const frozen = await custodyManager.getWallet(wallet.id);
+      expect(frozen?.status).toBe('frozen');
+
+      await custodyManager.unfreezeWallet(wallet.id, 'admin');
+      const unfrozen = await custodyManager.getWallet(wallet.id);
+      expect(unfrozen?.status).toBe('active');
+    });
+  });
+
+  describe('Withdrawal & Approval Workflow', () => {
+    let walletId: string;
+
+    beforeEach(async () => {
+      await custodyManager.configureCustomer('account_123', 'fireblocks', 'mpc', {
+        withdrawalPolicy: {
+          requiresApproval: true,
+          approvalThreshold: 0,
+          approverRoles: ['admin', 'risk_manager'],
+          coolingPeriodHours: 0,
+          dailyLimit: 1000000,
+          whitelistOnly: false,
+          travelRuleRequired: false,
+        },
+      });
+      const wallet = await custodyManager.createWallet(
+        'account_123', 'Trading Wallet', 'mpc', 'TON', 'ton_mainnet'
+      );
+      walletId = wallet.id;
+      await custodyManager.updateWalletBalance(walletId, 500000);
+    });
+
+    it('should initiate withdrawal pending approval', async () => {
+      const tx = await custodyManager.initiateWithdrawal(
+        'account_123',
+        walletId,
+        'EQDest123',
+        'TON',
+        10000,
+        'trader_user'
+      );
+
+      expect(tx).toBeDefined();
+      expect(tx.status).toBe('pending_approval');
+      expect(tx.type).toBe('withdrawal');
+      expect(tx.amount).toBe(10000);
+    });
+
+    it('should approve withdrawal and change status when threshold met', async () => {
+      const tx = await custodyManager.initiateWithdrawal(
+        'account_123', walletId, 'EQDest123', 'TON', 10000, 'trader_user'
+      );
+
+      // First approval (need 2 for admin + risk_manager)
+      await custodyManager.approveTransaction(tx.id, 'admin_user', 'admin');
+      const afterFirst = await custodyManager.getTransaction(tx.id);
+      expect(afterFirst?.status).toBe('pending_approval'); // Still pending
+
+      // Second approval
+      await custodyManager.approveTransaction(tx.id, 'risk_mgr', 'risk_manager');
+      const afterSecond = await custodyManager.getTransaction(tx.id);
+      expect(afterSecond?.status).toBe('approved');
+    });
+
+    it('should reject withdrawal', async () => {
+      const tx = await custodyManager.initiateWithdrawal(
+        'account_123', walletId, 'EQDest123', 'TON', 10000, 'trader_user'
+      );
+
+      const rejected = await custodyManager.rejectTransaction(
+        tx.id, 'admin_user', 'admin', 'Suspicious destination'
+      );
+
+      expect(rejected.status).toBe('cancelled');
+      expect(rejected.failureReason).toBe('Suspicious destination');
+    });
+
+    it('should fail withdrawal with insufficient balance', async () => {
+      await expect(
+        custodyManager.initiateWithdrawal(
+          'account_123', walletId, 'EQDest123', 'TON', 999999999, 'trader_user'
+        )
+      ).rejects.toThrow('Insufficient balance');
+    });
+  });
+
+  describe('Address Whitelisting', () => {
+    beforeEach(async () => {
+      await custodyManager.configureCustomer('account_123', 'fireblocks', 'mpc');
+    });
+
+    it('should add and approve whitelisted address', async () => {
+      const addr = await custodyManager.addWhitelistedAddress(
+        'account_123',
+        'EQAddress123',
+        'ton_mainnet',
+        'Partner Exchange',
+        'admin_user'
+      );
+
+      expect(addr.status).toBe('pending');
+
+      await custodyManager.approveWhitelistedAddress(addr.id, 'compliance_officer');
+      const approved = await custodyManager.listWhitelistedAddresses('account_123');
+      expect(approved[0].status).toBe('approved');
+    });
+
+    it('should verify address is whitelisted after approval', async () => {
+      const addr = await custodyManager.addWhitelistedAddress(
+        'account_123', 'EQAddress123', 'ton_mainnet', 'Partner', 'admin'
+      );
+      await custodyManager.approveWhitelistedAddress(addr.id, 'admin');
+
+      const isWhitelisted = await custodyManager.isAddressWhitelisted(
+        'account_123', 'EQAddress123', 'ton_mainnet'
+      );
+      expect(isWhitelisted).toBe(true);
+    });
+
+    it('should not return removed addresses', async () => {
+      const addr = await custodyManager.addWhitelistedAddress(
+        'account_123', 'EQAddress123', 'ton_mainnet', 'Partner', 'admin'
+      );
+      await custodyManager.approveWhitelistedAddress(addr.id, 'admin');
+      await custodyManager.removeWhitelistedAddress(addr.id, 'admin');
+
+      const addresses = await custodyManager.listWhitelistedAddresses('account_123');
+      expect(addresses.length).toBe(0);
+    });
+  });
+
+  describe('MPC and Multi-Sig Config', () => {
+    it('should return MPC config for MPC custody', async () => {
+      await custodyManager.configureCustomer('account_123', 'fireblocks', 'mpc', {
+        mpcConfig: { threshold: 3, keyShares: 5, parties: [], refreshInterval: 60, enabled: true },
+      });
+
+      const mpcConfig = await custodyManager.getMpcConfig('account_123');
+      expect(mpcConfig).toBeDefined();
+      expect(mpcConfig?.threshold).toBe(3);
+      expect(mpcConfig?.keyShares).toBe(5);
+    });
+
+    it('should return multi-sig config for multi-sig custody', async () => {
+      await custodyManager.configureCustomer('account_123', 'bitgo', 'multi_sig', {
+        multiSigConfig: {
+          requiredSignatures: 2,
+          totalSigners: 3,
+          signers: [],
+          scriptType: 'p2wsh',
+        },
+      });
+
+      const multiSigConfig = await custodyManager.getMultiSigConfig('account_123');
+      expect(multiSigConfig).toBeDefined();
+      expect(multiSigConfig?.requiredSignatures).toBe(2);
+    });
+  });
+});
+
+// ============================================================================
+// Segregated Vault Tests
+// ============================================================================
+
+describe('Segregated Vault Architecture', () => {
+  let vaultManager: DefaultVaultManager;
+
+  beforeEach(() => {
+    vaultManager = createVaultManager();
+  });
+
+  describe('Vault Creation & Management', () => {
+    it('should create an institutional vault', async () => {
+      const vault = await vaultManager.createVault(
+        'account_123',
+        'Main Trading Vault',
+        'institutional',
+        'Primary vault for institutional trading',
+        'admin_user'
+      );
+
+      expect(vault).toBeDefined();
+      expect(vault.id).toContain('vault_');
+      expect(vault.name).toBe('Main Trading Vault');
+      expect(vault.type).toBe('institutional');
+      expect(vault.status).toBe('active');
+      expect(vault.accountId).toBe('account_123');
+    });
+
+    it('should create strategy-restricted vault', async () => {
+      const vault = await vaultManager.createVault(
+        'account_123',
+        'DeFi Vault',
+        'strategy_restricted',
+        'Restricted to approved DeFi strategies',
+        'admin_user',
+        {
+          strategyRestrictions: [
+            {
+              strategyId: 'defi_lending',
+              strategyName: 'DeFi Lending',
+              permission: 'allowed',
+              maxAllocation: 500000,
+              approvedBy: 'admin_user',
+            },
+            {
+              strategyId: 'high_risk_derivatives',
+              strategyName: 'High Risk Derivatives',
+              permission: 'prohibited',
+              reason: 'Exceeds risk tolerance',
+              approvedBy: 'admin_user',
+            },
+          ],
+        }
+      );
+
+      expect(vault.type).toBe('strategy_restricted');
+      expect(vault.strategyRestrictions.length).toBe(2);
+    });
+
+    it('should list vaults for account', async () => {
+      await vaultManager.createVault('account_123', 'Vault 1', 'institutional', 'Desc', 'admin');
+      await vaultManager.createVault('account_123', 'Vault 2', 'reserve', 'Desc', 'admin');
+      await vaultManager.createVault('account_123', 'Vault 3', 'collateral', 'Desc', 'admin');
+
+      const vaults = await vaultManager.listVaults('account_123');
+      expect(vaults.length).toBe(3);
+    });
+
+    it('should filter vaults by type', async () => {
+      await vaultManager.createVault('account_123', 'Trading', 'institutional', 'Desc', 'admin');
+      await vaultManager.createVault('account_123', 'Reserve', 'reserve', 'Desc', 'admin');
+
+      const institutionalVaults = await vaultManager.listVaults('account_123', { type: 'institutional' });
+      expect(institutionalVaults.length).toBe(1);
+      expect(institutionalVaults[0].name).toBe('Trading');
+    });
+
+    it('should lock and unlock vault', async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Vault', 'institutional', 'Desc', 'admin'
+      );
+
+      await vaultManager.lockVault(vault.id, 'Regulatory hold', 'compliance_officer');
+      const locked = await vaultManager.getVault(vault.id);
+      expect(locked?.status).toBe('locked');
+
+      await vaultManager.unlockVault(vault.id, 'admin');
+      const unlocked = await vaultManager.getVault(vault.id);
+      expect(unlocked?.status).toBe('active');
+    });
+
+    it('should freeze vault', async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Vault', 'institutional', 'Desc', 'admin'
+      );
+
+      await vaultManager.freezeVault(vault.id, 'Court order', 'admin');
+      const frozen = await vaultManager.getVault(vault.id);
+      expect(frozen?.status).toBe('frozen');
+    });
+  });
+
+  describe('Asset Management', () => {
+    let vaultId: string;
+
+    beforeEach(async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Test Vault', 'institutional', 'Desc', 'admin'
+      );
+      vaultId = vault.id;
+    });
+
+    it('should deposit assets into vault', async () => {
+      const asset = await vaultManager.depositAsset(
+        vaultId, 'TON', 'ton_mainnet', 100000, 'depositor_user'
+      );
+
+      expect(asset).toBeDefined();
+      expect(asset.asset).toBe('TON');
+      expect(asset.balance).toBe(100000);
+      expect(asset.availableAmount).toBe(100000);
+    });
+
+    it('should withdraw assets from vault', async () => {
+      await vaultManager.depositAsset(vaultId, 'TON', 'ton_mainnet', 100000, 'depositor');
+      const asset = await vaultManager.withdrawAsset(vaultId, 'TON', 30000, 'trader');
+
+      expect(asset.balance).toBe(70000);
+      expect(asset.availableAmount).toBe(70000);
+    });
+
+    it('should allocate assets for strategy', async () => {
+      await vaultManager.depositAsset(vaultId, 'USDT', 'ton_mainnet', 500000, 'depositor');
+      const asset = await vaultManager.allocateAsset(
+        vaultId, 'USDT', 200000, 'DeFi Strategy Alpha', 'risk_manager'
+      );
+
+      expect(asset.availableAmount).toBe(300000);
+      expect(asset.allocatedAmount).toBe(200000);
+      expect(asset.balance).toBe(500000);
+    });
+
+    it('should fail withdrawal exceeding available balance', async () => {
+      await vaultManager.depositAsset(vaultId, 'TON', 'ton_mainnet', 50000, 'depositor');
+
+      await expect(
+        vaultManager.withdrawAsset(vaultId, 'TON', 100000, 'trader')
+      ).rejects.toThrow('Insufficient available balance');
+    });
+
+    it('should not allow deposits to frozen vault', async () => {
+      await vaultManager.freezeVault(vaultId, 'Regulatory hold', 'admin');
+
+      await expect(
+        vaultManager.depositAsset(vaultId, 'TON', 'ton_mainnet', 10000, 'depositor')
+      ).rejects.toThrow('Cannot deposit to frozen vault');
+    });
+  });
+
+  describe('Access Control', () => {
+    let vaultId: string;
+
+    beforeEach(async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Test Vault', 'institutional', 'Desc', 'admin_user',
+        { accessControl: { authorizedRoles: ['admin', 'trader'], authorizedUsers: ['admin_user'] } }
+      );
+      vaultId = vault.id;
+    });
+
+    it('should allow access to authorized user', async () => {
+      const result = await vaultManager.checkVaultAccess(vaultId, 'admin_user', 'admin');
+      expect(result.allowed).toBe(true);
+    });
+
+    it('should allow access to authorized role', async () => {
+      const result = await vaultManager.checkVaultAccess(vaultId, 'new_trader', 'trader');
+      expect(result.allowed).toBe(true);
+    });
+
+    it('should deny access to unauthorized role', async () => {
+      const result = await vaultManager.checkVaultAccess(vaultId, 'viewer_user', 'viewer');
+      expect(result.allowed).toBe(false);
+    });
+
+    it('should grant and revoke user access', async () => {
+      await vaultManager.grantAccess(vaultId, 'new_user', 'admin_user');
+      const afterGrant = await vaultManager.checkVaultAccess(vaultId, 'new_user', 'viewer');
+      expect(afterGrant.allowed).toBe(true);
+
+      await vaultManager.revokeAccess(vaultId, 'new_user', 'admin_user');
+      const afterRevoke = await vaultManager.checkVaultAccess(vaultId, 'new_user', 'viewer');
+      expect(afterRevoke.allowed).toBe(false);
+    });
+  });
+
+  describe('Exposure Limits', () => {
+    let vaultId: string;
+
+    beforeEach(async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Test Vault', 'institutional', 'Desc', 'admin',
+        { exposureLimits: { maxSingleAssetExposure: 1000000, maxTotalExposure: 5000000, maxSingleCounterpartyExposure: 500000, maxLeverage: 2, maxDrawdown: 15, assetClassLimits: {}, protocolLimits: {} } }
+      );
+      vaultId = vault.id;
+    });
+
+    it('should approve deposit within exposure limits', async () => {
+      const result = await vaultManager.checkExposureLimit(vaultId, 'TON', 500000);
+      expect(result.withinLimits).toBe(true);
+      expect(result.limit).toBe(1000000);
+    });
+
+    it('should reject deposit exceeding exposure limit', async () => {
+      await vaultManager.depositAsset(vaultId, 'TON', 'ton_mainnet', 800000, 'depositor');
+      const result = await vaultManager.checkExposureLimit(vaultId, 'TON', 300000);
+
+      expect(result.withinLimits).toBe(false);
+      expect(result.reason).toContain('Exposure limit');
+    });
+  });
+
+  describe('Strategy Restrictions', () => {
+    let vaultId: string;
+
+    beforeEach(async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Strategy Vault', 'strategy_restricted', 'Desc', 'admin'
+      );
+      vaultId = vault.id;
+    });
+
+    it('should allow strategies with no restriction configured', async () => {
+      const result = await vaultManager.isStrategyAllowed(vaultId, 'any_strategy');
+      expect(result.allowed).toBe(true);
+      expect(result.permission).toBe('not_configured');
+    });
+
+    it('should enforce allowed strategy restriction', async () => {
+      await vaultManager.addStrategyRestriction(vaultId, {
+        strategyId: 'defi_lending',
+        strategyName: 'DeFi Lending',
+        permission: 'allowed',
+        maxAllocation: 500000,
+        approvedBy: 'admin',
+      }, 'admin');
+
+      const result = await vaultManager.isStrategyAllowed(vaultId, 'defi_lending');
+      expect(result.allowed).toBe(true);
+      expect(result.maxAllocation).toBe(500000);
+    });
+
+    it('should enforce prohibited strategy restriction', async () => {
+      await vaultManager.addStrategyRestriction(vaultId, {
+        strategyId: 'high_risk_options',
+        strategyName: 'High Risk Options',
+        permission: 'prohibited',
+        reason: 'Exceeds risk limits',
+        approvedBy: 'admin',
+      }, 'admin');
+
+      const result = await vaultManager.isStrategyAllowed(vaultId, 'high_risk_options');
+      expect(result.allowed).toBe(false);
+      expect(result.permission).toBe('prohibited');
+    });
+  });
+
+  describe('Audit Trail', () => {
+    it('should record audit entries for all vault operations', async () => {
+      const vault = await vaultManager.createVault(
+        'account_123', 'Audit Vault', 'institutional', 'Desc', 'admin'
+      );
+
+      await vaultManager.depositAsset(vault.id, 'TON', 'ton_mainnet', 10000, 'trader');
+      await vaultManager.lockVault(vault.id, 'Test lock', 'admin');
+      await vaultManager.unlockVault(vault.id, 'admin');
+
+      const log = await vaultManager.getAuditLog(vault.id);
+      expect(log.length).toBeGreaterThanOrEqual(4); // create, deposit, lock, unlock
+
+      const actions = log.map(e => e.action);
+      expect(actions).toContain('create_vault');
+      expect(actions).toContain('deposit_asset');
+      expect(actions).toContain('lock_vault');
+      expect(actions).toContain('unlock_vault');
+    });
+  });
+});
+
+// ============================================================================
+// Jurisdiction-Aware Deployment Tests
+// ============================================================================
+
+describe('Jurisdiction-Aware Deployment', () => {
+  let jurisdictionManager: DefaultJurisdictionManager;
+
+  beforeEach(() => {
+    jurisdictionManager = createJurisdictionManager();
+  });
+
+  describe('Profile Management', () => {
+    it('should create EU jurisdiction profile with MiCA', async () => {
+      const profile = await jurisdictionManager.createProfile(
+        'account_123',
+        'EU',
+        ['MiCA', 'MiFID_II', 'GDPR']
+      );
+
+      expect(profile).toBeDefined();
+      expect(profile.jurisdiction).toBe('EU');
+      expect(profile.frameworks).toContain('MiCA');
+      expect(profile.frameworks).toContain('MiFID_II');
+      expect(profile.enabled).toBe(true);
+    });
+
+    it('should create US jurisdiction profile', async () => {
+      const profile = await jurisdictionManager.createProfile(
+        'account_123',
+        'US',
+        ['SEC_regulations', 'CFTC', 'FATF_TRAVEL_RULE']
+      );
+
+      expect(profile.jurisdiction).toBe('US');
+      expect(profile.frameworks).toContain('SEC_regulations');
+    });
+
+    it('should retrieve profile by jurisdiction', async () => {
+      await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+      await jurisdictionManager.createProfile('account_123', 'UK', ['FCA']);
+
+      const euProfile = await jurisdictionManager.getProfile('account_123', 'EU');
+      expect(euProfile?.jurisdiction).toBe('EU');
+
+      const ukProfile = await jurisdictionManager.getProfile('account_123', 'UK');
+      expect(ukProfile?.jurisdiction).toBe('UK');
+    });
+
+    it('should list all profiles for account', async () => {
+      await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+      await jurisdictionManager.createProfile('account_123', 'US', ['SEC_regulations']);
+      await jurisdictionManager.createProfile('account_123', 'Asia', ['MAS']);
+
+      const profiles = await jurisdictionManager.listProfiles('account_123');
+      expect(profiles.length).toBe(3);
+    });
+
+    it('should enable and disable profile', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+
+      await jurisdictionManager.disableProfile(profile.id);
+      const disabled = await jurisdictionManager.getProfile('account_123', 'EU');
+      expect(disabled?.enabled).toBe(false);
+
+      await jurisdictionManager.enableProfile(profile.id);
+      const enabled = await jurisdictionManager.getProfile('account_123', 'EU');
+      expect(enabled?.enabled).toBe(true);
+    });
+  });
+
+  describe('Default KYC Requirements', () => {
+    it('should return EU KYC requirements with enhanced level', async () => {
+      const requirements = await jurisdictionManager.getKycRequirements('account_123', 'EU');
+
+      expect(requirements.minimumKycLevel).toBe('enhanced');
+      expect(requirements.pepScreeningRequired).toBe(true);
+      expect(requirements.adverseMediaRequired).toBe(true);
+      expect(requirements.additionalDocuments).toContain('beneficial_ownership');
+    });
+
+    it('should return US KYC requirements with tax identification', async () => {
+      const requirements = await jurisdictionManager.getKycRequirements('account_123', 'US');
+
+      expect(requirements.minimumKycLevel).toBe('enhanced');
+      expect(requirements.additionalDocuments).toContain('tax_identification');
+      expect(requirements.localIdRequired).toBe(true);
+    });
+
+    it('should return Global KYC requirements (strictest defaults)', async () => {
+      const requirements = await jurisdictionManager.getKycRequirements('account_123', 'Global');
+
+      expect(requirements.minimumKycLevel).toBe('institutional');
+      expect(requirements.beneficialOwnershipThreshold).toBe(10);
+    });
+  });
+
+  describe('KYC Compliance Check', () => {
+    it('should pass KYC compliance for EU with correct level and documents', async () => {
+      const result = await jurisdictionManager.isKycCompliant(
+        'account_123',
+        'EU',
+        'enhanced',
+        ['articles_of_incorporation', 'beneficial_ownership']
+      );
+
+      expect(result.compliant).toBe(true);
+      expect(result.missingDocuments.length).toBe(0);
+    });
+
+    it('should fail KYC compliance with insufficient level', async () => {
+      const result = await jurisdictionManager.isKycCompliant(
+        'account_123',
+        'EU',
+        'basic', // Below enhanced
+        ['articles_of_incorporation', 'beneficial_ownership']
+      );
+
+      expect(result.compliant).toBe(false);
+      expect(result.requiredLevel).toBe('enhanced');
+    });
+
+    it('should fail KYC compliance with missing documents', async () => {
+      const result = await jurisdictionManager.isKycCompliant(
+        'account_123',
+        'EU',
+        'enhanced',
+        ['articles_of_incorporation'] // Missing beneficial_ownership
+      );
+
+      expect(result.compliant).toBe(false);
+      expect(result.missingDocuments).toContain('beneficial_ownership');
+    });
+  });
+
+  describe('Data Residency', () => {
+    it('should check EU data residency compliance', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['GDPR']);
+
+      const compliant = await jurisdictionManager.isDataResidencyCompliant(
+        profile.id, 'eu-central-1'
+      );
+      expect(compliant.compliant).toBe(true);
+    });
+
+    it('should reject data in prohibited region', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['GDPR']);
+      await jurisdictionManager.updateDataResidency(profile.id, {
+        prohibitedRegions: ['cn-north-1', 'cn-northwest-1'],
+      });
+
+      const result = await jurisdictionManager.isDataResidencyCompliant(
+        profile.id, 'cn-north-1'
+      );
+      expect(result.compliant).toBe(false);
+      expect(result.reason).toContain('prohibited');
+    });
+  });
+
+  describe('Regulatory Reporting Requirements', () => {
+    it('should add and retrieve reporting requirement', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+
+      await jurisdictionManager.addReportingRequirement(profile.id, {
+        framework: 'MiCA',
+        reportType: 'periodic_report',
+        frequency: 'quarterly',
+        deadline: 'end_of_quarter',
+        recipient: 'ESMA',
+        format: 'xml',
+        enabled: true,
+      });
+
+      const requirements = await jurisdictionManager.getReportingRequirements(profile.id);
+      expect(requirements.length).toBe(1);
+      expect(requirements[0].framework).toBe('MiCA');
+      expect(requirements[0].frequency).toBe('quarterly');
+    });
+
+    it('should filter requirements by framework', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA', 'GDPR']);
+
+      await jurisdictionManager.addReportingRequirement(profile.id, {
+        framework: 'MiCA',
+        reportType: 'periodic_report',
+        frequency: 'quarterly',
+        deadline: 'end_of_quarter',
+        recipient: 'ESMA',
+        format: 'xml',
+        enabled: true,
+      });
+      await jurisdictionManager.addReportingRequirement(profile.id, {
+        framework: 'GDPR',
+        reportType: 'data_breach',
+        frequency: 'on_demand',
+        deadline: '72_hours',
+        recipient: 'DPA',
+        format: 'json',
+        enabled: true,
+      });
+
+      const micaRequirements = await jurisdictionManager.getReportingRequirements(profile.id, 'MiCA');
+      expect(micaRequirements.length).toBe(1);
+      expect(micaRequirements[0].framework).toBe('MiCA');
+    });
+  });
+
+  describe('Multi-Jurisdiction Compliance', () => {
+    it('should get all applicable frameworks across jurisdictions', async () => {
+      await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA', 'GDPR']);
+      await jurisdictionManager.createProfile('account_123', 'US', ['SEC_regulations', 'CFTC']);
+
+      const frameworks = await jurisdictionManager.getApplicableFrameworks('account_123');
+      expect(frameworks).toContain('MiCA');
+      expect(frameworks).toContain('GDPR');
+      expect(frameworks).toContain('SEC_regulations');
+      expect(frameworks).toContain('CFTC');
+    });
+
+    it('should compute strictest KYC requirements across jurisdictions', async () => {
+      // EU: enhanced, US: enhanced, Global: institutional
+      await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+      await jurisdictionManager.createProfile('account_123', 'Global', ['FATF_TRAVEL_RULE']);
+
+      const strictest = await jurisdictionManager.getStrictestKycRequirements('account_123');
+      expect(strictest.minimumKycLevel).toBe('institutional'); // Global is stricter
+      expect(strictest.beneficialOwnershipThreshold).toBe(10); // Global is stricter (10 < 25)
+    });
+  });
+
+  describe('Jurisdiction Restrictions', () => {
+    it('should check if asset is allowed in jurisdiction', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+      await jurisdictionManager.addRestriction(profile.id, {
+        type: 'asset',
+        description: 'Privacy coins prohibited',
+        prohibitedItems: ['XMR', 'ZEC'],
+        requiresLicense: false,
+        effectiveDate: new Date(),
+      });
+
+      const xmrResult = await jurisdictionManager.checkAssetAllowed(profile.id, 'XMR');
+      expect(xmrResult.allowed).toBe(false);
+
+      const tonResult = await jurisdictionManager.checkAssetAllowed(profile.id, 'TON');
+      expect(tonResult.allowed).toBe(true);
+    });
+
+    it('should check if service requires license', async () => {
+      const profile = await jurisdictionManager.createProfile('account_123', 'EU', ['MiCA']);
+      await jurisdictionManager.addRestriction(profile.id, {
+        type: 'service',
+        description: 'Staking requires MiCA license',
+        prohibitedItems: ['staking'],
+        requiresLicense: true,
+        licenseType: 'MiCA_CASP',
+        effectiveDate: new Date(),
+      });
+
+      const result = await jurisdictionManager.checkServiceAllowed(profile.id, 'staking');
+      expect(result.requiresLicense).toBe(true);
+      expect(result.licenseTypes).toContain('MiCA_CASP');
+    });
   });
 });
