@@ -424,6 +424,71 @@ export {
   type LifecycleOrchestratorErrorCode,
 } from './lifecycle-orchestrator';
 
+// Secure Multi-Tenant Agent Infrastructure & Isolation Layer (Issue #99)
+// Enterprise-grade tenant isolation with RBAC, sandbox runtime, secret vault,
+// and per-agent wallet isolation for thousands of concurrent tenants.
+// Note: Import separately from '@tonaiagent/core/multi-tenant' for full access.
+export * as MultiTenantModule from './multi-tenant';
+export {
+  // Manager
+  MultiTenantManager,
+  createMultiTenantManager,
+  DEFAULT_MULTI_TENANT_CONFIG,
+  // Components
+  TenantManager,
+  createTenantManager,
+  RbacManager,
+  createRbacManager,
+  IsolationEngine,
+  createIsolationEngine,
+  TenantVault,
+  createTenantVault,
+  WalletIsolationManager,
+  createWalletIsolationManager,
+  // Constants
+  TIER_LIMITS,
+  SYSTEM_ROLES,
+  DEFAULT_RESOURCE_LIMITS,
+  DEFAULT_WALLET_LIMITS,
+  // Types
+  type MultiTenantManagerInterface,
+  type Tenant,
+  type TenantStatus,
+  type TenantTier,
+  type TenantLimits,
+  type TenantSettings,
+  type TenantContext,
+  type CreateTenantInput,
+  type TenantUser,
+  type Role,
+  type RoleName,
+  type Permission,
+  type ResourceType,
+  type ActionType,
+  type RbacPolicy,
+  type AccessCheckRequest,
+  type AccessCheckResult,
+  type TenantSandbox,
+  type SandboxStatus,
+  type SandboxResourceLimits,
+  type NetworkPolicy,
+  type SandboxViolation,
+  type IsolationMode,
+  type TenantSecret,
+  type SecretType,
+  type CreateSecretInput,
+  type GetSecretResult,
+  type IsolatedWallet,
+  type WalletIsolationStatus,
+  type WalletIsolationLimits,
+  type MultiTenantConfig,
+  type MultiTenantHealth,
+  type MultiTenantEvent,
+  type MultiTenantEventType,
+  type MultiTenantEventCallback,
+  type TenantIsolationReport,
+} from './multi-tenant';
+
 // Distributed Scheduler & Event Engine (Issue #93)
 // Fault-tolerant distributed cron engine with event-driven execution,
 // on-chain TON blockchain event listeners, worker pool, and retry/DLQ engine.
