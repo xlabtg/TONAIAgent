@@ -607,10 +607,10 @@ export class DefaultCostOptimizer implements CostOptimizer {
       const results: BatchTransactionResult[] = [];
       let totalSavings = 0;
 
-      // Simulate processing each transaction
+      // Simulate processing each transaction (deterministic for testability)
       for (const txId of batch.transactions) {
-        const success = Math.random() > 0.1; // 90% success rate
-        const savings = success ? Math.random() * 5 : 0;
+        const success = true; // Deterministic success for simulation
+        const savings = success ? 2.5 : 0; // Fixed savings for deterministic results
 
         results.push({
           transactionId: txId,
