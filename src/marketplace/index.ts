@@ -153,6 +153,69 @@ export {
   type SafeguardResult,
 } from './risk-transparency';
 
+// Export sandbox manager
+export {
+  DefaultSandboxManager,
+  createSandboxManager,
+  type SandboxManager,
+  type SandboxManagerConfig,
+  type SandboxSession,
+  type SandboxConfig,
+  type SandboxResult,
+  type SandboxSummary,
+  type SandboxPerformanceMetrics,
+  type SandboxRiskMetrics,
+  type SandboxIssue,
+  type SandboxLog,
+  type SandboxAuditReport,
+  type AuditCategory,
+  type AuditCategoryFinding,
+  type CodeVerificationResult,
+  type CodeIssue,
+  type StressTestResult,
+  type StressScenario,
+  type SandboxTestType,
+  type SandboxStatus,
+} from './sandbox';
+
+// Export revenue distribution engine
+export {
+  DefaultRevenueDistributionEngine,
+  createRevenueDistributionEngine,
+  type RevenueDistributionEngine,
+  type RevenueDistributionConfig,
+  type RevenueEvent,
+  type Distribution,
+  type DistributionSplit,
+  type DistributionRule,
+  type SplitRule,
+  type SplitCondition,
+  type HighWaterMark,
+  type RevenueStatement,
+  type DAOTreasuryAllocation,
+  type BatchDistributionResult,
+  type DistributionStatus,
+  type RevenueSource,
+} from './revenue-distribution';
+
+// Export freemium manager
+export {
+  DefaultFreemiumManager,
+  createFreemiumManager,
+  type FreemiumManager,
+  type FreemiumManagerConfig,
+  type FreemiumPlan,
+  type FreemiumSubscription,
+  type FreemiumLimits,
+  type SubscriptionUsage,
+  type FeatureAccess,
+  type TierUpgradeRecommendation,
+  type UsageLimitCheck,
+  type FreemiumTier,
+  type FeatureKey,
+  type SubscriptionStatus,
+} from './freemium';
+
 // ============================================================================
 // Marketplace Service - Unified Entry Point
 // ============================================================================
@@ -169,6 +232,9 @@ import { DefaultReputationManager, createReputationManager, ReputationManagerCon
 import { DefaultAnalyticsEngine, createAnalyticsEngine, AnalyticsEngineConfig } from './analytics';
 import { DefaultMonetizationManager, createMonetizationManager, MonetizationConfig } from './monetization';
 import { DefaultRiskTransparencyManager, createRiskTransparencyManager, RiskTransparencyConfig, RiskLevel } from './risk-transparency';
+import { DefaultSandboxManager, createSandboxManager } from './sandbox';
+import { DefaultRevenueDistributionEngine, createRevenueDistributionEngine } from './revenue-distribution';
+import { DefaultFreemiumManager, createFreemiumManager } from './freemium';
 
 export interface MarketplaceService {
   readonly enabled: boolean;
@@ -178,6 +244,9 @@ export interface MarketplaceService {
   readonly analytics: DefaultAnalyticsEngine;
   readonly monetization: DefaultMonetizationManager;
   readonly riskTransparency: DefaultRiskTransparencyManager;
+  readonly sandbox: DefaultSandboxManager;
+  readonly revenueDistribution: DefaultRevenueDistributionEngine;
+  readonly freemium: DefaultFreemiumManager;
 
   // Health check
   getHealth(): Promise<MarketplaceHealth>;
@@ -195,6 +264,9 @@ export interface MarketplaceHealth {
     analytics: boolean;
     monetization: boolean;
     riskTransparency: boolean;
+    sandbox: boolean;
+    revenueDistribution: boolean;
+    freemium: boolean;
   };
   lastCheck: Date;
   details: Record<string, unknown>;
@@ -208,6 +280,9 @@ export class DefaultMarketplaceService implements MarketplaceService {
   readonly analytics: DefaultAnalyticsEngine;
   readonly monetization: DefaultMonetizationManager;
   readonly riskTransparency: DefaultRiskTransparencyManager;
+  readonly sandbox: DefaultSandboxManager;
+  readonly revenueDistribution: DefaultRevenueDistributionEngine;
+  readonly freemium: DefaultFreemiumManager;
 
   private readonly eventCallbacks: MarketplaceEventCallback[] = [];
 
@@ -271,6 +346,17 @@ export class DefaultMarketplaceService implements MarketplaceService {
     };
     this.riskTransparency = createRiskTransparencyManager(riskConfig);
 
+    // Initialize sandbox manager
+    this.sandbox = createSandboxManager();
+
+    // Initialize revenue distribution engine
+    this.revenueDistribution = createRevenueDistributionEngine({
+      defaultPlatformFeePercent: config.monetization?.platformFeePercent ?? 2.5,
+    });
+
+    // Initialize freemium manager
+    this.freemium = createFreemiumManager();
+
     // Wire up event forwarding
     this.setupEventForwarding();
   }
@@ -283,6 +369,9 @@ export class DefaultMarketplaceService implements MarketplaceService {
       analytics: true,
       monetization: true,
       riskTransparency: true,
+      sandbox: true,
+      revenueDistribution: true,
+      freemium: true,
     };
 
     const healthyCount = Object.values(components).filter(Boolean).length;
@@ -329,6 +418,9 @@ export class DefaultMarketplaceService implements MarketplaceService {
     this.analytics.onEvent(forwardEvent);
     this.monetization.onEvent(forwardEvent);
     this.riskTransparency.onEvent(forwardEvent);
+    this.sandbox.onEvent(forwardEvent);
+    this.revenueDistribution.onEvent(forwardEvent);
+    this.freemium.onEvent(forwardEvent);
   }
 }
 
