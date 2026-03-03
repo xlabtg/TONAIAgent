@@ -1,0 +1,369 @@
+# TON AI Agent - Global Kubernetes Deployment Configuration
+#
+# Multi-region Kubernetes deployment for the global edge runtime.
+# Designed for deployment to regional clusters (EKS, GKE, AKS).
+#
+# Deploy to each region:
+#   kubectl apply -f global-deployment.yaml \
+#     --context <region-cluster-context>
+#
+# Issue #100: Global Infrastructure & Edge Deployment
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/part-of: tonaiagent-global
+    tonaiagent.io/component: global-infrastructure
+
+---
+# Global ConfigMap (region-specific values injected via Helm/Kustomize)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tonaiagent-global-config
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: config
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  REGION: "us-east-1"             # Override per region
+  GEOGRAPHIC_ZONE: "north_america" # Override per region
+  COMPLIANCE_ZONES: "fatf"         # Override per region
+  DATA_RESIDENCY_REQUIRED: "false" # Override per region
+  EDGE_INFERENCE_ENABLED: "true"
+  EDGE_CACHING_ENABLED: "true"
+  STREAMING_DATA_ENABLED: "true"
+  GLOBAL_SCHEDULER_ENABLED: "true"
+  COST_OPTIMIZATION_ENABLED: "true"
+  LOG_LEVEL: "info"
+
+---
+# Edge Runtime Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: edge-runtime
+    app.kubernetes.io/version: "2.15.0"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/metrics"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tonaiagent
+      app.kubernetes.io/component: edge-runtime
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tonaiagent
+        app.kubernetes.io/component: edge-runtime
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: tonaiagent-edge
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: edge-runtime
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: edge-runtime
+      containers:
+        - name: edge-runtime
+          image: tonaiagent/edge-runtime:2.15.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tonaiagent-global-config
+            - secretRef:
+                name: tonaiagent-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 30
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: edge-runtime
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tonaiagent-edge
+  minReplicas: 2
+  maxReplicas: 50
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      pods:
+        metric:
+          name: tonaiagent_active_agents
+        target:
+          type: AverageValue
+          averageValue: "100"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 10
+          periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: edge-runtime
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: edge-runtime
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+
+---
+# Ingress (region-specific hostname injected by Kustomize overlay)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: edge-runtime
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Served-By: $hostname";
+      more_set_headers "X-Edge-Region: $region";
+spec:
+  ingressClassName: nginx
+  tls:
+    - secretName: tonaiagent-edge-tls
+      hosts:
+        - edge.us-east-1.tonaiagent.io   # Override per region
+  rules:
+    - host: edge.us-east-1.tonaiagent.io  # Override per region
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tonaiagent-edge
+                port:
+                  name: http
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+    app.kubernetes.io/component: edge-runtime
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tonaiagent
+      app.kubernetes.io/component: edge-runtime
+
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+  labels:
+    app.kubernetes.io/name: tonaiagent
+
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tonaiagent-edge
+  namespace: tonaiagent
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: tonaiagent
+      app.kubernetes.io/component: edge-runtime
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: tonaiagent
+      ports:
+        - port: 3000
+          protocol: TCP
+        - port: 9090
+          protocol: TCP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - port: 5432
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    # External APIs (TON, AI providers, Telegram)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
