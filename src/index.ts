@@ -716,6 +716,43 @@ export {
 // Architecture: Investors → Tokenized Fund → Prime Brokerage Layer → AI Risk Engine → Agent Strategies → Execution
 // Note: Import separately from '@tonaiagent/core/prime-brokerage' for full access.
 export * as PrimeBrokerage from './prime-brokerage';
+
+// AI-native Clearing House (Issue #120)
+// Institutional-grade clearing and settlement infrastructure for autonomous AI funds and agents on TON.
+// Provides central clearing smart contract layer, AI risk netting engine, collateral management,
+// default resolution framework, real-time settlement, and clearing audit & transparency.
+// Architecture: Agents / Funds → Prime Brokerage → Liquidity Network → Clearing House → Settlement Finality
+// Note: Import separately from '@tonaiagent/core/clearing-house' for full access.
+export * as ClearingHouse from './clearing-house';
+export {
+  // Unified manager
+  DefaultClearingHouseManager,
+  createClearingHouseManager,
+  // Central Clearing
+  DefaultCentralClearingManager,
+  createCentralClearingManager,
+  // Netting Engine
+  DefaultNettingEngine,
+  createNettingEngine,
+  // Collateral Management
+  DefaultCollateralManager,
+  createCollateralManager,
+  // Default Resolution
+  DefaultDefaultResolutionManager,
+  createDefaultResolutionManager,
+  // Settlement Layer
+  DefaultSettlementLayer,
+  createSettlementLayer,
+  // Audit Module
+  DefaultClearingAuditModule,
+  createClearingAuditModule,
+  // Types
+  type ClearingHouseManager,
+  type ClearingHouseSystemStatus,
+  type ClearingHouseConfig,
+  type ClearingHouseEvent,
+  type ClearingHouseEventCallback,
+} from './clearing-house';
 export {
   // Unified manager
   DefaultPrimeBrokerageManager,
@@ -749,6 +786,40 @@ export {
   type PrimeBrokerageEvent,
   type PrimeBrokerageEventCallback,
 } from './prime-brokerage';
+
+// Institutional Liquidity Network (Issue #119)
+// Deep liquidity infrastructure layer for institutional capital routing on TON.
+// Enables aggregated liquidity pools, cross-fund capital routing, smart order routing,
+// deep liquidity sourcing, and risk-controlled execution built on The Open Network.
+// Architecture: Agents/Funds → Prime Brokerage → Liquidity Network → DEX / OTC / Cross-chain
+// Note: Import separately from '@tonaiagent/core/liquidity-network' for full access.
+export * as LiquidityNetwork from './liquidity-network';
+export {
+  // Unified manager
+  DefaultLiquidityNetworkManager,
+  createLiquidityNetworkManager,
+  // Aggregation Layer
+  DefaultLiquidityAggregationManager,
+  createLiquidityAggregationManager,
+  // Smart Order Routing
+  DefaultSmartOrderRoutingEngine,
+  createSmartOrderRoutingEngine,
+  // Internal Liquidity Pools
+  DefaultInternalLiquidityPoolManager,
+  createInternalLiquidityPoolManager,
+  // Deep Liquidity Vaults
+  DefaultDeepLiquidityVaultManager,
+  createDeepLiquidityVaultManager,
+  // Risk-Controlled Execution
+  DefaultRiskControlledExecutionManager,
+  createRiskControlledExecutionManager,
+  // Types
+  type LiquidityNetworkManager,
+  type LiquidityNetworkSystemStatus,
+  type LiquidityNetworkConfig,
+  type LiquidityNetworkEvent,
+  type LiquidityNetworkEventCallback,
+} from './liquidity-network';
 
 // DAO Governance & Treasury Layer (Issue #103)
 // Self-governing AI financial protocol with on-chain treasury management,
@@ -841,3 +912,47 @@ export {
   type DaoEventType,
   type DaoEventCallback,
 } from './dao-governance';
+
+// Systemic Risk & Stability Framework (Issue #122)
+// System-wide risk containment and stability controls analogous to BIS/Federal Reserve
+// but fully transparent, algorithmic, AI-supervised, and on-chain enforceable.
+// Components: Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker,
+//             Insurance & Stability Fund, AI Stress Testing Engine, GAAMP Stability Index.
+// Architecture: Agents/Funds → Prime Brokerage → Clearing House
+//               → Systemic Risk Engine → Leverage Governor → Stability Fund
+// Note: Import separately from '@tonaiagent/core/systemic-risk' for full access.
+export * as SystemicRisk from './systemic-risk';
+export {
+  // Unified manager
+  DefaultSystemicRiskManager,
+  createSystemicRiskManager,
+  // Exposure Monitoring
+  DefaultGlobalExposureMonitor,
+  createGlobalExposureMonitor,
+  // Leverage Governor
+  DefaultDynamicLeverageGovernor,
+  createDynamicLeverageGovernor,
+  // Circuit Breaker
+  DefaultCircuitBreakerSystem,
+  createCircuitBreakerSystem,
+  DEFAULT_CIRCUIT_BREAKER_RULES,
+  // Insurance Fund
+  DefaultInsuranceAndStabilityFund,
+  createInsuranceAndStabilityFund,
+  // Stress Testing
+  DefaultAIStressTestingEngine,
+  createAIStressTestingEngine,
+  // Stability Score
+  DefaultStabilityScoreEngine,
+  createStabilityScoreEngine,
+  // Types
+  type SystemicRiskManager,
+  type SystemicRiskSystemStatus,
+  type SystemicRiskConfig,
+  type SystemicRiskEvent,
+  type SystemicRiskEventCallback,
+  // Note: exported as SystemicRiskCircuitBreakerState to avoid conflict with dao-governance module
+  type CircuitBreakerState as SystemicRiskCircuitBreakerState,
+  // Note: exported as SystemicRiskCircuitBreakerEvent to avoid conflict with investment module
+  type CircuitBreakerEvent as SystemicRiskCircuitBreakerEvent,
+} from './systemic-risk';
