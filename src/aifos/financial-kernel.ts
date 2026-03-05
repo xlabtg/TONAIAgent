@@ -405,7 +405,7 @@ export class DefaultFinancialKernel implements FinancialKernel {
 
     if (override.targetParameter && override.targetValue !== undefined) {
       previousValue = this.parameters[override.targetParameter];
-      (this.parameters as Record<string, unknown>)[override.targetParameter] = override.targetValue;
+      (this.parameters as unknown as Record<string, unknown>)[override.targetParameter] = override.targetValue;
       newValue = override.targetValue;
     }
 
@@ -439,7 +439,7 @@ export class DefaultFinancialKernel implements FinancialKernel {
   }
 
   updateKernelParameter(key: keyof KernelParameters, value: KernelParameters[typeof key]): void {
-    (this.parameters as Record<string, unknown>)[key] = value;
+    (this.parameters as unknown as Record<string, unknown>)[key] = value;
     this.emitEvent('kernel_parameter_updated', 'info', 'Kernel', `Kernel parameter updated: ${key}`, {
       parameter: key,
       newValue: value,
