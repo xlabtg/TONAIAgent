@@ -18,24 +18,25 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 ## Table of Contents
 
 1. [AGFI: AI-native Global Financial Infrastructure](#agfi-ai-native-global-financial-infrastructure)
-2. [MVP Overview](#mvp-overview)
-3. [Overview](#overview)
-4. [Key Features](#key-features)
-5. [System Architecture](#system-architecture)
-6. [Core Modules](#core-modules)
-7. [Technology Stack](#technology-stack)
-8. [Prerequisites](#prerequisites)
-9. [Installation](#installation)
-10. [Configuration](#configuration)
-11. [Quick Start](#quick-start)
-12. [Telegram Integration](#telegram-integration)
-13. [Admin Dashboard](#admin-dashboard)
-14. [Security Best Practices](#security-best-practices)
-15. [Contributing](#contributing)
-16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-17. [Roadmap](#roadmap)
-18. [Community](#community)
-19. [License](#license)
+2. [GAEI: Global Autonomous Economic Infrastructure](#gaei-global-autonomous-economic-infrastructure)
+3. [MVP Overview](#mvp-overview)
+4. [Overview](#overview)
+5. [Key Features](#key-features)
+6. [System Architecture](#system-architecture)
+7. [Core Modules](#core-modules)
+8. [Technology Stack](#technology-stack)
+9. [Prerequisites](#prerequisites)
+10. [Installation](#installation)
+11. [Configuration](#configuration)
+12. [Quick Start](#quick-start)
+13. [Telegram Integration](#telegram-integration)
+14. [Admin Dashboard](#admin-dashboard)
+15. [Security Best Practices](#security-best-practices)
+16. [Contributing](#contributing)
+17. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
+18. [Roadmap](#roadmap)
+19. [Community](#community)
+20. [License](#license)
 
 ---
 
@@ -118,6 +119,111 @@ console.log('Active Corridors:', status.activeLiquidityCorridors);
 - SWIFT/SEPA/Fedwire bank connectivity
 - RWA custodial mapping and verification
 - Multi-signature governance with quorum voting
+
+---
+
+## GAEI: Global Autonomous Economic Infrastructure
+
+> **From Financial Infrastructure → Economic Infrastructure**: GAEI expands the platform from financial coordination to comprehensive AI-coordinated global economic infrastructure.
+
+### What is GAEI?
+
+The Global Autonomous Economic Infrastructure (GAEI) is a distributed, AI-coordinated economic layer that:
+
+- **Manages capital flows** at a macro level across jurisdictions
+- **Coordinates digital assets** with real economy integration
+- **Supports sovereign systems** through dedicated economic nodes
+- **Enables AI-driven production & allocation** with governance bounds
+- **Operates across jurisdictions** with compliance-aware routing
+- **Integrates financial and real economy layers** including trade finance, infrastructure, and supply chains
+
+### Evolution Path
+
+```
+Phase 1: Autonomous Capital Markets Stack (ACMS)
+    ↓
+Phase 2: AI-native Global Financial Infrastructure (AGFI)
+    ↓
+Phase 3: Global Autonomous Economic Infrastructure (GAEI)
+```
+
+### Six Core Infrastructure Domains
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│             GAEI - Global Autonomous Economic Infrastructure                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Capital Coordination Layer     │  Macro-level capital allocation        │
+│  2. Real Economy Integration       │  RWA, commodities, trade finance       │
+│  3. AI Economic Orchestration      │  Stress simulations, risk modeling     │
+│  4. Monetary Coordination          │  Sovereign assets, treasury reserves   │
+│  5. Economic Node Architecture     │  Sovereign, institutional, AI nodes    │
+│  6. Stability Dashboard            │  Global monitoring, alerts, trends     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Quick GAEI Example
+
+```typescript
+import { createGAEIManager } from '@tonaiagent/core/gaei';
+
+const gaei = createGAEIManager();
+
+// Register a sovereign economic node
+const sovereignNode = gaei.nodeArchitecture.registerSovereignNode({
+  name: 'Central Bank Digital Hub',
+  nodeType: 'sovereign_node',
+  jurisdiction: 'SG',
+  parentNetwork: 'AGFN',
+  initialCapital: 50_000_000_000,
+  sovereignType: 'central_bank',
+  countryCode: 'SG',
+  regulatoryAuthority: 'MAS',
+  reserveHoldings: 30_000_000_000,
+  monetaryPolicyRole: 'Monetary authority',
+});
+
+// Create tokenized infrastructure financing
+const project = gaei.realEconomyIntegration.createInfrastructureFinancing({
+  projectName: 'ASEAN Digital Payment Rail',
+  projectType: 'digital',
+  totalInvestment: 200_000_000,
+  jurisdiction: 'SG',
+  expectedReturn: 7.5,
+  projectDurationYears: 7,
+  riskRating: 'AA',
+  tokenize: true,
+  chain: 'ton',
+});
+
+// Run macro stress simulation
+const stressTest = gaei.aiOrchestration.runStressSimulation({
+  scenarioName: 'Regional Liquidity Stress',
+  scenarioType: 'currency_crisis',
+  shockMagnitude: 15,
+});
+
+// Generate stability dashboard
+const dashboard = gaei.stabilityDashboard.generateDashboard();
+console.log('Stability Score:', dashboard.overallStabilityScore);
+console.log('Stability Level:', dashboard.stabilityLevel);
+
+// Get full system status
+const status = gaei.getSystemStatus();
+console.log('GAEI v' + status.version);
+console.log('Total Capital Managed:', status.totalCapitalManaged);
+console.log('Active Nodes:', status.activeNodes);
+```
+
+**Full GAEI Documentation**: [docs/gaei.md](docs/gaei.md)
+
+**Key Capabilities**:
+- Macro-level capital flow coordination across jurisdictions
+- Real economy integration (RWA, commodities, infrastructure, trade finance)
+- AI-driven economic orchestration with stress testing and risk modeling
+- Multi-layer monetary coordination with sovereign digital assets
+- Global economic node architecture for sovereign and institutional participants
+- Real-time stability dashboard with alerts and trend analysis
 
 ---
 
@@ -362,6 +468,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | Module | MVP Status | Description | Documentation |
 |--------|-----------|-------------|---------------|
 | **AGFI** | ✅ Phase 2 | AI-native Global Financial Infrastructure (6 pillars) | [docs/agfi.md](docs/agfi.md) |
+| **GAEI** | ✅ Phase 3 | Global Autonomous Economic Infrastructure (6 domains) | [docs/gaei.md](docs/gaei.md) |
 | **Demo Agent** | ✅ MVP Core | Agent REST API, 4 strategies, risk manager | (src/demo-agent) |
 | **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine | (src/agent-runtime) |
 | **AI Layer** | ✅ MVP Core | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
