@@ -841,3 +841,50 @@ export {
   type DaoEventType,
   type DaoEventCallback,
 } from './dao-governance';
+
+// Autonomous Capital Markets Stack (ACMS) — Issue #125
+// Vertically integrated, AI-native capital markets infrastructure on TON.
+// Unifies 9 protocol layers: Asset → Agent/Fund → Liquidity → Prime Brokerage →
+// Clearing/Settlement → Risk/Stability → Monetary/Treasury → Inter-Protocol → Governance
+// Replaces BlackRock, Goldman Sachs, NASDAQ, DTCC, Federal Reserve with AI-coordinated stack.
+// Note: Import separately from '@tonaiagent/core/acms' for full access to all 9 layers.
+export * as ACMS from './acms';
+export {
+  // Unified manager
+  DefaultACMSManager,
+  createACMSManager,
+  DEFAULT_ACMS_CONFIG,
+  // Layer 1: Asset Layer
+  DefaultAssetLayerManager,
+  createAssetLayerManager,
+  // Layer 2: Agent & Fund Layer
+  DefaultAgentFundLayerManager,
+  createAgentFundLayerManager,
+  // Layer 3: Liquidity Layer
+  DefaultLiquidityLayerManager,
+  createLiquidityLayerManager,
+  // Layer 4: Prime Brokerage Layer (ACMS)
+  DefaultPrimeBrokerageLayerManager,
+  createPrimeBrokerageLayerManager,
+  // Layer 5: Clearing & Settlement Layer
+  DefaultClearingSettlementLayerManager,
+  createClearingSettlementLayerManager,
+  // Layer 6: Risk & Stability Layer
+  DefaultRiskStabilityLayerManager,
+  createRiskStabilityLayerManager,
+  // Layer 7: Monetary & Treasury Layer
+  DefaultMonetaryTreasuryLayerManager,
+  createMonetaryTreasuryLayerManager,
+  // Layer 8: Inter-Protocol Layer
+  DefaultInterProtocolLayerManager,
+  createInterProtocolLayerManager,
+  // Layer 9: Governance Layer (ACMS)
+  DefaultGovernanceLayerManager,
+  createGovernanceLayerManager,
+  // Types
+  type ACMSManager,
+  type ACMSConfig,
+  type ACMSStackStatus,
+  type ACMSEvent,
+  type ACMSEventCallback,
+} from './acms';

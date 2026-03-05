@@ -269,6 +269,68 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **ACMS** | ❌ Phase 4 | Autonomous Capital Markets Stack — 9-layer unified infrastructure | [docs/acms.md](docs/acms.md) |
+
+---
+
+## Autonomous Capital Markets Stack (ACMS)
+
+TONAIAgent implements the **Autonomous Capital Markets Stack** — a vertically integrated, AI-native capital markets infrastructure that replaces the fragmented traditional financial system with a unified, programmable, AI-coordinated protocol on TON.
+
+### Institutional Comparison
+
+| ACMS Layer | Replaces |
+|---|---|
+| Asset Layer (L1) + Agent/Fund Layer (L2) | BlackRock / Global Asset Managers |
+| Liquidity Layer (L3) | NASDAQ / Institutional Liquidity Venues |
+| Prime Brokerage Layer (L4) | Goldman Sachs / Prime Brokers |
+| Clearing & Settlement Layer (L5) | DTCC / Central Counterparties (CCPs) |
+| Risk & Stability Layer (L6) | Basel Committee / Prudential Regulators |
+| Monetary & Treasury Layer (L7) | Federal Reserve / Central Banks |
+| Inter-Protocol Layer (L8) | SWIFT / BIS Cross-border Infrastructure |
+| Governance Layer (L9) | SEC / CFTC / Protocol DAO |
+
+### Stack Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Layer 9: Governance         — DAO governance, parameter tuning      │
+│  Layer 8: Inter-Protocol     — IPLS, cross-chain routing, passports  │
+│  Layer 7: Monetary/Treasury  — Emission control, treasury allocation  │
+│  Layer 6: Risk & Stability   — Circuit breakers, Stability Index      │
+│  Layer 5: Clearing/Settlement— AI netting, collateral, default rescue │
+│  Layer 4: Prime Brokerage    — Margin, leverage, capital efficiency   │
+│  Layer 3: Liquidity          — Smart routing, cross-chain liquidity   │
+│  Layer 2: Agent & Fund       — AI hedge funds, strategy agents        │
+│  Layer 1: Asset              — Crypto, RWA tokenization, funds        │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Quick Start
+
+```typescript
+import { createACMSManager } from '@tonaiagent/core/acms';
+
+const acms = createACMSManager({ networkId: 'ton-mainnet', environment: 'mainnet' });
+
+// Layer 1: Issue a tokenized fund
+const fund = acms.assetLayer.createTokenizedFund({ ... });
+
+// Layer 2: Deploy AI agents
+const agent = acms.agentFundLayer.deployAgent({ type: 'arbitrage_agent', ... });
+
+// Layer 3: Route a large order
+const route = acms.liquidityLayer.routeOrder({ orderType: 'twap', amountIn: 1_000_000, ... });
+
+// Layer 6: Monitor stability
+const stability = acms.riskStabilityLayer.computeStabilityIndex({ liquidityScore: 85, ... });
+console.log('Stability Index:', stability.score, stability.riskLevel);
+
+// Full stack status
+const status = acms.getStackStatus();
+```
+
+See [docs/acms.md](docs/acms.md) for full documentation.
 
 ---
 
