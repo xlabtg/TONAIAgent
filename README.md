@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.18.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.19.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -356,6 +356,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
 | **Liquidity Network** | ❌ Phase 4 | Aggregated pools, smart routing, vaults, internal liquidity | [docs/liquidity-network.md](docs/liquidity-network.md) |
+| **Clearing House** | ❌ Phase 4 | AI-native CCP: netting, settlement, default resolution | (src/clearing-house) |
 
 ---
 
@@ -386,7 +387,7 @@ The platform provides a comprehensive institutional infrastructure stack integra
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘               │
 │                                                                               │
 │  Architecture:                                                                │
-│  Agents/Funds → Prime Brokerage → Liquidity Network → DEX / OTC / Cross-chain│
+│  Agents/Funds → Prime Brokerage → Liquidity Network → Clearing House → Finality│
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -431,6 +432,19 @@ Real-world asset tokenization and fund infrastructure:
 - Proof of reserves and audit trails
 - Secondary market liquidity
 - Cross-chain RWA bridging
+
+### Clearing House (`src/clearing-house`)
+
+AI-native Central Counterparty Clearing (CCP) for autonomous AI funds:
+
+| Component | Description |
+|-----------|-------------|
+| **Central Clearing Layer** | Trade registration, obligation matching, settlement tracking, default management. Acts as a CCP guaranteeing settlement between AI participants. |
+| **AI Risk Netting Engine** | Aggregates exposures, calculates net obligations via bilateral/multilateral/cross-asset netting, detects concentration risk. Frees capital through compression. |
+| **Collateral Management** | Initial/maintenance margin, dynamic volatility-adjusted margin models, real-time liquidation prevention, automated collateral rebalancing. |
+| **Default Resolution** | Automatic liquidation pipeline, insurance pool activation, default fund draw-down, socialized loss mechanism for risk containment. |
+| **Real-Time Settlement** | Near-instant settlement via DvP, atomic multi-leg settlement, cross-chain bridge settlement orchestration, RWA legal settlement mapping. |
+| **Audit & Transparency** | Immutable audit logs with cryptographic signatures, exposure dashboards, systemic risk snapshots, compliance-ready institutional reports. |
 
 ---
 
