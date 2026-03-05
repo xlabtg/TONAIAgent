@@ -269,94 +269,96 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **Liquidity Network** | ❌ Phase 4 | Aggregated pools, smart routing, vaults, internal liquidity | [docs/liquidity-network.md](docs/liquidity-network.md) |
 | **Clearing House** | ❌ Phase 4 | AI-native CCP: netting, settlement, default resolution | (src/clearing-house) |
 
 ---
 
-## Institutional Settlement & Clearing
+## Institutional Infrastructure Layer
 
-The TON AI Agent platform includes a comprehensive **AI-native Clearing House** that provides institutional-grade clearing and settlement infrastructure for autonomous AI funds and agents.
+> Built on The Open Network for institutional-grade autonomous finance
 
-### Architecture
+The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, and Clearing capabilities.
 
 ```
-Agents / Funds → Prime Brokerage → Liquidity Network → Clearing House → Settlement Finality
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Institutional Infrastructure Layer                      │
+│                                                                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │
+│  │  Prime          │  │  Liquidity      │  │  Risk Engine    │               │
+│  │  Brokerage      │  │  Network        │  │                 │               │
+│  │                 │  │                 │  │  - VaR/Stress   │               │
+│  │  - Custody      │  │  - Aggregation  │  │  - Margin       │               │
+│  │  - Margin       │  │  - Smart Route  │  │  - Limits       │               │
+│  │  - Capital Eff. │  │  - Vaults       │  │  - Exposure     │               │
+│  │  - Securities   │  │  - Int. Pools   │  │                 │               │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘               │
+│           │                    │                     │                       │
+│  ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐               │
+│  │  RWA &          │  │  Institutional  │  │  Clearing &     │               │
+│  │  Tokenized      │  │  Network        │  │  Settlement     │               │
+│  │  Funds          │  │  (Partners)     │  │                 │               │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘               │
+│                                                                               │
+│  Architecture:                                                                │
+│  Agents/Funds → Prime Brokerage → Liquidity Network → Clearing House → Finality│
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Components
+### Prime Brokerage (`src/prime-brokerage`)
+
+Institutional-grade prime brokerage for autonomous AI funds:
 
 | Component | Description |
 |-----------|-------------|
-| **Central Clearing Layer** | Trade registration, obligation matching, settlement tracking, default management. Acts as a Central Counterparty Clearing (CCP) guaranteeing settlement between AI participants. |
+| **Multi-Fund Custody** | Centralized capital pools, multi-agent allocation, internal clearing |
+| **Margin & Leverage** | Risk-based leverage, dynamic margin, volatility-adjusted collateral |
+| **Risk Aggregation** | Portfolio-level exposure, systemic risk modeling, VaR and stress tests |
+| **Capital Efficiency** | Idle capital optimization, yield stacking, cross-fund routing |
+| **Institutional Reporting** | NAV calculations, risk exposure reports, audit logs |
+| **Securities Lending** | Token lending, agent-to-agent liquidity, RWA-backed lending |
+| **Cross-Chain Brokerage** | Multi-chain capital, cross-chain collateral, bridge-aware margin |
+
+### Liquidity Network (`src/liquidity-network`)
+
+Deep liquidity infrastructure for institutional capital routing:
+
+| Component | Description |
+|-----------|-------------|
+| **Aggregation Layer** | DEXs, OTC desks, agent liquidity, cross-chain bridges |
+| **Smart Order Routing** | Slippage optimization, gas-aware routing, latency optimization |
+| **Internal Pools** | Agent-to-agent lending, treasury-to-fund routing, capital reuse |
+| **Deep Liquidity Vaults** | Stablecoin, RWA, and hedging pool infrastructure |
+| **Risk-Controlled Execution** | Prime brokerage limits, real-time exposure checks, circuit breakers |
+
+### Risk Engine
+
+Integrated across Prime Brokerage and Liquidity Network:
+- Pre-trade risk validation with configurable limits
+- Real-time pair exposure and concentration monitoring
+- Post-trade volume tracking and daily limit enforcement
+- Automated suspension on limit breach
+
+### RWA & Tokenized Funds (`src/rwa`)
+
+Real-world asset tokenization and fund infrastructure:
+- Asset-backed token management
+- Proof of reserves and audit trails
+- Secondary market liquidity
+- Cross-chain RWA bridging
+
+### Clearing House (`src/clearing-house`)
+
+AI-native Central Counterparty Clearing (CCP) for autonomous AI funds:
+
+| Component | Description |
+|-----------|-------------|
+| **Central Clearing Layer** | Trade registration, obligation matching, settlement tracking, default management. Acts as a CCP guaranteeing settlement between AI participants. |
 | **AI Risk Netting Engine** | Aggregates exposures, calculates net obligations via bilateral/multilateral/cross-asset netting, detects concentration risk. Frees capital through compression. |
 | **Collateral Management** | Initial/maintenance margin, dynamic volatility-adjusted margin models, real-time liquidation prevention, automated collateral rebalancing. |
 | **Default Resolution** | Automatic liquidation pipeline, insurance pool activation, default fund draw-down, socialized loss mechanism for risk containment. |
 | **Real-Time Settlement** | Near-instant settlement via DvP, atomic multi-leg settlement, cross-chain bridge settlement orchestration, RWA legal settlement mapping. |
 | **Audit & Transparency** | Immutable audit logs with cryptographic signatures, exposure dashboards, systemic risk snapshots, compliance-ready institutional reports. |
-
-### Quick Start
-
-```typescript
-import { createClearingHouseManager } from '@tonaiagent/core/clearing-house';
-
-const ch = createClearingHouseManager();
-
-// Register AI fund participants
-const fundAlpha = ch.clearing.registerParticipant({ name: 'Alpha AI Fund', type: 'ai_fund' });
-const fundBeta = ch.clearing.registerParticipant({ name: 'Beta AI Fund', type: 'ai_fund' });
-
-// Post collateral
-ch.collateral.postCollateral({
-  participantId: fundAlpha.id,
-  assetId: 'USDT', assetName: 'Tether USD', collateralType: 'stablecoin',
-  quantity: 50000, marketValue: 50000, heldFor: 'initial_margin',
-});
-
-// Register cross-fund trades
-const trade1 = ch.clearing.registerTrade({
-  buyerParticipantId: fundAlpha.id, sellerParticipantId: fundBeta.id,
-  assetId: 'TON', assetName: 'TON', assetClass: 'crypto',
-  quantity: 10000, price: 5.0,
-});
-
-// Run AI netting to compress gross exposure
-const allTrades = ch.clearing.listTrades();
-const nettingRun = ch.netting.runMultilateralNetting(allTrades);
-console.log('Capital freed through netting:', nettingRun.capitalFreed);
-
-// Execute atomic settlement
-const obligations = ch.netting.listObligations();
-const settlement = ch.settlement.createSettlement({
-  obligationId: obligations[0].id,
-  payerParticipantId: fundAlpha.id,
-  receiverParticipantId: fundBeta.id,
-  assetId: 'TON', amount: obligations[0].netPayable,
-});
-ch.settlement.executeSettlement(settlement.id);
-
-// Get system status
-const status = ch.getSystemStatus();
-console.log('Clearing House:', status);
-```
-
-### Capital Efficiency Through Netting
-
-The AI netting engine reduces gross settlement obligations, freeing capital for productive use:
-
-- **Bilateral Netting**: Nets opposing trades between each participant pair
-- **Multilateral Netting**: Aggregates all positions across all participants per asset
-- **Cross-Asset Netting**: Nets total USD exposure across all asset classes
-
-Typical compression ratios of **60-90%** reduce capital requirements significantly.
-
-### Risk Isolation
-
-The default resolution framework protects the system through a layered defense:
-
-1. **Auto-Liquidation** – Seize and liquidate defaulting participant's collateral (95% execution)
-2. **Insurance Pool** – Activates if liquidation proceeds are insufficient
-3. **Default Fund** – Mutualized participant contributions drawn for residual losses
-4. **Socialized Loss** – Last-resort loss distribution across surviving participants (capped at 2%)
 
 ---
 
