@@ -36,9 +36,10 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 17. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
 18. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
 19. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
-20. [Roadmap](#roadmap)
-21. [Community](#community)
-22. [License](#license)
+20. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
+21. [Roadmap](#roadmap)
+22. [Community](#community)
+23. [License](#license)
 
 ---
 
@@ -1713,11 +1714,9 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
 - [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
-<<<<<<< HEAD
-- [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
-=======
 - [x] Global Regulatory Integration Framework (Issue #139) — Jurisdiction-Aware Deployment, Regulatory Mapping Matrix, Compliance Module Interface, Transparency Portal, Audit & Attestation, Regulatory Dialogue
->>>>>>> origin/main
+- [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
+- [x] AIFOS v1 — AI-native Financial Operating System (Issue #143) — Financial Kernel, Financial Modules, AI Orchestration Layer, Application Layer, Permission & Identity Layer, Interoperability Layer
 - [ ] Full decentralization
 
 ---
@@ -1837,6 +1836,139 @@ The GRIF makes the protocol sustainable across regulatory jurisdictions by:
 4. **No single point of control** — Transparency without centralization
 
 **Full GRIF Documentation**: [docs/grif.md](docs/grif.md)
+
+---
+
+## AI-native Financial Operating System (AIFOS)
+
+> **From Financial Network → Financial Operating System**: The AIFOS abstracts the entire infrastructure into a programmable, modular, AI-coordinated financial OS — comparable to Windows/iOS/Linux, but for capital markets & global finance.
+
+### What is AIFOS?
+
+The AI-native Financial Operating System (AIFOS) transforms the platform from a global financial network into a programmable financial operating system that:
+
+- **Manages capital** — Kernel-level capital state management with risk boundaries
+- **Allocates liquidity** — Module-based liquidity routing and optimization
+- **Executes strategies** — AI orchestration layer for agent decision coordination
+- **Controls risk** — Immutable risk caps with stability index triggers
+- **Enforces governance** — Constitutional governance with override mechanisms
+- **Interfaces globally** — Cross-chain abstraction and external API integration
+
+### OS Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                 AIFOS - AI-native Financial Operating System                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Applications (Funds / DAOs / Sovereigns)                                    │
+│                        ↓                                                     │
+│  Financial Modules (Asset / Liquidity / Clearing / Treasury / Compliance)    │
+│                        ↓                                                     │
+│  AI Orchestration Layer (Agent decisions / Risk / Crisis response)           │
+│                        ↓                                                     │
+│  Financial Kernel (Capital state / Risk / Monetary / Governance)             │
+│                        ↓                                                     │
+│  Blockchain Infrastructure (TON + cross-chain)                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Permission & Identity Layer (across all layers)                             │
+│  Interoperability Layer (cross-chain / external APIs / protocol bridges)     │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Six Core Layers
+
+| Layer | Description |
+|-------|-------------|
+| **1. Financial Kernel** | The immutable logic core — capital state management, risk boundaries enforcement, monetary parameter control, governance execution |
+| **2. Financial Modules** | Plug-in modules with defined APIs: Asset, Liquidity, Clearing, Treasury, Compliance — each upgradeable within constitutional limits |
+| **3. AI Orchestration Layer** | Coordinates agent decisions, risk recalibration, capital reallocation, crisis response — bounded by hard risk caps and governance overrides |
+| **4. Application Layer** | Built on top of AIFOS: AI hedge funds, institutional vaults, sovereign allocation nodes, strategy marketplaces, retail finance apps |
+| **5. Permission & Identity Layer** | Institutional role management, node permissions, governance delegation, compliance gating |
+| **6. Interoperability Layer** | Extends IPLS and global routing — cross-chain abstraction, external API integration, protocol-to-protocol compatibility |
+
+### Quick AIFOS Example
+
+```typescript
+import { createAIFOSManager } from '@tonaiagent/core/aifos';
+
+// Initialize the Financial OS
+const aifos = createAIFOSManager();
+
+// Check kernel state
+console.log('Kernel state:', aifos.kernel.getState());
+// → 'active'
+
+// Plug the liquidity module
+const modules = aifos.modules.listModules({ moduleType: 'liquidity' });
+console.log('Liquidity module:', modules[0].name);
+
+// Run AI orchestration decision
+const decision = aifos.orchestration.proposeDecision({
+  agentId: 'agent-001',
+  decisionType: 'capital_reallocation',
+  rationale: 'Optimize yield across modules',
+  targetModules: [modules[0].id],
+  proposedActions: [],
+  estimatedRiskImpact: -5,
+  estimatedCapitalImpact: 1_000_000,
+});
+
+// Execute governance parameter update
+const override = aifos.kernel.applyGovernanceOverride({
+  overrideType: 'parameter_update',
+  proposedBy: 'governance-council',
+  approvalPercent: 67,
+  targetParameter: 'globalRiskCap',
+  targetValue: 'elevated',
+  reason: 'Temporary risk appetite increase',
+});
+
+// Launch a demo application
+const app = aifos.applications.registerApp({
+  name: 'AI Hedge Fund Alpha',
+  appType: 'ai_hedge_fund',
+  developer: 'dev-001',
+  version: '1.0.0',
+  description: 'Autonomous hedge fund running on AIFOS',
+  capitalBudget: 100_000_000,
+});
+
+// Get full system status
+const status = aifos.getSystemStatus();
+console.log('AIFOS Status:', status);
+// → { kernelState: 'active', totalManagedCapitalUSD: ..., currentRiskLevel: ..., ... }
+```
+
+### Strategic Impact
+
+With AIFOS, the project evolves from:
+
+> **Global financial network** → **Programmable financial operating system**
+
+This enables:
+
+- **Ecosystem expansion** — Others can build applications on top without touching the core kernel
+- **Institutional integration** — Institutions can integrate as modules with defined APIs
+- **Sovereign deployment** — Sovereigns can deploy customized AIFOS instances
+- **Developer extensibility** — Developers can extend functionality through the module system
+
+### Governance Enforcement
+
+The Financial Kernel enforces constitutional governance:
+
+- **Hard risk caps** — Immutable boundaries that cannot be overridden
+- **Stability index triggers** — Automatic actions when stability drops below thresholds
+- **Governance quorum** — Parameter updates require constitutional approval (default: 51%)
+- **Emergency halt** — Kernel can halt the entire system when critical thresholds are breached
+
+### Module Interoperability
+
+Each Financial Module:
+
+- Has a **defined API** — Standard interface for operations
+- Is **upgradeable** — Can be updated without kernel changes
+- Operates within **constitutional limits** — Bounded by kernel parameters
+- Emits **typed events** — All operations are auditable
 
 ---
 
