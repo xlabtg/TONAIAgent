@@ -171,6 +171,31 @@ TON AI Agent is a comprehensive platform that enables:
 | **DAO Governance** | Proposal creation, voting, and execution |
 | **Anti-Exploit** | Sybil resistance, rate limiting, emission controls |
 
+### Protocol Constitution & Governance Charter
+
+The Protocol Constitution is the foundational constitutional layer that defines the protocol's governance structure, AI authority boundaries, and immutable protections.
+
+```
+Token Holders (DAO)
+      ↓
+Governance Proposals → AI Advisory Analysis → Risk Oversight Review
+      ↓
+Vote & Timelock → On-chain Execution
+      ↓
+Constitutional Limits (Hard limits · AI prohibition list · Immutable clauses)
+```
+
+| Section | Description |
+|---------|-------------|
+| **Foundational Principles** | Protocol purpose, economic mission, risk tolerance, decentralization commitment |
+| **Governance Architecture** | Token holder DAO, treasury council, risk oversight council, emergency committee, AI advisory layer |
+| **AI Authority Spec** | Bounded autonomous actions, advisory-only actions, and absolutely prohibited actions |
+| **Risk Boundaries** | Immutable hard limits (max leverage, systemic exposure, insurance reserve floor) |
+| **Monetary Governance Rules** | Emission policy, inflation/deflation bounds, AI monetary adjustment limits |
+| **Emergency Framework** | Trigger conditions, emergency powers, auto-sunset (max 7 days), post-emergency review |
+| **Amendment Process** | Community review → audit → DAO vote → timelock → enactment; supermajority for constitutional changes |
+| **Institutional Compliance** | KYC/AML, custody standards, RWA regulatory mapping, jurisdiction-aware rules |
+
 ---
 
 ## System Architecture
@@ -269,6 +294,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **Protocol Constitution** | ❌ Phase 4 | Governance charter, AI authority spec, risk hard limits, emergency framework | (src/protocol-constitution) |
 
 ---
 
