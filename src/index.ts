@@ -841,3 +841,58 @@ export {
   type DaoEventType,
   type DaoEventCallback,
 } from './dao-governance';
+
+// Inter-Protocol Liquidity Standard (Issue #124)
+// Standardized framework for cross-protocol liquidity routing, risk-aware capital
+// allocation, shared clearing logic, and institutional interoperability.
+// Enables any IPLS-compliant protocol to act as a LiquidityProvider or
+// LiquidityConsumer with full on-chain trust guarantees.
+// Architecture: GAAMP → Liquidity Network → IPLS Layer → External Protocols → Cross-chain Liquidity
+// Note: Import separately from '@tonaiagent/core/ipls' for full access.
+export * as IPLSModule from './ipls';
+export {
+  // Unified manager
+  DefaultIPLSManager,
+  createIPLSManager,
+  DEFAULT_IPLS_CONFIG,
+  // Liquidity Standard
+  DefaultLiquidityStandardManager,
+  createLiquidityStandardManager,
+  // Cross-Protocol Risk
+  DefaultCrossProtocolRiskManager,
+  createCrossProtocolRiskManager,
+  // Liquidity Passport
+  DefaultLiquidityPassportManager,
+  createLiquidityPassportManager,
+  // Adapter Layer
+  DefaultAdapterLayerManager,
+  createAdapterLayerManager,
+  // Protocol API
+  DefaultProtocolApiManager,
+  createProtocolApiManager,
+  // Types
+  type IPLSManager,
+  type IPLSConfig,
+  type IPLSHealth,
+  type IPLSEventCallback,
+  type LiquidityProvider,
+  type LiquidityConsumer,
+  type LiquidityRequest,
+  type LiquidityResponse,
+  type LiquidityRoute,
+  type ExposureReport,
+  type CrossProtocolRiskAssessment,
+  type LiquidityPassport,
+  type CrossChainAdapter,
+  type ClearingSession,
+  type CapitalRequest,
+  type ReportingPayload,
+  type RiskDisclosure,
+  type GovernanceHook,
+  type IPLSEvent,
+  type LiquidityStandardManager,
+  type CrossProtocolRiskManager,
+  type LiquidityPassportManager,
+  type AdapterLayerManager,
+  type ProtocolApiManager,
+} from './ipls';

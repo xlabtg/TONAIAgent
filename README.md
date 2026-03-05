@@ -269,6 +269,125 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **Inter-Protocol Liquidity Standard (IPLS)** | ❌ Phase 4 | Cross-protocol liquidity routing, risk-aware capital allocation, clearing, and institutional interoperability | (src/ipls) |
+
+---
+
+## Inter-Protocol Liquidity Standard (IPLS)
+
+IPLS v1 is a standardized cross-protocol liquidity and interoperability framework that enables any compliant protocol on The Open Network to act as a `LiquidityProvider` or `LiquidityConsumer` with institutional-grade trust guarantees.
+
+### Architecture
+
+```
+GAAMP → Liquidity Network → IPLS Layer → External Protocols → Cross-chain Liquidity
+```
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| **LiquidityStandard** | IPLS v1 provider/consumer interfaces — deposit, withdraw, quote, route, reportExposure, requestLiquidity, returnLiquidity, reportRisk |
+| **CrossProtocolRisk** | External protocol exposure assessment, liquidity depth analysis, volatility scoring, smart contract risk, AI-driven capital allocation |
+| **LiquidityPassport** | On-chain capital origin verification, risk scoring, compliance status, jurisdictional flags, credit history, endorsements |
+| **AdapterLayer** | Cross-chain vault management, bridge abstraction, gas-aware routing, circuit-breaker failover |
+| **ProtocolAPI** | Capital request standards, reporting format, risk disclosure, governance hooks |
+
+### Quick Start
+
+```typescript
+import { createIPLSManager } from '@tonaiagent/core/ipls';
+
+const ipls = createIPLSManager({
+  version: '1.0.0',
+  crossChainEnabled: true,
+  aiRiskEnabled: true,
+  governanceEnabled: true,
+});
+
+// Register a liquidity provider
+const provider = await ipls.liquidity.registerProvider({
+  name: 'TON AMM Pool',
+  type: 'dex',
+  chainIds: ['ton'],
+  supportedAssets: ['ton', 'usdt', 'usdc'],
+});
+await ipls.liquidity.updateProviderStatus(provider.id, 'active');
+await ipls.liquidity.deposit(provider.id, 'usdt', '1000000', 'ton');
+
+// Issue a Liquidity Passport
+const passport = await ipls.passport.issuePassport({
+  holderId: provider.id,
+  holderName: provider.name,
+  capitalOrigin: { primaryChain: 'ton', capitalType: 'native' },
+  compliance: { status: 'compliant', kycLevel: 'institutional' },
+});
+
+// Assess cross-protocol risk with AI insights
+const assessment = await ipls.risk.assessProtocol({
+  protocolId: provider.id,
+  protocolName: provider.name,
+  includeAIInsights: true,
+});
+console.log(`Risk Tier: ${assessment.riskTier}, Score: ${assessment.overallScore}`);
+
+// Register a cross-chain adapter
+const adapter = await ipls.adapter.registerAdapter({
+  name: 'TON↔ETH Bridge',
+  bridgeType: 'lock_mint',
+  supportedChains: ['ton', 'ethereum'],
+  supportedAssets: ['usdt', 'usdc'],
+  config: {},
+});
+await ipls.adapter.setAdapterStatus(adapter.id, 'active');
+
+// Request liquidity (consumer side)
+const consumer = await ipls.liquidity.registerConsumer({
+  name: 'Derivatives Protocol',
+  type: 'derivatives',
+  requestedChains: ['ton'],
+  preferredAssets: ['usdt'],
+});
+await ipls.liquidity.updateConsumerStatus(consumer.id, 'active');
+
+const response = await ipls.liquidity.requestLiquidity(consumer.id, {
+  id: 'req_001',
+  consumerId: consumer.id,
+  asset: 'usdt',
+  amount: '50000',
+  targetChain: 'ton',
+  urgency: 'standard',
+  strategy: 'ai_optimized',
+  maxFeeBps: 50,
+  deadline: new Date(Date.now() + 3600000),
+  createdAt: new Date(),
+});
+console.log(`Liquidity ${response.approved ? 'approved' : 'rejected'}: ${response.allocatedAmount}`);
+
+// Submit a governance proposal
+const proposal = await ipls.api.proposeGovernanceAction({
+  action: 'fee_adjustment',
+  targetModule: 'liquidity_standard',
+  proposedBy: provider.id,
+  parameters: { newFeesBps: 8 },
+  rationale: 'Reduce fees to improve capital efficiency',
+  quorumRequired: 50,
+  votingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+});
+
+console.log('IPLS Health:', ipls.getHealth());
+```
+
+### Key IPLS Features
+
+- **Standardized Interfaces**: `LiquidityProvider` and `LiquidityConsumer` follow IPLS v1 spec with defined deposit/withdraw/quote/route/expose methods
+- **Cross-Protocol Risk Scoring**: Multi-dimensional risk assessment covering smart contract safety, liquidity depth, volatility, concentration, and operational risk
+- **AI-Driven Allocation**: ML-based capital allocation recommendations with scenario analysis and contagion risk modeling
+- **Liquidity Passport**: On-chain verifiable protocol identity with capital origin proof, credit history, compliance status, and peer endorsements
+- **Adapter Abstraction**: Unified bridge API supporting lock-mint, burn-mint, atomic swap, optimistic, and ZK-proof bridge types
+- **Gas-Aware Routing**: Dynamic gas price estimation with configurable buffers, chain-specific limits, and failover adapter support
+- **Clearing Compatibility**: Bilateral and multilateral netting, portable collateral, configurable haircuts, and settlement finality guarantees
+- **Governance Hooks**: On-chain parameter governance with quorum voting, proposal lifecycle, and execution via multi-sig
 
 ---
 
