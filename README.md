@@ -1,13 +1,15 @@
 # TON AI Agent Platform
 
-> **AI-Native Autonomous Finance Infrastructure for The Open Network**
+> **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.7.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.19.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
 
-TON AI Agent is a production-grade platform for deploying autonomous AI agents on the TON blockchain. The platform combines multi-provider AI orchestration (Groq-first), institutional-grade security, and a comprehensive strategy engine to enable intelligent, self-operating financial agents.
+TON AI Agent is an institutional-grade platform for global AI-native capital coordination on the TON blockchain. The platform implements the **AI-native Global Financial Infrastructure (AGFI)** — comparable in systemic importance to SWIFT, IMF, and BIS, but with AI-coordination, on-chain transparency, programmability, and borderless design.
+
+> **🏛️ AGFI Status**: The platform has been formalized as global AI-native financial infrastructure. The AGFI module implements all six architectural pillars: Global Capital Layer, Global Liquidity Fabric, AI Systemic Coordination, Autonomous Monetary Infrastructure, Governance & Institutional Alignment, and Interoperability & Global Integration. See [docs/agfi.md](docs/agfi.md) for the complete AGFI specification.
 
 > **🚀 MVP Status**: The current development focus is the MVP — delivering the core demo flow end-to-end. See the [MVP Architecture](docs/mvp-architecture.md) and [MVP Feature Checklist](docs/mvp-checklist.md) for scope and priorities.
 
@@ -15,24 +17,107 @@ TON AI Agent is a production-grade platform for deploying autonomous AI agents o
 
 ## Table of Contents
 
-1. [MVP Overview](#mvp-overview)
-2. [Overview](#overview)
-3. [Key Features](#key-features)
-4. [System Architecture](#system-architecture)
-5. [Core Modules](#core-modules)
-6. [Technology Stack](#technology-stack)
-7. [Prerequisites](#prerequisites)
-8. [Installation](#installation)
-9. [Configuration](#configuration)
-10. [Quick Start](#quick-start)
-11. [Telegram Integration](#telegram-integration)
-12. [Admin Dashboard](#admin-dashboard)
-13. [Security Best Practices](#security-best-practices)
-14. [Contributing](#contributing)
-15. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-16. [Roadmap](#roadmap)
-17. [Community](#community)
-17. [License](#license)
+1. [AGFI: AI-native Global Financial Infrastructure](#agfi-ai-native-global-financial-infrastructure)
+2. [MVP Overview](#mvp-overview)
+3. [Overview](#overview)
+4. [Key Features](#key-features)
+5. [System Architecture](#system-architecture)
+6. [Core Modules](#core-modules)
+7. [Technology Stack](#technology-stack)
+8. [Prerequisites](#prerequisites)
+9. [Installation](#installation)
+10. [Configuration](#configuration)
+11. [Quick Start](#quick-start)
+12. [Telegram Integration](#telegram-integration)
+13. [Admin Dashboard](#admin-dashboard)
+14. [Security Best Practices](#security-best-practices)
+15. [Contributing](#contributing)
+16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
+17. [Roadmap](#roadmap)
+18. [Community](#community)
+19. [License](#license)
+
+---
+
+## AGFI: AI-native Global Financial Infrastructure
+
+> **From Protocol → Infrastructure**: TON AI Agent is now formalized as institutional-grade global capital coordination infrastructure — AI-native, on-chain transparent, programmable, and borderless.
+
+### What is AGFI?
+
+The AI-native Global Financial Infrastructure (AGFI) transforms the platform from a DeFi protocol into a candidate architecture for next-generation global financial coordination, comparable to:
+
+| Traditional System | AGFI Equivalent | Key Capability |
+|---|---|---|
+| SWIFT | Global Liquidity Fabric + Interoperability | Cross-chain settlement corridors |
+| IMF | AI Systemic Coordination Layer | Global exposure mapping & stabilization |
+| BIS | Autonomous Monetary Infrastructure | Multi-asset reserves & emission control |
+| DTCC | Global Capital Layer | Institutional clearing & custody |
+
+### Six Architectural Pillars
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│               AGFI - AI-native Global Financial Infrastructure               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Global Capital Layer      │  Sovereign funds, institutional allocators  │
+│  2. Global Liquidity Fabric   │  Cross-chain corridors, RWA bridges         │
+│  3. AI Systemic Coordination  │  Exposure mapping, capital adequacy         │
+│  4. Autonomous Monetary       │  Multi-asset treasury, emission control     │
+│  5. Governance & Alignment    │  Jurisdiction modules, sovereign onboarding │
+│  6. Interoperability          │  Cross-chain messaging, bank connectors     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Quick AGFI Example
+
+```typescript
+import { createAGFIManager } from '@tonaiagent/core/agfi';
+
+const agfi = createAGFIManager();
+
+// Onboard a sovereign wealth fund
+const fund = agfi.globalCapital.onboardInstitution({
+  name: 'Norges Bank Investment Management',
+  type: 'sovereign_fund',
+  jurisdiction: 'NO',
+  aum: 1_400_000_000_000, // $1.4T
+  complianceTier: 'sovereign',
+});
+
+// Open a cross-chain liquidity corridor
+const corridor = agfi.globalLiquidity.openCorridor({
+  name: 'TON-ETH Institutional',
+  sourceChain: 'ton',
+  destinationChain: 'ethereum',
+  corridorType: 'institutional_corridor',
+  initialLiquidity: 500_000_000,
+});
+
+// Run a systemic risk simulation
+const stress = agfi.systemicCoordination.runStressSimulation({
+  scenarioName: 'Global Credit Event',
+  scenarioType: 'market_crash',
+  shockMagnitude: 30,
+});
+
+// Get full system status
+const status = agfi.getSystemStatus();
+console.log('Risk Level:', status.systemicRiskLevel);
+console.log('Active Corridors:', status.activeLiquidityCorridors);
+```
+
+**Full AGFI Documentation**: [docs/agfi.md](docs/agfi.md)
+
+**Institutional Capabilities**:
+- Cross-border capital flows with jurisdiction-aware compliance
+- Real-time systemic risk monitoring and automated stabilization
+- Sovereign-grade onboarding with multi-stage due diligence
+- Basel-equivalent capital adequacy modeling
+- Yield-backed stabilization reserves
+- SWIFT/SEPA/Fedwire bank connectivity
+- RWA custodial mapping and verification
+- Multi-signature governance with quorum voting
 
 ---
 
@@ -276,6 +361,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 
 | Module | MVP Status | Description | Documentation |
 |--------|-----------|-------------|---------------|
+| **AGFI** | ✅ Phase 2 | AI-native Global Financial Infrastructure (6 pillars) | [docs/agfi.md](docs/agfi.md) |
 | **Demo Agent** | ✅ MVP Core | Agent REST API, 4 strategies, risk manager | (src/demo-agent) |
 | **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine | (src/agent-runtime) |
 | **AI Layer** | ✅ MVP Core | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
