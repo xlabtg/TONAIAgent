@@ -269,7 +269,83 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **Liquidity Network** | ❌ Phase 4 | Aggregated pools, smart routing, vaults, internal liquidity | [docs/liquidity-network.md](docs/liquidity-network.md) |
 | **Inter-Protocol Liquidity Standard (IPLS)** | ❌ Phase 4 | Cross-protocol liquidity routing, risk-aware capital allocation, clearing, and institutional interoperability | (src/ipls) |
+
+---
+
+## Institutional Infrastructure Layer
+
+> Built on The Open Network for institutional-grade autonomous finance
+
+The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, and Clearing capabilities.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Institutional Infrastructure Layer                      │
+│                                                                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │
+│  │  Prime          │  │  Liquidity      │  │  Risk Engine    │               │
+│  │  Brokerage      │  │  Network        │  │                 │               │
+│  │                 │  │                 │  │  - VaR/Stress   │               │
+│  │  - Custody      │  │  - Aggregation  │  │  - Margin       │               │
+│  │  - Margin       │  │  - Smart Route  │  │  - Limits       │               │
+│  │  - Capital Eff. │  │  - Vaults       │  │  - Exposure     │               │
+│  │  - Securities   │  │  - Int. Pools   │  │                 │               │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘               │
+│           │                    │                     │                       │
+│  ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐               │
+│  │  RWA &          │  │  Institutional  │  │  Clearing &     │               │
+│  │  Tokenized      │  │  Network        │  │  Settlement     │               │
+│  │  Funds          │  │  (Partners)     │  │                 │               │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘               │
+│                                                                               │
+│  Architecture:                                                                │
+│  Agents/Funds → Prime Brokerage → Liquidity Network → DEX / OTC / Cross-chain│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Prime Brokerage (`src/prime-brokerage`)
+
+Institutional-grade prime brokerage for autonomous AI funds:
+
+| Component | Description |
+|-----------|-------------|
+| **Multi-Fund Custody** | Centralized capital pools, multi-agent allocation, internal clearing |
+| **Margin & Leverage** | Risk-based leverage, dynamic margin, volatility-adjusted collateral |
+| **Risk Aggregation** | Portfolio-level exposure, systemic risk modeling, VaR and stress tests |
+| **Capital Efficiency** | Idle capital optimization, yield stacking, cross-fund routing |
+| **Institutional Reporting** | NAV calculations, risk exposure reports, audit logs |
+| **Securities Lending** | Token lending, agent-to-agent liquidity, RWA-backed lending |
+| **Cross-Chain Brokerage** | Multi-chain capital, cross-chain collateral, bridge-aware margin |
+
+### Liquidity Network (`src/liquidity-network`)
+
+Deep liquidity infrastructure for institutional capital routing:
+
+| Component | Description |
+|-----------|-------------|
+| **Aggregation Layer** | DEXs, OTC desks, agent liquidity, cross-chain bridges |
+| **Smart Order Routing** | Slippage optimization, gas-aware routing, latency optimization |
+| **Internal Pools** | Agent-to-agent lending, treasury-to-fund routing, capital reuse |
+| **Deep Liquidity Vaults** | Stablecoin, RWA, and hedging pool infrastructure |
+| **Risk-Controlled Execution** | Prime brokerage limits, real-time exposure checks, circuit breakers |
+
+### Risk Engine
+
+Integrated across Prime Brokerage and Liquidity Network:
+- Pre-trade risk validation with configurable limits
+- Real-time pair exposure and concentration monitoring
+- Post-trade volume tracking and daily limit enforcement
+- Automated suspension on limit breach
+
+### RWA & Tokenized Funds (`src/rwa`)
+
+Real-world asset tokenization and fund infrastructure:
+- Asset-backed token management
+- Proof of reserves and audit trails
+- Secondary market liquidity
+- Cross-chain RWA bridging
 
 ---
 
