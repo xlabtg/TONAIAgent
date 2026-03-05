@@ -171,6 +171,17 @@ TON AI Agent is a comprehensive platform that enables:
 | **DAO Governance** | Proposal creation, voting, and execution |
 | **Anti-Exploit** | Sybil resistance, rate limiting, emission controls |
 
+### AI Monetary Policy & Treasury Layer
+
+| Feature | Description |
+|---------|-------------|
+| **Protocol Treasury Vault** | Multi-category reserves: liquidity buffer, insurance fund, strategic capital, stabilization fund |
+| **AI Monetary Engine** | Continuously analyzes stability index, liquidity depth, market volatility to generate policy recommendations |
+| **Adaptive Emission Control** | Phase-based tokenomics: inflation (growth), deflation (stress), burn (profit), incentive boost (liquidity gap) |
+| **Treasury Capital Allocator** | Strategic deployment of reserves with AI-auto / multisig / DAO-vote approval tiers |
+| **Stability-Linked Incentives** | Reward multipliers and yield boosts tied to protocol health and participant behavior |
+| **Monetary Governance** | AI Analysis → DAO Proposal → Vote → Smart Contract Execution with emergency override support |
+
 ---
 
 ## System Architecture
@@ -251,6 +262,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Multi-Agent** | ❌ Phase 2 | Swarm coordination, shared memory, task delegation | [docs/multi-agent.md](docs/multi-agent.md) |
 | **Marketplace** | ❌ Phase 2 | Strategy discovery, copy trading, creator monetization | [docs/marketplace.md](docs/marketplace.md) |
 | **Tokenomics** | ❌ Phase 2 | TONAI token, staking, governance, reputation | [docs/tokenomics.md](docs/tokenomics.md) |
+| **Monetary Policy** | ❌ Phase 2 | AI-driven emission control, treasury management, DAO monetary governance | (src/monetary-policy) |
 | **Institutional** | ❌ Phase 2 | KYC/AML, compliance, reporting, custody | [docs/institutional.md](docs/institutional.md) |
 | **Hedge Fund** | ❌ Phase 2 | Autonomous fund management with AI strategies | [docs/hedgefund.md](docs/hedgefund.md) |
 | **Ecosystem Fund** | ❌ Phase 2 | Grants, incubation, capital allocation | [docs/ecosystem-fund.md](docs/ecosystem-fund.md) |
@@ -753,6 +765,94 @@ const permissions = {
 - Enable multi-layer authorization
 - Configure fraud detection
 - Implement emergency kill switch
+
+---
+
+## AI Monetary Policy & Treasury Layer
+
+The AI Monetary Policy & Treasury Layer is a programmable central bank for the TON AI Agent ecosystem. Inspired conceptually by the Federal Reserve, ECB, and IMF — but transparent, algorithmic, AI-managed, and DAO-governed.
+
+### How Emissions Are Controlled
+
+The **Adaptive Emission Controller** replaces fixed tokenomics with a phase-based adaptive model:
+
+```
+Market Conditions
+       ↓
+AI Monetary Engine (Stability Index + Liquidity + Volatility + Growth)
+       ↓
+Emission Phase Decision:
+  • Growth Phase  → Inflation: boost emissions to incentivize participation
+  • Stress Phase  → Deflation: reduce emissions to stabilize token price
+  • Profit Phase  → Burn: destroy tokens to increase long-term value
+  • Gap Phase     → Incentive Boost: attract liquidity providers
+  • Stable Phase  → Maintain: keep current emission rate
+       ↓
+Adaptive Emission Controller (clamped to min/max bounds)
+```
+
+### How Reserves Are Managed
+
+The **Protocol Treasury Vault** maintains five reserve categories:
+
+| Reserve | Target Allocation | Purpose |
+|---------|------------------|---------|
+| Liquidity Buffer | 30% | Short-term liquidity for withdrawals and operations |
+| Insurance Fund | 20% | Backstop against unexpected losses |
+| Strategic Capital | 20% | Long-term strategic investments and co-investments |
+| Stabilization Fund | 15% | Ecosystem stability interventions |
+| Protocol Reserves | 15% | Core protocol operations and upgrades |
+
+Revenue flows from performance fees, marketplace fees, RWA yield, prime brokerage revenue, and token issuance.
+
+The **Treasury Capital Allocator** deploys reserves with a three-tier approval system:
+- **AI Auto-deploy** (≤5% of treasury): For low-urgency, small deployments
+- **Multi-sig** (5–10%): Requires multiple authorized signers
+- **DAO Vote** (>10%): Full governance vote required
+
+### How Stability Is Enforced
+
+The **Stability-Linked Incentive System** ties rewards to protocol health:
+
+```
+Stability Score + Liquidity Depth + Risk Exposure + Agent Performance
+                              ↓
+                    Incentive Multiplier (0.5x – 2.0x)
+                              ↓
+              Base Yield × Multiplier + Tier Yield Boost
+```
+
+Reward tiers encourage conservative, long-term, capital-disciplined behavior:
+- **Conservative** (≤5% drawdown, 90+ day hold) → +3% yield boost
+- **Balanced** (≤15% drawdown, 30+ day hold) → +1.5% yield boost
+- **Growth** (≤25% drawdown, 7+ day hold) → +0.5% yield boost
+- **Aggressive** → Base yield only
+
+### Why the Token Model Is Sustainable
+
+The adaptive emission model ensures long-term sustainability through:
+
+1. **Demand-driven supply**: Emissions increase when protocol growth demands more participation incentives and decrease when markets are stressed
+2. **Revenue-backed reserves**: Treasury grows from protocol revenue, not token inflation
+3. **Deflationary mechanisms**: Burns reduce supply during high profitability, creating long-term value accrual
+4. **AI-optimized allocation**: Treasury capital is continuously redeployed to maximize yield and minimize risk
+5. **DAO governance**: Token holders vote on major monetary policy changes, ensuring community alignment
+
+### Monetary Governance Flow
+
+```
+AI Analysis (Monetary Policy Engine)
+            ↓
+  Monetary Proposal (type, recommendation, rationale)
+            ↓
+        DAO Vote (7-day voting period, 51% threshold)
+            ↓
+  Execution Smart Contract (2-day timelock)
+            ↓
+  Protocol-wide Economic Impact
+```
+
+Emergency overrides (emission pause, treasury freeze, yield cap) are available for critical situations that cannot wait for the standard governance cycle.
 
 ---
 
