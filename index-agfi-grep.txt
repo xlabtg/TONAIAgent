@@ -1,0 +1,6 @@
+4: * AI-native Global Financial Infrastructure (AGFI) — global capital coordination at
+1064:// AI-native Global Financial Infrastructure (AGFI)
+1072:// Note: Import AGFI module separately from '@tonaiagent/core/agfi'
+1073:// for full access to all AGFI types, managers, and factory functions
+1074:export * as AGFI from './agfi';
+1074 /tmp/gh-issue-solver-1772734072833/src/index.ts

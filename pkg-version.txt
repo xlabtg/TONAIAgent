@@ -1,0 +1,4 @@
+{
+  "version": "2.23.0",
+  "name": "@tonaiagent/core"
+}

@@ -1,0 +1,8 @@
+ai-systemic-coordination.ts
+autonomous-monetary-infrastructure.ts
+global-capital-layer.ts
+global-liquidity-fabric.ts
+governance-institutional-alignment.ts
+index.ts
+interoperability-global-integration.ts
+types.ts
