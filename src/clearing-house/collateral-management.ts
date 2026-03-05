@@ -308,7 +308,7 @@ export class DefaultCollateralManager implements CollateralManager {
     // Update margin account
     const accountToUpdate = this.getOrCreateMarginAccount(participantId);
     accountToUpdate.initialMarginRequired = initialMarginRequired;
-    accountToUpdate.maintenanceMargin = maintenanceMarginRequired;
+    accountToUpdate.maintenanceMarginRequired = maintenanceMarginRequired;
     accountToUpdate.excessMargin = surplus;
     this.marginAccounts.set(participantId, accountToUpdate);
 
@@ -534,6 +534,7 @@ export class DefaultCollateralManager implements CollateralManager {
       const account: ParticipantMarginAccount = {
         participantId,
         initialMarginRequired: 0,
+        maintenanceMarginRequired: 0,
         initialMarginPosted: 0,
         variationMargin: 0,
         excessMargin: 0,

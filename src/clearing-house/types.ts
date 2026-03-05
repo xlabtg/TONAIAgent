@@ -146,6 +146,7 @@ export interface ClearingParticipant {
 export interface ParticipantMarginAccount {
   participantId: ClearingParticipantId;
   initialMarginRequired: number;
+  maintenanceMarginRequired: number;
   initialMarginPosted: number;
   variationMargin: number;
   excessMargin: number;

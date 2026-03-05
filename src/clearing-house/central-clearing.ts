@@ -149,6 +149,7 @@ export class DefaultCentralClearingManager implements CentralClearingManager {
     const marginAccount: ParticipantMarginAccount = {
       participantId: id,
       initialMarginRequired: 0,
+      maintenanceMarginRequired: 0,
       initialMarginPosted: 0,
       variationMargin: 0,
       excessMargin: 0,
