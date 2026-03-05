@@ -1,15 +1,17 @@
 /**
  * TONAIAgent Core
  *
- * Multi-provider AI layer with production-grade security, plugin system, strategy engine,
- * no-code strategy builder, marketplace, copy trading, institutional compliance,
- * omnichain infrastructure, agent launchpad, autonomous hedge fund infrastructure,
- * viral consumer growth engine, AI safety/alignment framework, ecosystem fund, TON Super App
- * (wallet, AI agents, social layer, Telegram Mini App), Telegram-native mobile-first UX,
- * AI-native personal finance, Open Agent Protocol, Enterprise SDK & Developer Platform,
- * token strategy (launch, liquidity flywheel, valuation, simulation), AI-native payments
- * and commerce layer, global regulatory strategy framework, and global institutional
- * network for autonomous finance on TON blockchain.
+ * AI-native Global Financial Infrastructure (AGFI) — global capital coordination at
+ * institutional scale, comparable to SWIFT, IMF, and BIS but with AI-coordination,
+ * on-chain transparency, programmability, and borderless design. Includes multi-provider
+ * AI layer with production-grade security, plugin system, strategy engine, no-code strategy
+ * builder, marketplace, copy trading, institutional compliance, omnichain infrastructure,
+ * agent launchpad, autonomous hedge fund infrastructure, viral consumer growth engine,
+ * AI safety/alignment framework, ecosystem fund, TON Super App (wallet, AI agents, social
+ * layer, Telegram Mini App), Telegram-native mobile-first UX, AI-native personal finance,
+ * Open Agent Protocol, Enterprise SDK & Developer Platform, token strategy (launch, liquidity
+ * flywheel, valuation, simulation), AI-native payments and commerce layer, global regulatory
+ * strategy framework, and global institutional network for autonomous finance on TON blockchain.
  *
  * Features:
  * - Multi-provider AI support (Groq, Anthropic, OpenAI, Google, xAI, OpenRouter)
@@ -841,3 +843,15 @@ export {
   type DaoEventType,
   type DaoEventCallback,
 } from './dao-governance';
+
+// AI-native Global Financial Infrastructure (AGFI)
+// Six interconnected pillars forming institutional-grade global capital coordination:
+// 1. Global Capital Layer - Sovereign funds, institutional allocators, DAO treasuries
+// 2. Global Liquidity Fabric - Cross-chain corridors, RWA bridges, institutional pools
+// 3. AI Systemic Coordination - Exposure mapping, capital adequacy, stress simulation
+// 4. Autonomous Monetary Infrastructure - Multi-asset reserves, emission control
+// 5. Governance & Institutional Alignment - Jurisdiction modules, sovereign onboarding
+// 6. Interoperability & Global Integration - Cross-chain messaging, bank connectors
+// Note: Import AGFI module separately from '@tonaiagent/core/agfi'
+// for full access to all AGFI types, managers, and factory functions
+export * as AGFI from './agfi';
