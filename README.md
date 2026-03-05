@@ -33,9 +33,10 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 14. [Security Best Practices](#security-best-practices)
 15. [Contributing](#contributing)
 16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-17. [Roadmap](#roadmap)
-18. [Community](#community)
-19. [License](#license)
+17. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
+18. [Roadmap](#roadmap)
+19. [Community](#community)
+20. [License](#license)
 
 ---
 
@@ -400,6 +401,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Inter-Protocol Liquidity Standard (IPLS)** | ❌ Phase 4 | Cross-protocol liquidity routing, risk-aware capital allocation, clearing, and institutional interoperability | (src/ipls) |
 | **ACMS** | ❌ Phase 4 | Autonomous Capital Markets Stack — 9-layer unified infrastructure | [docs/acms.md](docs/acms.md) |
 | **Protocol Constitution** | ❌ Phase 4 | Governance charter, AI authority spec, risk hard limits, emergency framework | (src/protocol-constitution) |
+| **GRIF** | ❌ Phase 4 | Global Regulatory Integration Framework — jurisdiction-aware deployment, compliance modules, transparency portal, audit & attestation | [docs/grif.md](docs/grif.md) |
 
 ---
 
@@ -1437,7 +1439,126 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
 - [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
+- [x] Global Regulatory Integration Framework (Issue #139) — Jurisdiction-Aware Deployment, Regulatory Mapping Matrix, Compliance Module Interface, Transparency Portal, Audit & Attestation, Regulatory Dialogue
 - [ ] Full decentralization
+
+---
+
+## Global Regulatory Integration Framework (GRIF)
+
+> **Regulation-compatible by architecture, not by exception.**
+
+The Global Regulatory Integration Framework (GRIF) enables the TONAIAgent protocol to operate as compliant, jurisdiction-aware infrastructure across all major financial regions — without sacrificing decentralization or autonomy.
+
+### Why GRIF?
+
+The goal is not to avoid regulation. The goal is to become **regulation-compatible infrastructure** — comparable to how institutions engage with:
+
+- Financial Stability Board (FSB)
+- Bank for International Settlements (BIS)
+- International Organization of Securities Commissions (IOSCO)
+
+But implemented transparently and on-chain.
+
+### Architecture
+
+```
+Global Regulators
+       ↓
+Regulatory Transparency Portal  ← Stability Index, Capital Adequacy, Reserves, Clearing Stats
+       ↓
+Compliance Modules              ← KYC, AML, Custodian Hooks, RWA Compliance, Reporting
+       ↓
+Jurisdiction Deployment Layer   ← Region Configs, Fund Classes, Permissioned Pools
+       ↓
+GAAMP / AGFI Infrastructure     ← Liquidity / Clearing / Treasury / Risk
+```
+
+### Six Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **Jurisdiction-Aware Deployment** | Configurable compliance modules, region-specific fund classes, permissioned pools, restricted participation rules |
+| **Regulatory Mapping Matrix** | Per-jurisdiction coverage: EU, US, MENA, APAC — securities classification, custody, capital reserves, KYC/AML |
+| **Compliance Module Interface** | Plug-in modules: `verifyParticipant()`, `validateAsset()`, `enforceRestrictions()`, `generateReport()` |
+| **Regulatory Transparency Portal** | Live visibility into stability index, capital adequacy, treasury reserves, clearing statistics |
+| **Audit & Attestation Layer** | Third-party audit integration, on-chain proof-of-reserve, risk attestations, ZK disclosure modes |
+| **Regulatory Dialogue Framework** | Structured document management and regulator engagement tracking |
+
+### How the Protocol Adapts Per Jurisdiction
+
+| Region | Key Framework | Fund Classes | Reporting |
+|--------|--------------|--------------|-----------|
+| **EU** | MiCA, FINMA, BaFin | Public, Institutional, RWA | Quarterly XBRL |
+| **US** | SEC, FinCEN, BSA | Accredited Investor, Institutional | Real-time SAR/CTR |
+| **MENA** | VARA, MAS-DFSA | Sovereign, Institutional | Quarterly VARA |
+| **APAC** | MAS, FSA, SFC | All classes with MAS KYC | Monthly/Quarterly |
+
+### How Institutions Comply
+
+```typescript
+import { createGRIFManager } from '@tonaiagent/core/grif';
+
+const grif = createGRIFManager({
+  primaryJurisdiction: 'CH',
+  operationalRegions: ['EU', 'APAC', 'MENA'],
+  complianceLevel: 'institutional',
+});
+
+// Enable jurisdictions
+grif.activateJurisdiction('CH');
+grif.activateJurisdiction('SG');
+grif.activateJurisdiction('AE');
+
+// Register institutional fund class
+const fundClass = grif.jurisdictionDeployment.registerFundClass({
+  name: 'Sovereign RWA Fund',
+  type: 'sovereign',
+  eligibleJurisdictions: ['CH', 'SG', 'AE'],
+  minimumInvestment: 10_000_000,
+});
+
+// Verify institutional participant
+const verification = await grif.complianceModules.verifyParticipant({
+  participantId: 'institution-001',
+  participantType: 'institutional',
+  jurisdiction: 'CH',
+});
+
+// Issue proof-of-reserve attestation
+const attestation = grif.auditAttestation.issueProofOfReserve({
+  issuer: 'TONAIAgent',
+  reserveAmount: 100_000_000,
+  currency: 'USD',
+  chain: 'ton',
+  zkProof: true, // Zero-knowledge disclosure mode
+});
+
+// Check transparency dashboard
+const dashboard = grif.transparencyPortal.getDashboard();
+console.log('Regulatory status:', dashboard.status);
+// → { status: 'healthy', metrics: { stabilityScore: 92, capitalAdequacyStatus: 'adequate', ... } }
+```
+
+### How Transparency Is Provided
+
+The Regulatory Transparency Portal exposes on-chain data without requiring central control:
+
+- **Stability Index** — Protocol-wide health score from the Systemic Risk Framework
+- **Capital Adequacy** — Tier 1/2 ratios, leverage ratio, liquidity coverage
+- **Treasury Reserves** — Real-time reserve composition with proof-of-reserve hashes
+- **Clearing Statistics** — Settlement volume, success rates, jurisdiction breakdown
+
+### Sustainable Long-Term Model
+
+The GRIF makes the protocol sustainable across regulatory jurisdictions by:
+
+1. **Proactive engagement** — Document-driven regulator dialogue (whitepapers, risk reports, governance disclosures)
+2. **Pluggable compliance** — Jurisdiction-specific modules can be updated as laws evolve
+3. **Cryptographic attestations** — Third-party auditable, on-chain verifiable, ZK-private when required
+4. **No single point of control** — Transparency without centralization
+
+**Full GRIF Documentation**: [docs/grif.md](docs/grif.md)
 
 ---
 
