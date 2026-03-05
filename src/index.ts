@@ -1072,3 +1072,51 @@ export {
 // Note: Import AGFI module separately from '@tonaiagent/core/agfi'
 // for full access to all AGFI types, managers, and factory functions
 export * as AGFI from './agfi';
+
+// Global Regulatory Integration Framework (GRIF)
+// Six components enabling regulation-compatible infrastructure:
+// 1. Jurisdiction-Aware Deployment - Region configs, fund classes, permissioned pools
+// 2. Regulatory Mapping Matrix - Per-jurisdiction securities, custody, capital, KYC/AML rules
+// 3. Compliance Module Interface - KYC, AML, custodian hooks, RWA compliance, reporting
+// 4. Regulatory Transparency Portal - Stability index, capital adequacy, reserves, clearing stats
+// 5. Audit & Attestation Layer - Third-party audits, proof-of-reserve, ZK disclosures
+// 6. Regulatory Dialogue Framework - Whitepaper disclosures, regulator engagement tracking
+// Note: Import GRIF module separately from '@tonaiagent/core/grif'
+// for full access to all GRIF types, managers, and factory functions
+export * as GRIF from './grif';
+export {
+  // Main GRIF manager
+  GRIFManager,
+  createGRIFManager,
+  type GRIFManagerConfig,
+  // Component factories
+  createJurisdictionDeploymentLayer,
+  createRegulatoryMappingMatrix,
+  createComplianceModuleInterface,
+  createTransparencyPortal,
+  createAuditAttestationLayer,
+  createRegulatoryDialogueFramework,
+  // Component classes
+  JurisdictionDeploymentLayer,
+  RegulatoryMappingMatrix,
+  ComplianceModuleInterface,
+  TransparencyPortal,
+  AuditAttestationLayer,
+  RegulatoryDialogueFramework,
+  // Key types
+  type GRIFConfig,
+  type GRIFStatusReport,
+  type GRIFJurisdictionCode,
+  type GRIFRegionCode,
+  type GRIFRiskLevel,
+  type RegulatoryStatus as GRIFRegulatoryStatus,
+  type ComplianceModule,
+  type RegulatoryMapping,
+  type Attestation,
+  type AuditRecord,
+  type RegulatoryDocument,
+  type RegulatorEngagement,
+  type TransparencyPortalData,
+  type GRIFEvent,
+  type GRIFEventCallback,
+} from './grif';

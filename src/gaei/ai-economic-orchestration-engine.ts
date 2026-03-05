@@ -747,7 +747,7 @@ export class DefaultAIEconomicOrchestrationEngine implements AIEconomicOrchestra
   private estimateRebalancingImpact(params: ProposeRebalancingParams): number {
     // Estimate improvement based on amount and priority
     const baseImpact = 10;
-    const priorityMultiplier = params.priority === 'urgent' ? 2 : params.priority === 'high' ? 1.5 : 1;
+    const priorityMultiplier = params.priority === 'emergency' ? 2 : params.priority === 'high' ? 1.5 : 1;
     return Math.min(50, baseImpact * priorityMultiplier);
   }
 

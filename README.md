@@ -34,9 +34,12 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 15. [Security Best Practices](#security-best-practices)
 16. [Contributing](#contributing)
 17. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-18. [Roadmap](#roadmap)
-19. [Community](#community)
-20. [License](#license)
+18. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
+19. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
+20. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
+21. [Roadmap](#roadmap)
+22. [Community](#community)
+23. [License](#license)
 
 ---
 
@@ -507,6 +510,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Inter-Protocol Liquidity Standard (IPLS)** | ❌ Phase 4 | Cross-protocol liquidity routing, risk-aware capital allocation, clearing, and institutional interoperability | (src/ipls) |
 | **ACMS** | ❌ Phase 4 | Autonomous Capital Markets Stack — 9-layer unified infrastructure | [docs/acms.md](docs/acms.md) |
 | **Protocol Constitution** | ❌ Phase 4 | Governance charter, AI authority spec, risk hard limits, emergency framework | (src/protocol-constitution) |
+| **GRIF** | ❌ Phase 4 | Global Regulatory Integration Framework — jurisdiction-aware deployment, compliance modules, transparency portal, audit & attestation | [docs/grif.md](docs/grif.md) |
 
 ---
 
@@ -1486,6 +1490,278 @@ For full documentation, see [docs/gaamp.md](docs/gaamp.md).
 
 ---
 
+## Sovereign-Grade Institutional Alignment (SGIA)
+
+> Formalizing the protocol as **sovereign-grade infrastructure** accessible to central banks, sovereign wealth funds, national regulators, institutional custodians, and Tier-1 financial institutions.
+
+SGIA is a comprehensive compliance, custody, and governance framework that enables the world's most sophisticated institutional participants to interact with the protocol in a structured, auditable, and jurisdictionally-compliant manner.
+
+### Institutional Coverage
+
+| Institution Type | Examples | SGIA Mode |
+|-----------------|----------|-----------|
+| **Sovereign Wealth Funds** | NBIM, GIC, ADIA, Temasek | Strategic Partner / Allocator |
+| **Central Banks** | Fed, ECB, PBoC, BoE | Regulatory Node / Observer |
+| **National Regulators** | SEC, FCA, BaFin, MAS | Regulatory Node / Observer |
+| **Tier-1 Banks** | JPMorgan, Goldman, HSBC | Allocator / Custodian Partner |
+| **Institutional Custodians** | BNY Mellon, State Street, Clearstream | Custodian Partner |
+
+### Six Alignment Domains
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│          SGIA - Sovereign-Grade Institutional Alignment Framework            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Sovereign Integration     │  Tokenized vaults, permissioned fund classes │
+│  2. Regulatory Compatibility  │  KYC/AML plug-ins, jurisdiction-aware deploy │
+│  3. Custody Alignment         │  Multi-sig vaults, custodian API compat.     │
+│  4. Transparency & Audit      │  On-chain dashboards, real-time reporting    │
+│  5. Capital Adequacy          │  Reserve requirements, liquidity buffers     │
+│  6. Sovereign Participation   │  Observer / Allocator / Strategic Partner    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Module Architecture
+
+| Domain | Module | Description |
+|--------|--------|-------------|
+| **1. Sovereign Integration** | `src/sgia/sovereign-integration.ts` | Tokenized institutional vaults, permissioned fund classes, multi-sig |
+| **2. Regulatory Compatibility** | `src/sgia/regulatory-compatibility.ts` | KYC/AML plug-in modules, jurisdiction deployment profiles |
+| **3. Custody Alignment** | `src/sgia/custody-alignment.ts` | Custodian registration, multi-sig vault configs, proof of reserve |
+| **4. Transparency & Audit** | `src/sgia/transparency-audit.ts` | On-chain audit records, real-time dashboards, compliance scoring |
+| **5. Capital Adequacy** | `src/sgia/capital-adequacy.ts` | Basel III modeling, reserve requirements, liquidity stress tests |
+| **6. Sovereign Participation** | `src/sgia/sovereign-participation.ts` | Observer / Allocator / Strategic Partner participation modes |
+
+### Participation Modes
+
+| Mode | Privileges | Governance Weight | Target Participants |
+|------|-----------|------------------|---------------------|
+| **Observer** | Read-only, public reports | None | Regulators, auditors |
+| **Allocator** | Allocate capital, fund access | 5 | Pension funds, family offices |
+| **Strategic Partner** | Full access, governance proposals | 20 | Sovereign wealth funds, Tier-1 banks |
+| **Regulatory Node** | Compliance data, veto rights | 10 | Central banks, national regulators |
+| **Custodian Partner** | Vault management, transfers | 3 | Institutional custodians |
+
+### Quick Start
+
+```typescript
+import { createSGIAManager } from '@tonaiagent/core/sgia';
+
+const sgia = createSGIAManager();
+
+// Register KYC/AML module for a jurisdiction
+const kycModule = sgia.regulatoryCompatibility.registerKycModule({
+  name: 'EU Sovereign KYC Module',
+  jurisdiction: 'EU',
+  kycTier: 'sovereign_grade',
+  supportedEntityTypes: ['central_bank', 'sovereign_wealth_fund'],
+});
+
+// Create a permissioned fund class
+const fundClass = sgia.sovereignIntegration.createFundClass({
+  name: 'Sovereign Reserved Class A',
+  fundClass: 'sovereign_reserved',
+  description: 'Reserved for sovereign wealth funds and central banks',
+  minimumInvestmentUSD: 100_000_000,
+  lockupPeriodDays: 90,
+  redemptionNoticeDays: 30,
+  allowedJurisdictions: ['US', 'EU', 'GB', 'NO', 'SG'],
+  eligibilityCriteria: {
+    requiredEntityTypes: ['sovereign_wealth_fund', 'central_bank'],
+    requiredKycTier: 'sovereign_grade',
+    requiresSovereignClassification: true,
+    minimumAUMUSD: 10_000_000_000,
+  },
+});
+
+// Create sovereign vault
+const vault = sgia.sovereignIntegration.createVault({
+  name: 'NBIM Digital Reserve Vault',
+  vaultType: 'sovereign_vault',
+  fundClass: 'sovereign_reserved',
+  ownerEntityId: 'nbim-001',
+  jurisdictions: ['NO', 'EU'],
+  minimumSignatures: 3,
+});
+
+// Register institutional custodian
+const custodian = sgia.custodyAlignment.registerCustodian({
+  name: 'BNY Mellon Digital',
+  custodianType: 'traditional',
+  jurisdiction: 'US',
+  regulatoryLicenses: ['OCC_TRUST_CHARTER', 'NYDFS_BITLICENSE'],
+  supportedAssets: ['BTC', 'ETH', 'USDC', 'TON'],
+  supportedChains: ['bitcoin', 'ethereum', 'ton'],
+  segregationModel: 'full_segregation',
+  insuranceCoverageUSD: 500_000_000,
+});
+
+// Configure Basel III capital adequacy model
+const capitalModel = sgia.capitalAdequacy.createCapitalModel({
+  entityId: 'nbim-001',
+  entityName: 'Norges Bank Investment Management',
+  modelType: 'sovereign_grade',
+  totalCapitalUSD: 1_400_000_000_000,
+  tier1CapitalUSD: 1_200_000_000_000,
+  tier2CapitalUSD: 200_000_000_000,
+  riskWeightedAssetsUSD: 5_000_000_000_000,
+  liquidityCoverageRatio: 250,
+  netStableFundingRatio: 200,
+});
+
+// Register as Strategic Partner
+const participant = sgia.sovereignParticipation.registerParticipant({
+  entityId: 'nbim-001',
+  entityName: 'Norges Bank Investment Management',
+  entityType: 'sovereign_wealth_fund',
+  participationMode: 'strategic_partner',
+});
+
+// Get system status
+const status = sgia.getSystemStatus();
+console.log('SGIA Status:', status);
+// {
+//   activeVaults: 1,
+//   activeKycModules: 1,
+//   activeParticipants: 1,
+//   strategicPartnerCount: 1,
+//   totalCapitalModels: 1,
+//   ...
+// }
+```
+
+---
+
+## Autonomous Global Financial Network (AGFN)
+
+> Transforming infrastructure into a **globally connected autonomous financial network**.
+
+The Autonomous Global Financial Network (AGFN) extends AGFI capabilities into a distributed, AI-coordinated network that connects multiple jurisdictions, integrates sovereign and institutional nodes, routes global liquidity, and executes AI-managed capital flows 24/7.
+
+### Vision
+
+Comparable in systemic role to the world's largest financial networks — but AI-managed, on-chain native, and governance-bounded:
+
+| Traditional System | AGFN Equivalent | Key Capability |
+|---|---|---|
+| **SWIFT** | Global Node Architecture + Settlement Mesh | Cross-jurisdiction capital routing |
+| **CLS Group** | Global Settlement Mesh | Multi-region FX settlement |
+| **Visa Inc** | Cross-Jurisdiction Routing | Real-time transaction routing |
+| **BIS** | AI Coordination Layer | Global systemic risk coordination |
+
+### Network Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              AGFN - Autonomous Global Financial Network                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Global Node Architecture    │  Sovereign, institutional, custodian      │
+│  2. Cross-Jurisdiction Routing  │  Compliance-aware, liquidity passport     │
+│  3. Global Settlement Mesh      │  Multi-region, atomic transfers           │
+│  4. AI Coordination Layer       │  Liquidity balance, risk clusters         │
+│  5. Multi-Reserve Treasury      │  Regional pools, multi-asset vaults       │
+│  6. Global Stability Dashboard  │  Exposure, liquidity, stability index     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Core Network Components
+
+| Component | Module | Description |
+|-----------|--------|-------------|
+| **1. Global Node Architecture** | `src/agfn/global-node-architecture.ts` | Sovereign, institutional, custodian, liquidity, clearing, and AI computation nodes with defined permissions and capital exposure limits |
+| **2. Cross-Jurisdiction Routing** | `src/agfn/cross-jurisdiction-routing.ts` | Compliance-aware capital routing, liquidity passport validation, jurisdiction-aware execution |
+| **3. Global Settlement Mesh** | `src/agfn/global-settlement-mesh.ts` | Multi-region settlement, cross-chain finality, atomic cross-jurisdiction transfers, time-zone independent settlement |
+| **4. AI Coordination Layer** | `src/agfn/ai-coordination-layer.ts` | Global liquidity balancing, risk cluster detection, autonomous capital reallocation, crisis mitigation coordination |
+| **5. Multi-Reserve Treasury** | `src/agfn/multi-reserve-treasury.ts` | Regional reserve pools, multi-asset treasury vaults, cross-chain reserve management, stability buffers |
+| **6. Global Stability Dashboard** | `src/agfn/global-stability-dashboard.ts` | Public-facing metrics: global exposure, regional capital allocation, liquidity depth, leverage levels, stability index |
+
+### Quick Start
+
+```typescript
+import { createAGFNManager } from '@tonaiagent/core/agfn';
+
+// Initialize AGFN
+const agfn = createAGFNManager();
+
+// Register a sovereign node
+const ecbNode = agfn.nodeArchitecture.registerNode({
+  name: 'ECB Primary Node',
+  type: 'sovereign',
+  jurisdiction: 'EU',
+  chain: 'ethereum',
+  operatorId: 'ecb_001',
+  capacityUSD: 500_000_000_000, // $500B
+  complianceLevel: 'sovereign',
+});
+
+// Register an institutional node
+const jpMorganNode = agfn.nodeArchitecture.registerNode({
+  name: 'JPMorgan Custody Node',
+  type: 'institutional',
+  jurisdiction: 'US',
+  chain: 'ton',
+  operatorId: 'jpm_001',
+  capacityUSD: 100_000_000_000, // $100B
+  complianceLevel: 'enhanced',
+});
+
+// Compute cross-jurisdiction capital route
+const route = agfn.capitalRouting.computeRoute({
+  sourceNodeId: ecbNode.id,
+  destinationNodeId: jpMorganNode.id,
+  amount: 1_000_000_000, // $1B
+  currency: 'USD',
+  strategy: 'compliance_first',
+});
+
+// Execute settlement
+const settlement = agfn.settlementMesh.initiateSettlement({
+  routeId: route.id,
+  settlementType: 'atomic',
+  sourceNodeId: route.sourceNodeId,
+  destinationNodeId: route.destinationNodeId,
+  amount: route.finalAmount,
+  currency: route.currency,
+});
+
+// Monitor global stability
+const status = agfn.getSystemStatus();
+console.log('AGFN Network Status:', {
+  activeNodes: status.activeNodes,
+  sovereignNodes: status.sovereignNodes,
+  institutionalNodes: status.institutionalNodes,
+  activeRiskClusters: status.activeRiskClusters,
+  stabilityIndex: status.stabilityIndex,
+  stabilityIndicator: status.stabilityIndicator,
+});
+```
+
+### Node Types
+
+| Node Type | Description | Typical Operators |
+|-----------|-------------|-------------------|
+| **Sovereign** | Central bank and government-backed nodes | ECB, Fed, BoJ, PBoC |
+| **Institutional** | Large financial institution nodes | JPMorgan, Goldman, BlackRock |
+| **Custodian** | Qualified custodian nodes | State Street, BNY Mellon |
+| **Liquidity** | Market maker and liquidity provider nodes | Citadel, Jump, Jane Street |
+| **Clearing** | Central counterparty clearing nodes | DTCC, LCH, CME |
+| **AI Computation** | AI model inference and coordination nodes | AGFN AI Infrastructure |
+
+### Key Capabilities
+
+- **Cross-Border Capital Flows**: Compliance-aware routing across 190+ jurisdictions
+- **AI-Managed Liquidity**: Real-time global liquidity balancing and optimization
+- **Risk Cluster Detection**: Proactive identification of concentration, correlation, and contagion risks
+- **Atomic Multi-Region Settlement**: Time-zone independent cross-chain settlement
+- **Crisis Mitigation**: Autonomous crisis detection and coordinated response
+- **Multi-Reserve Treasury**: Regional reserve pools with stability buffers
+- **Public Transparency**: Real-time stability dashboard with institutional visibility
+
+For full documentation, see [docs/agfn.md](docs/agfn.md).
+
+
+---
+
 ## Roadmap
 
 ### MVP (Current Focus)
@@ -1544,7 +1820,128 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
 - [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
+- [x] Global Regulatory Integration Framework (Issue #139) — Jurisdiction-Aware Deployment, Regulatory Mapping Matrix, Compliance Module Interface, Transparency Portal, Audit & Attestation, Regulatory Dialogue
+- [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
+- [x] GAEI v1 — Global Autonomous Economic Infrastructure (Issue #147) — Capital Coordination Layer, Real Economy Integration, AI Economic Orchestration, Monetary Coordination, Economic Node Architecture, Stability Dashboard
 - [ ] Full decentralization
+
+---
+
+## Global Regulatory Integration Framework (GRIF)
+
+> **Regulation-compatible by architecture, not by exception.**
+
+The Global Regulatory Integration Framework (GRIF) enables the TONAIAgent protocol to operate as compliant, jurisdiction-aware infrastructure across all major financial regions — without sacrificing decentralization or autonomy.
+
+### Why GRIF?
+
+The goal is not to avoid regulation. The goal is to become **regulation-compatible infrastructure** — comparable to how institutions engage with:
+
+- Financial Stability Board (FSB)
+- Bank for International Settlements (BIS)
+- International Organization of Securities Commissions (IOSCO)
+
+But implemented transparently and on-chain.
+
+### Architecture
+
+```
+Global Regulators
+       ↓
+Regulatory Transparency Portal  ← Stability Index, Capital Adequacy, Reserves, Clearing Stats
+       ↓
+Compliance Modules              ← KYC, AML, Custodian Hooks, RWA Compliance, Reporting
+       ↓
+Jurisdiction Deployment Layer   ← Region Configs, Fund Classes, Permissioned Pools
+       ↓
+GAAMP / AGFI Infrastructure     ← Liquidity / Clearing / Treasury / Risk
+```
+
+### Six Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **Jurisdiction-Aware Deployment** | Configurable compliance modules, region-specific fund classes, permissioned pools, restricted participation rules |
+| **Regulatory Mapping Matrix** | Per-jurisdiction coverage: EU, US, MENA, APAC — securities classification, custody, capital reserves, KYC/AML |
+| **Compliance Module Interface** | Plug-in modules: `verifyParticipant()`, `validateAsset()`, `enforceRestrictions()`, `generateReport()` |
+| **Regulatory Transparency Portal** | Live visibility into stability index, capital adequacy, treasury reserves, clearing statistics |
+| **Audit & Attestation Layer** | Third-party audit integration, on-chain proof-of-reserve, risk attestations, ZK disclosure modes |
+| **Regulatory Dialogue Framework** | Structured document management and regulator engagement tracking |
+
+### How the Protocol Adapts Per Jurisdiction
+
+| Region | Key Framework | Fund Classes | Reporting |
+|--------|--------------|--------------|-----------|
+| **EU** | MiCA, FINMA, BaFin | Public, Institutional, RWA | Quarterly XBRL |
+| **US** | SEC, FinCEN, BSA | Accredited Investor, Institutional | Real-time SAR/CTR |
+| **MENA** | VARA, MAS-DFSA | Sovereign, Institutional | Quarterly VARA |
+| **APAC** | MAS, FSA, SFC | All classes with MAS KYC | Monthly/Quarterly |
+
+### How Institutions Comply
+
+```typescript
+import { createGRIFManager } from '@tonaiagent/core/grif';
+
+const grif = createGRIFManager({
+  primaryJurisdiction: 'CH',
+  operationalRegions: ['EU', 'APAC', 'MENA'],
+  complianceLevel: 'institutional',
+});
+
+// Enable jurisdictions
+grif.activateJurisdiction('CH');
+grif.activateJurisdiction('SG');
+grif.activateJurisdiction('AE');
+
+// Register institutional fund class
+const fundClass = grif.jurisdictionDeployment.registerFundClass({
+  name: 'Sovereign RWA Fund',
+  type: 'sovereign',
+  eligibleJurisdictions: ['CH', 'SG', 'AE'],
+  minimumInvestment: 10_000_000,
+});
+
+// Verify institutional participant
+const verification = await grif.complianceModules.verifyParticipant({
+  participantId: 'institution-001',
+  participantType: 'institutional',
+  jurisdiction: 'CH',
+});
+
+// Issue proof-of-reserve attestation
+const attestation = grif.auditAttestation.issueProofOfReserve({
+  issuer: 'TONAIAgent',
+  reserveAmount: 100_000_000,
+  currency: 'USD',
+  chain: 'ton',
+  zkProof: true, // Zero-knowledge disclosure mode
+});
+
+// Check transparency dashboard
+const dashboard = grif.transparencyPortal.getDashboard();
+console.log('Regulatory status:', dashboard.status);
+// → { status: 'healthy', metrics: { stabilityScore: 92, capitalAdequacyStatus: 'adequate', ... } }
+```
+
+### How Transparency Is Provided
+
+The Regulatory Transparency Portal exposes on-chain data without requiring central control:
+
+- **Stability Index** — Protocol-wide health score from the Systemic Risk Framework
+- **Capital Adequacy** — Tier 1/2 ratios, leverage ratio, liquidity coverage
+- **Treasury Reserves** — Real-time reserve composition with proof-of-reserve hashes
+- **Clearing Statistics** — Settlement volume, success rates, jurisdiction breakdown
+
+### Sustainable Long-Term Model
+
+The GRIF makes the protocol sustainable across regulatory jurisdictions by:
+
+1. **Proactive engagement** — Document-driven regulator dialogue (whitepapers, risk reports, governance disclosures)
+2. **Pluggable compliance** — Jurisdiction-specific modules can be updated as laws evolve
+3. **Cryptographic attestations** — Third-party auditable, on-chain verifiable, ZK-private when required
+4. **No single point of control** — Transparency without centralization
+
+**Full GRIF Documentation**: [docs/grif.md](docs/grif.md)
 
 ---
 
