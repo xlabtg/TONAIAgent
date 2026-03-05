@@ -35,9 +35,10 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
 17. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
 18. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
-19. [Roadmap](#roadmap)
-20. [Community](#community)
-21. [License](#license)
+19. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
+20. [Roadmap](#roadmap)
+21. [Community](#community)
+22. [License](#license)
 
 ---
 
@@ -1702,6 +1703,186 @@ The GRIF makes the protocol sustainable across regulatory jurisdictions by:
 4. **No single point of control** — Transparency without centralization
 
 **Full GRIF Documentation**: [docs/grif.md](docs/grif.md)
+
+---
+
+## Sovereign Digital Asset Coordination Layer (SDACL)
+
+> **Infrastructure designed to coordinate — not disrupt — sovereign systems.**
+
+The Sovereign Digital Asset Coordination Layer (SDACL) enables CBDCs, sovereign tokenized bonds, national digital treasuries, and state-backed RWA instruments to integrate, interoperate, and coordinate within the AIFOS stack.
+
+Initially built on The Open Network with multi-chain compatibility.
+
+### Strategic Vision
+
+CBDCs and sovereign digital assets are being explored by institutions connected to:
+
+- Bank for International Settlements (BIS)
+- International Monetary Fund (IMF)
+- Central banks worldwide
+
+SDACL positions the protocol as a **coordination layer** — not a replacement — for sovereign monetary systems.
+
+### Architecture
+
+```
+Sovereign Digital Assets
+          ↓
+Sovereign Asset Module (CBDC Integration)
+          ↓
+Financial OS (Kernel)
+          ↓
+Liquidity / Clearing / Risk
+          ↓
+Global Financial Network
+```
+
+### Five Core Components
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│            SDACL — Sovereign Digital Asset Coordination Layer               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. CBDC Integration Interface    │ Issuer verify, supply validate, settle  │
+│  2. Sovereign Treasury Bridge     │ Treasury alloc, bond issuance, reserves │
+│  3. Cross-Sovereign Coordination  │ AI capital flows, liquidity balancing   │
+│  4. Jurisdiction Enforcement      │ Geo restrict, eligibility, sanctions    │
+│  5. Sovereign Transparency        │ Exposure metrics, compliance, alerts    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Component | Description |
+|-----------|-------------|
+| **CBDC Integration Interface** | Issuer verification, supply validation, jurisdiction rule enforcement, settlement routing, authority reporting |
+| **Sovereign Treasury Bridge** | National treasury allocations, sovereign fund participation, bond issuance integration, configurable reserve visibility |
+| **Cross-Sovereign Coordination** | AI-assisted cross-border capital flows, liquidity balancing, risk concentration management, settlement timing |
+| **Jurisdiction Enforcement Layer** | Geographic restrictions, participant eligibility, sovereign asset isolation, sanction-aware routing |
+| **Sovereign Transparency Dashboard** | Exposure metrics, liquidity depth, risk index, compliance reporting (observer/allocator/strategic partner modes) |
+
+### Quick Start
+
+```typescript
+import { createSDACLService } from '@tonaiagent/core/sdacl';
+
+const sdacl = createSDACLService({
+  networkId: 'ton-mainnet',
+  environment: 'sandbox',
+  sanctionCheckEnabled: true,
+  crossBorderRoutingEnabled: true,
+});
+
+// Register a CBDC
+const cbdc = sdacl.cbdcIntegration.registerSovereignAsset({
+  issuerId: 'ECB',
+  issuerName: 'European Central Bank',
+  assetType: 'cbdc',
+  symbol: 'EURC',
+  name: 'Digital Euro',
+  jurisdictionCode: 'EU',
+  totalSupply: 1_000_000_000,
+  reserveRatio: 1.0,
+  chainId: 'ton',
+});
+
+// Verify issuer
+const verification = sdacl.cbdcIntegration.verifyIssuer('ECB', 'EU');
+console.log('ECB verified:', verification.verified);
+// → ECB verified: true
+
+// Create treasury allocation
+const allocation = sdacl.treasuryBridge.createAllocation({
+  sovereignFundId: 'GPFG',
+  sovereignFundName: 'Government Pension Fund Global',
+  jurisdictionCode: 'NO',
+  allocationAmountUsd: 500_000_000,
+  allocationCurrency: 'NOK',
+  targetAssetId: cbdc.id,
+});
+
+// Initiate cross-border flow with AI risk assessment
+const flow = sdacl.crossSovereignCoordination.initiateFlow({
+  flowType: 'capital_transfer',
+  sourceJurisdiction: 'EU',
+  destinationJurisdiction: 'NO',
+  assetId: cbdc.id,
+  amountUsd: 10_000_000,
+  complianceVerified: true,
+});
+console.log('Risk level:', flow.riskLevel);
+console.log('AI recommendation:', flow.aiRecommendation);
+
+// Check participant eligibility with sanction screening
+const eligibility = sdacl.jurisdictionEnforcement.checkParticipantEligibility({
+  participantId: 'inst-001',
+  jurisdictionCode: 'EU',
+  kycLevel: 'institutional',
+});
+
+// Generate transparency dashboard
+const dashboard = sdacl.sovereignTransparency.generateDashboardSnapshot();
+console.log('Stability score:', dashboard.stabilityScore);
+console.log('Compliance rate:', dashboard.complianceRate);
+
+// Get full system status
+const status = sdacl.getSystemStatus();
+console.log('System stability index:', status.systemStabilityIndex);
+```
+
+### How Sovereign Assets Integrate
+
+1. **Issuer Verification** — Central banks and treasuries are verified against a sovereign registry (BIS, IMF scorecards)
+2. **Supply Validation** — Circulating supply and reserve ratios are continuously validated
+3. **Settlement Routing** — Cross-border settlements are routed through TON bridge infrastructure with compliance checks
+4. **Authority Reporting** — Automated generation of daily position, settlement summary, and reserve attestation reports
+
+### How Risk Is Contained
+
+- **AI Risk Assessment** — Every cross-border flow is scored for concentration risk, spillover risk, and systemic impact
+- **Stability Index Protection** — High-risk flows require emergency committee approval
+- **Systemic Spillover Detection** — AI monitors for cascade effects across jurisdictions
+- **Circuit Breakers** — Automatic flow blocking when stability thresholds are exceeded
+
+### How Cross-Border Routing Works
+
+```
+Source Jurisdiction
+        ↓
+Liquidity Balance Check → AI Rebalancing Suggestion
+        ↓
+Compliance Verification (KYC, AML, Sanctions)
+        ↓
+Risk Assessment (Concentration, Spillover, Systemic)
+        ↓
+Settlement Routing (TON Bridge Infrastructure)
+        ↓
+Destination Jurisdiction
+        ↓
+Authority Reporting & Transparency Dashboard Update
+```
+
+### How Compliance Boundaries Are Enforced
+
+The Jurisdiction Enforcement Layer implements:
+
+| Restriction Type | Description |
+|-----------------|-------------|
+| **Geographic** | Block or flag transactions from/to specific regions |
+| **Participant Eligibility** | KYC tier requirements, institutional-only access |
+| **Asset Isolation** | Restrict certain assets to specific jurisdictions |
+| **Sanction-Aware Routing** | Screen against OFAC, EU Sanctions, and other lists |
+| **Volume Limits** | Daily/transaction caps per jurisdiction |
+| **KYC Thresholds** | Enhanced verification for high-value transactions |
+
+### Why the Protocol Is Sovereign-Compatible
+
+SDACL is designed to **coordinate with** — not replace — sovereign monetary systems:
+
+1. **Neutral Infrastructure** — No monetary policy interference; pure coordination layer
+2. **Jurisdiction Respect** — Full opt-in enforcement rules per jurisdiction
+3. **Transparency Without Centralization** — On-chain dashboards without central control
+4. **Pluggable Compliance** — Adaptable to evolving regulatory requirements
+5. **AI-Managed Risk** — Stability protection without human intervention delays
 
 ---
 
