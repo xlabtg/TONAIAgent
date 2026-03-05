@@ -1121,6 +1121,67 @@ export {
   type GRIFEventCallback,
 } from './grif';
 
+// AI-native Financial Operating System (AIFOS)
+// A programmable, modular, AI-coordinated financial OS for capital markets & global finance.
+// Six-layer architecture (bottom-up):
+// 1. Financial Kernel - Capital state, risk boundaries, monetary control, governance execution
+// 2. Financial Modules - Asset, liquidity, clearing, treasury, compliance modules
+// 3. AI Orchestration Layer - Agent decisions, risk recalibration, capital reallocation, crisis response
+// 4. Application Layer - AI hedge funds, institutional vaults, sovereign nodes, strategy marketplaces
+// 5. Permission & Identity Layer - Role management, node permissions, governance delegation
+// 6. Interoperability Layer - Cross-chain abstraction, external APIs, protocol bridges
+// Note: Import AIFOS module separately from '@tonaiagent/core/aifos'
+// for full access to all AIFOS types, managers, and factory functions
+export * as AIFOS from './aifos';
+export {
+  // Main AIFOS manager
+  DefaultAIFOSManager,
+  createAIFOSManager,
+  type AIFOSManager,
+  type AIFOSConfig,
+  type AIFOSSystemStatus,
+  // Financial Kernel
+  DefaultFinancialKernel,
+  createFinancialKernel,
+  type FinancialKernel,
+  type FinancialKernelConfig,
+  type KernelValidationResult,
+  type KernelBoundaryResult,
+  // Financial Modules
+  DefaultFinancialModules,
+  createFinancialModules,
+  type FinancialModules,
+  type FinancialModulesConfig,
+  type ModulesHealthSummary,
+  // AI Orchestration Layer
+  DefaultAIOrchestrationLayer,
+  createAIOrchestrationLayer,
+  type AIOrchestrationLayer,
+  type AIOrchestrationConfig,
+  type OrchestrationMetrics,
+  // Application Layer
+  DefaultApplicationLayer,
+  createApplicationLayer,
+  type ApplicationLayer,
+  type ApplicationLayerConfig,
+  type EcosystemMetrics,
+  // Permission & Identity Layer
+  DefaultPermissionIdentityLayer,
+  createPermissionIdentityLayer,
+  type PermissionIdentityLayer,
+  type PermissionIdentityConfig,
+  // Interoperability Layer
+  DefaultInteroperabilityLayer,
+  createInteroperabilityLayer,
+  type InteroperabilityLayer,
+  type InteropSummary,
+  // Key types
+  type KernelState,
+  type KernelParameters,
+  type AIFOSEvent,
+  type AIFOSEventCallback,
+} from './aifos';
+
 // Sovereign Digital Asset Coordination Layer (SDACL)
 // Five components enabling sovereign digital asset coordination:
 // 1. CBDC Integration Interface - Issuer verification, supply validation, settlement routing

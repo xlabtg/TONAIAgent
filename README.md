@@ -35,10 +35,12 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
 17. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
 18. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
-19. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
-20. [Roadmap](#roadmap)
-21. [Community](#community)
-22. [License](#license)
+19. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
+20. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
+21. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
+22. [Roadmap](#roadmap)
+23. [Community](#community)
+24. [License](#license)
 
 ---
 
@@ -1525,6 +1527,136 @@ console.log('SGIA Status:', status);
 
 ---
 
+## Autonomous Global Financial Network (AGFN)
+
+> Transforming infrastructure into a **globally connected autonomous financial network**.
+
+The Autonomous Global Financial Network (AGFN) extends AGFI capabilities into a distributed, AI-coordinated network that connects multiple jurisdictions, integrates sovereign and institutional nodes, routes global liquidity, and executes AI-managed capital flows 24/7.
+
+### Vision
+
+Comparable in systemic role to the world's largest financial networks — but AI-managed, on-chain native, and governance-bounded:
+
+| Traditional System | AGFN Equivalent | Key Capability |
+|---|---|---|
+| **SWIFT** | Global Node Architecture + Settlement Mesh | Cross-jurisdiction capital routing |
+| **CLS Group** | Global Settlement Mesh | Multi-region FX settlement |
+| **Visa Inc** | Cross-Jurisdiction Routing | Real-time transaction routing |
+| **BIS** | AI Coordination Layer | Global systemic risk coordination |
+
+### Network Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              AGFN - Autonomous Global Financial Network                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Global Node Architecture    │  Sovereign, institutional, custodian      │
+│  2. Cross-Jurisdiction Routing  │  Compliance-aware, liquidity passport     │
+│  3. Global Settlement Mesh      │  Multi-region, atomic transfers           │
+│  4. AI Coordination Layer       │  Liquidity balance, risk clusters         │
+│  5. Multi-Reserve Treasury      │  Regional pools, multi-asset vaults       │
+│  6. Global Stability Dashboard  │  Exposure, liquidity, stability index     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Core Network Components
+
+| Component | Module | Description |
+|-----------|--------|-------------|
+| **1. Global Node Architecture** | `src/agfn/global-node-architecture.ts` | Sovereign, institutional, custodian, liquidity, clearing, and AI computation nodes with defined permissions and capital exposure limits |
+| **2. Cross-Jurisdiction Routing** | `src/agfn/cross-jurisdiction-routing.ts` | Compliance-aware capital routing, liquidity passport validation, jurisdiction-aware execution |
+| **3. Global Settlement Mesh** | `src/agfn/global-settlement-mesh.ts` | Multi-region settlement, cross-chain finality, atomic cross-jurisdiction transfers, time-zone independent settlement |
+| **4. AI Coordination Layer** | `src/agfn/ai-coordination-layer.ts` | Global liquidity balancing, risk cluster detection, autonomous capital reallocation, crisis mitigation coordination |
+| **5. Multi-Reserve Treasury** | `src/agfn/multi-reserve-treasury.ts` | Regional reserve pools, multi-asset treasury vaults, cross-chain reserve management, stability buffers |
+| **6. Global Stability Dashboard** | `src/agfn/global-stability-dashboard.ts` | Public-facing metrics: global exposure, regional capital allocation, liquidity depth, leverage levels, stability index |
+
+### Quick Start
+
+```typescript
+import { createAGFNManager } from '@tonaiagent/core/agfn';
+
+// Initialize AGFN
+const agfn = createAGFNManager();
+
+// Register a sovereign node
+const ecbNode = agfn.nodeArchitecture.registerNode({
+  name: 'ECB Primary Node',
+  type: 'sovereign',
+  jurisdiction: 'EU',
+  chain: 'ethereum',
+  operatorId: 'ecb_001',
+  capacityUSD: 500_000_000_000, // $500B
+  complianceLevel: 'sovereign',
+});
+
+// Register an institutional node
+const jpMorganNode = agfn.nodeArchitecture.registerNode({
+  name: 'JPMorgan Custody Node',
+  type: 'institutional',
+  jurisdiction: 'US',
+  chain: 'ton',
+  operatorId: 'jpm_001',
+  capacityUSD: 100_000_000_000, // $100B
+  complianceLevel: 'enhanced',
+});
+
+// Compute cross-jurisdiction capital route
+const route = agfn.capitalRouting.computeRoute({
+  sourceNodeId: ecbNode.id,
+  destinationNodeId: jpMorganNode.id,
+  amount: 1_000_000_000, // $1B
+  currency: 'USD',
+  strategy: 'compliance_first',
+});
+
+// Execute settlement
+const settlement = agfn.settlementMesh.initiateSettlement({
+  routeId: route.id,
+  settlementType: 'atomic',
+  sourceNodeId: route.sourceNodeId,
+  destinationNodeId: route.destinationNodeId,
+  amount: route.finalAmount,
+  currency: route.currency,
+});
+
+// Monitor global stability
+const status = agfn.getSystemStatus();
+console.log('AGFN Network Status:', {
+  activeNodes: status.activeNodes,
+  sovereignNodes: status.sovereignNodes,
+  institutionalNodes: status.institutionalNodes,
+  activeRiskClusters: status.activeRiskClusters,
+  stabilityIndex: status.stabilityIndex,
+  stabilityIndicator: status.stabilityIndicator,
+});
+```
+
+### Node Types
+
+| Node Type | Description | Typical Operators |
+|-----------|-------------|-------------------|
+| **Sovereign** | Central bank and government-backed nodes | ECB, Fed, BoJ, PBoC |
+| **Institutional** | Large financial institution nodes | JPMorgan, Goldman, BlackRock |
+| **Custodian** | Qualified custodian nodes | State Street, BNY Mellon |
+| **Liquidity** | Market maker and liquidity provider nodes | Citadel, Jump, Jane Street |
+| **Clearing** | Central counterparty clearing nodes | DTCC, LCH, CME |
+| **AI Computation** | AI model inference and coordination nodes | AGFN AI Infrastructure |
+
+### Key Capabilities
+
+- **Cross-Border Capital Flows**: Compliance-aware routing across 190+ jurisdictions
+- **AI-Managed Liquidity**: Real-time global liquidity balancing and optimization
+- **Risk Cluster Detection**: Proactive identification of concentration, correlation, and contagion risks
+- **Atomic Multi-Region Settlement**: Time-zone independent cross-chain settlement
+- **Crisis Mitigation**: Autonomous crisis detection and coordinated response
+- **Multi-Reserve Treasury**: Regional reserve pools with stability buffers
+- **Public Transparency**: Real-time stability dashboard with institutional visibility
+
+For full documentation, see [docs/agfn.md](docs/agfn.md).
+
+
+---
+
 ## Roadmap
 
 ### MVP (Current Focus)
@@ -1584,6 +1716,8 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Agent-to-agent economy
 - [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
 - [x] Global Regulatory Integration Framework (Issue #139) — Jurisdiction-Aware Deployment, Regulatory Mapping Matrix, Compliance Module Interface, Transparency Portal, Audit & Attestation, Regulatory Dialogue
+- [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
+- [x] AIFOS v1 — AI-native Financial Operating System (Issue #143) — Financial Kernel, Financial Modules, AI Orchestration Layer, Application Layer, Permission & Identity Layer, Interoperability Layer
 - [ ] Full decentralization
 
 ---
@@ -1883,6 +2017,139 @@ SDACL is designed to **coordinate with** — not replace — sovereign monetary 
 3. **Transparency Without Centralization** — On-chain dashboards without central control
 4. **Pluggable Compliance** — Adaptable to evolving regulatory requirements
 5. **AI-Managed Risk** — Stability protection without human intervention delays
+
+---
+
+## AI-native Financial Operating System (AIFOS)
+
+> **From Financial Network → Financial Operating System**: The AIFOS abstracts the entire infrastructure into a programmable, modular, AI-coordinated financial OS — comparable to Windows/iOS/Linux, but for capital markets & global finance.
+
+### What is AIFOS?
+
+The AI-native Financial Operating System (AIFOS) transforms the platform from a global financial network into a programmable financial operating system that:
+
+- **Manages capital** — Kernel-level capital state management with risk boundaries
+- **Allocates liquidity** — Module-based liquidity routing and optimization
+- **Executes strategies** — AI orchestration layer for agent decision coordination
+- **Controls risk** — Immutable risk caps with stability index triggers
+- **Enforces governance** — Constitutional governance with override mechanisms
+- **Interfaces globally** — Cross-chain abstraction and external API integration
+
+### OS Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                 AIFOS - AI-native Financial Operating System                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Applications (Funds / DAOs / Sovereigns)                                    │
+│                        ↓                                                     │
+│  Financial Modules (Asset / Liquidity / Clearing / Treasury / Compliance)    │
+│                        ↓                                                     │
+│  AI Orchestration Layer (Agent decisions / Risk / Crisis response)           │
+│                        ↓                                                     │
+│  Financial Kernel (Capital state / Risk / Monetary / Governance)             │
+│                        ↓                                                     │
+│  Blockchain Infrastructure (TON + cross-chain)                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Permission & Identity Layer (across all layers)                             │
+│  Interoperability Layer (cross-chain / external APIs / protocol bridges)     │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Six Core Layers
+
+| Layer | Description |
+|-------|-------------|
+| **1. Financial Kernel** | The immutable logic core — capital state management, risk boundaries enforcement, monetary parameter control, governance execution |
+| **2. Financial Modules** | Plug-in modules with defined APIs: Asset, Liquidity, Clearing, Treasury, Compliance — each upgradeable within constitutional limits |
+| **3. AI Orchestration Layer** | Coordinates agent decisions, risk recalibration, capital reallocation, crisis response — bounded by hard risk caps and governance overrides |
+| **4. Application Layer** | Built on top of AIFOS: AI hedge funds, institutional vaults, sovereign allocation nodes, strategy marketplaces, retail finance apps |
+| **5. Permission & Identity Layer** | Institutional role management, node permissions, governance delegation, compliance gating |
+| **6. Interoperability Layer** | Extends IPLS and global routing — cross-chain abstraction, external API integration, protocol-to-protocol compatibility |
+
+### Quick AIFOS Example
+
+```typescript
+import { createAIFOSManager } from '@tonaiagent/core/aifos';
+
+// Initialize the Financial OS
+const aifos = createAIFOSManager();
+
+// Check kernel state
+console.log('Kernel state:', aifos.kernel.getState());
+// → 'active'
+
+// Plug the liquidity module
+const modules = aifos.modules.listModules({ moduleType: 'liquidity' });
+console.log('Liquidity module:', modules[0].name);
+
+// Run AI orchestration decision
+const decision = aifos.orchestration.proposeDecision({
+  agentId: 'agent-001',
+  decisionType: 'capital_reallocation',
+  rationale: 'Optimize yield across modules',
+  targetModules: [modules[0].id],
+  proposedActions: [],
+  estimatedRiskImpact: -5,
+  estimatedCapitalImpact: 1_000_000,
+});
+
+// Execute governance parameter update
+const override = aifos.kernel.applyGovernanceOverride({
+  overrideType: 'parameter_update',
+  proposedBy: 'governance-council',
+  approvalPercent: 67,
+  targetParameter: 'globalRiskCap',
+  targetValue: 'elevated',
+  reason: 'Temporary risk appetite increase',
+});
+
+// Launch a demo application
+const app = aifos.applications.registerApp({
+  name: 'AI Hedge Fund Alpha',
+  appType: 'ai_hedge_fund',
+  developer: 'dev-001',
+  version: '1.0.0',
+  description: 'Autonomous hedge fund running on AIFOS',
+  capitalBudget: 100_000_000,
+});
+
+// Get full system status
+const status = aifos.getSystemStatus();
+console.log('AIFOS Status:', status);
+// → { kernelState: 'active', totalManagedCapitalUSD: ..., currentRiskLevel: ..., ... }
+```
+
+### Strategic Impact
+
+With AIFOS, the project evolves from:
+
+> **Global financial network** → **Programmable financial operating system**
+
+This enables:
+
+- **Ecosystem expansion** — Others can build applications on top without touching the core kernel
+- **Institutional integration** — Institutions can integrate as modules with defined APIs
+- **Sovereign deployment** — Sovereigns can deploy customized AIFOS instances
+- **Developer extensibility** — Developers can extend functionality through the module system
+
+### Governance Enforcement
+
+The Financial Kernel enforces constitutional governance:
+
+- **Hard risk caps** — Immutable boundaries that cannot be overridden
+- **Stability index triggers** — Automatic actions when stability drops below thresholds
+- **Governance quorum** — Parameter updates require constitutional approval (default: 51%)
+- **Emergency halt** — Kernel can halt the entire system when critical thresholds are breached
+
+### Module Interoperability
+
+Each Financial Module:
+
+- Has a **defined API** — Standard interface for operations
+- Is **upgradeable** — Can be updated without kernel changes
+- Operates within **constitutional limits** — Bounded by kernel parameters
+- Emits **typed events** — All operations are auditable
 
 ---
 
