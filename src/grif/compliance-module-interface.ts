@@ -303,7 +303,7 @@ export class ComplianceModuleInterface {
         reasons.push('Transaction exceeds US reporting threshold ($10M)');
         appliedRules.push('US_BSA_REPORTING');
       }
-      if (params.amount > 15_000 && params.jurisdiction === 'EU') {
+      if (params.amount > 15_000 && EU_JURISDICTIONS.includes(params.jurisdiction)) {
         appliedRules.push('EU_6AMLD_MONITORING');
       }
     }
@@ -464,6 +464,14 @@ export class ComplianceModuleInterface {
 // ============================================================================
 // Restricted Actions Registry
 // ============================================================================
+
+/**
+ * EU region jurisdictions for compliance checks.
+ * These jurisdictions are subject to EU-wide regulations like 6AMLD.
+ */
+const EU_JURISDICTIONS: GRIFJurisdictionCode[] = [
+  'CH', 'DE', 'FR', 'NL', 'IE', 'LU', 'MT', 'EE', 'LI', 'GB',
+];
 
 const RESTRICTED_ACTIONS_BY_JURISDICTION: Partial<Record<GRIFJurisdictionCode, string[]>> = {
   US: ['unregistered_securities_offering', 'unlicensed_exchange'],

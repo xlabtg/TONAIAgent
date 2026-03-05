@@ -33,10 +33,11 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 14. [Security Best Practices](#security-best-practices)
 15. [Contributing](#contributing)
 16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-17. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
-18. [Roadmap](#roadmap)
-19. [Community](#community)
-20. [License](#license)
+17. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
+18. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
+19. [Roadmap](#roadmap)
+20. [Community](#community)
+21. [License](#license)
 
 ---
 
@@ -1378,6 +1379,148 @@ console.log('GAAMP v1:', status);
 ```
 
 For full documentation, see [docs/gaamp.md](docs/gaamp.md).
+
+---
+
+## Sovereign-Grade Institutional Alignment (SGIA)
+
+> Formalizing the protocol as **sovereign-grade infrastructure** accessible to central banks, sovereign wealth funds, national regulators, institutional custodians, and Tier-1 financial institutions.
+
+SGIA is a comprehensive compliance, custody, and governance framework that enables the world's most sophisticated institutional participants to interact with the protocol in a structured, auditable, and jurisdictionally-compliant manner.
+
+### Institutional Coverage
+
+| Institution Type | Examples | SGIA Mode |
+|-----------------|----------|-----------|
+| **Sovereign Wealth Funds** | NBIM, GIC, ADIA, Temasek | Strategic Partner / Allocator |
+| **Central Banks** | Fed, ECB, PBoC, BoE | Regulatory Node / Observer |
+| **National Regulators** | SEC, FCA, BaFin, MAS | Regulatory Node / Observer |
+| **Tier-1 Banks** | JPMorgan, Goldman, HSBC | Allocator / Custodian Partner |
+| **Institutional Custodians** | BNY Mellon, State Street, Clearstream | Custodian Partner |
+
+### Six Alignment Domains
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│          SGIA - Sovereign-Grade Institutional Alignment Framework            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Sovereign Integration     │  Tokenized vaults, permissioned fund classes │
+│  2. Regulatory Compatibility  │  KYC/AML plug-ins, jurisdiction-aware deploy │
+│  3. Custody Alignment         │  Multi-sig vaults, custodian API compat.     │
+│  4. Transparency & Audit      │  On-chain dashboards, real-time reporting    │
+│  5. Capital Adequacy          │  Reserve requirements, liquidity buffers     │
+│  6. Sovereign Participation   │  Observer / Allocator / Strategic Partner    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Module Architecture
+
+| Domain | Module | Description |
+|--------|--------|-------------|
+| **1. Sovereign Integration** | `src/sgia/sovereign-integration.ts` | Tokenized institutional vaults, permissioned fund classes, multi-sig |
+| **2. Regulatory Compatibility** | `src/sgia/regulatory-compatibility.ts` | KYC/AML plug-in modules, jurisdiction deployment profiles |
+| **3. Custody Alignment** | `src/sgia/custody-alignment.ts` | Custodian registration, multi-sig vault configs, proof of reserve |
+| **4. Transparency & Audit** | `src/sgia/transparency-audit.ts` | On-chain audit records, real-time dashboards, compliance scoring |
+| **5. Capital Adequacy** | `src/sgia/capital-adequacy.ts` | Basel III modeling, reserve requirements, liquidity stress tests |
+| **6. Sovereign Participation** | `src/sgia/sovereign-participation.ts` | Observer / Allocator / Strategic Partner participation modes |
+
+### Participation Modes
+
+| Mode | Privileges | Governance Weight | Target Participants |
+|------|-----------|------------------|---------------------|
+| **Observer** | Read-only, public reports | None | Regulators, auditors |
+| **Allocator** | Allocate capital, fund access | 5 | Pension funds, family offices |
+| **Strategic Partner** | Full access, governance proposals | 20 | Sovereign wealth funds, Tier-1 banks |
+| **Regulatory Node** | Compliance data, veto rights | 10 | Central banks, national regulators |
+| **Custodian Partner** | Vault management, transfers | 3 | Institutional custodians |
+
+### Quick Start
+
+```typescript
+import { createSGIAManager } from '@tonaiagent/core/sgia';
+
+const sgia = createSGIAManager();
+
+// Register KYC/AML module for a jurisdiction
+const kycModule = sgia.regulatoryCompatibility.registerKycModule({
+  name: 'EU Sovereign KYC Module',
+  jurisdiction: 'EU',
+  kycTier: 'sovereign_grade',
+  supportedEntityTypes: ['central_bank', 'sovereign_wealth_fund'],
+});
+
+// Create a permissioned fund class
+const fundClass = sgia.sovereignIntegration.createFundClass({
+  name: 'Sovereign Reserved Class A',
+  fundClass: 'sovereign_reserved',
+  description: 'Reserved for sovereign wealth funds and central banks',
+  minimumInvestmentUSD: 100_000_000,
+  lockupPeriodDays: 90,
+  redemptionNoticeDays: 30,
+  allowedJurisdictions: ['US', 'EU', 'GB', 'NO', 'SG'],
+  eligibilityCriteria: {
+    requiredEntityTypes: ['sovereign_wealth_fund', 'central_bank'],
+    requiredKycTier: 'sovereign_grade',
+    requiresSovereignClassification: true,
+    minimumAUMUSD: 10_000_000_000,
+  },
+});
+
+// Create sovereign vault
+const vault = sgia.sovereignIntegration.createVault({
+  name: 'NBIM Digital Reserve Vault',
+  vaultType: 'sovereign_vault',
+  fundClass: 'sovereign_reserved',
+  ownerEntityId: 'nbim-001',
+  jurisdictions: ['NO', 'EU'],
+  minimumSignatures: 3,
+});
+
+// Register institutional custodian
+const custodian = sgia.custodyAlignment.registerCustodian({
+  name: 'BNY Mellon Digital',
+  custodianType: 'traditional',
+  jurisdiction: 'US',
+  regulatoryLicenses: ['OCC_TRUST_CHARTER', 'NYDFS_BITLICENSE'],
+  supportedAssets: ['BTC', 'ETH', 'USDC', 'TON'],
+  supportedChains: ['bitcoin', 'ethereum', 'ton'],
+  segregationModel: 'full_segregation',
+  insuranceCoverageUSD: 500_000_000,
+});
+
+// Configure Basel III capital adequacy model
+const capitalModel = sgia.capitalAdequacy.createCapitalModel({
+  entityId: 'nbim-001',
+  entityName: 'Norges Bank Investment Management',
+  modelType: 'sovereign_grade',
+  totalCapitalUSD: 1_400_000_000_000,
+  tier1CapitalUSD: 1_200_000_000_000,
+  tier2CapitalUSD: 200_000_000_000,
+  riskWeightedAssetsUSD: 5_000_000_000_000,
+  liquidityCoverageRatio: 250,
+  netStableFundingRatio: 200,
+});
+
+// Register as Strategic Partner
+const participant = sgia.sovereignParticipation.registerParticipant({
+  entityId: 'nbim-001',
+  entityName: 'Norges Bank Investment Management',
+  entityType: 'sovereign_wealth_fund',
+  participationMode: 'strategic_partner',
+});
+
+// Get system status
+const status = sgia.getSystemStatus();
+console.log('SGIA Status:', status);
+// {
+//   activeVaults: 1,
+//   activeKycModules: 1,
+//   activeParticipants: 1,
+//   strategicPartnerCount: 1,
+//   totalCapitalModels: 1,
+//   ...
+// }
+```
 
 ---
 

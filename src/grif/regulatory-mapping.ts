@@ -506,7 +506,7 @@ const REGULATORY_MAPPINGS: Record<GRIFJurisdictionCode, Omit<RegulatoryMapping, 
     region: 'US',
     securitiesClassification: {
       digitalAssetsAs: 'utility',
-      tokenizedRWA: 'unclassified',
+      tokenizedRWA: 'pending',
       applicableRegulations: ['VASP Act 2020', 'CIMA Guidelines'],
     },
     custodyRequirements: {
