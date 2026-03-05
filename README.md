@@ -2,7 +2,7 @@
 
 > **AI-Native Autonomous Finance Infrastructure for The Open Network**
 
-[![Version](https://img.shields.io/badge/version-2.6.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.7.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -29,8 +29,9 @@ TON AI Agent is a production-grade platform for deploying autonomous AI agents o
 12. [Admin Dashboard](#admin-dashboard)
 13. [Security Best Practices](#security-best-practices)
 14. [Contributing](#contributing)
-15. [Roadmap](#roadmap)
-16. [Community](#community)
+15. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
+16. [Roadmap](#roadmap)
+17. [Community](#community)
 17. [License](#license)
 
 ---
@@ -269,7 +270,116 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **GAAMP** | ❌ Phase 3 | Global Autonomous Asset Management Protocol — open protocol standard | [docs/gaamp.md](docs/gaamp.md) |
+| **Liquidity Network** | ❌ Phase 4 | Aggregated pools, smart routing, vaults, internal liquidity | [docs/liquidity-network.md](docs/liquidity-network.md) |
+| **Clearing House** | ❌ Phase 4 | AI-native CCP: netting, settlement, default resolution | (src/clearing-house) |
 | **Systemic Risk & Stability** | ❌ Phase 4 | Protocol-wide risk containment, circuit breakers, insurance fund, GAAMP Stability Index | (src/systemic-risk) |
+
+---
+
+## Institutional Infrastructure Layer
+
+> Built on The Open Network for institutional-grade autonomous finance
+
+The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, Clearing capabilities, and a Systemic Risk & Stability Framework.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Institutional Infrastructure Layer                      │
+│                                                                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │
+│  │  Prime          │  │  Liquidity      │  │  Risk Engine    │               │
+│  │  Brokerage      │  │  Network        │  │                 │               │
+│  │                 │  │                 │  │  - VaR/Stress   │               │
+│  │  - Custody      │  │  - Aggregation  │  │  - Margin       │               │
+│  │  - Margin       │  │  - Smart Route  │  │  - Limits       │               │
+│  │  - Capital Eff. │  │  - Vaults       │  │  - Exposure     │               │
+│  │  - Securities   │  │  - Int. Pools   │  │                 │               │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘               │
+│           │                    │                     │                       │
+│  ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐               │
+│  │  RWA &          │  │  Institutional  │  │  Clearing &     │               │
+│  │  Tokenized      │  │  Network        │  │  Settlement     │               │
+│  │  Funds          │  │  (Partners)     │  │                 │               │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘               │
+│                                                                               │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                   Systemic Risk & Stability Framework                   │  │
+│  │  Leverage Governor | Circuit Breakers | Insurance Fund | Stability Index│  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
+│  Architecture:                                                                │
+│  Agents/Funds → Prime Brokerage → Clearing House → Systemic Risk Engine → Finality│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Prime Brokerage (`src/prime-brokerage`)
+
+Institutional-grade prime brokerage for autonomous AI funds:
+
+| Component | Description |
+|-----------|-------------|
+| **Multi-Fund Custody** | Centralized capital pools, multi-agent allocation, internal clearing |
+| **Margin & Leverage** | Risk-based leverage, dynamic margin, volatility-adjusted collateral |
+| **Risk Aggregation** | Portfolio-level exposure, systemic risk modeling, VaR and stress tests |
+| **Capital Efficiency** | Idle capital optimization, yield stacking, cross-fund routing |
+| **Institutional Reporting** | NAV calculations, risk exposure reports, audit logs |
+| **Securities Lending** | Token lending, agent-to-agent liquidity, RWA-backed lending |
+| **Cross-Chain Brokerage** | Multi-chain capital, cross-chain collateral, bridge-aware margin |
+
+### Liquidity Network (`src/liquidity-network`)
+
+Deep liquidity infrastructure for institutional capital routing:
+
+| Component | Description |
+|-----------|-------------|
+| **Aggregation Layer** | DEXs, OTC desks, agent liquidity, cross-chain bridges |
+| **Smart Order Routing** | Slippage optimization, gas-aware routing, latency optimization |
+| **Internal Pools** | Agent-to-agent lending, treasury-to-fund routing, capital reuse |
+| **Deep Liquidity Vaults** | Stablecoin, RWA, and hedging pool infrastructure |
+| **Risk-Controlled Execution** | Prime brokerage limits, real-time exposure checks, circuit breakers |
+
+### Risk Engine
+
+Integrated across Prime Brokerage and Liquidity Network:
+- Pre-trade risk validation with configurable limits
+- Real-time pair exposure and concentration monitoring
+- Post-trade volume tracking and daily limit enforcement
+- Automated suspension on limit breach
+
+### RWA & Tokenized Funds (`src/rwa`)
+
+Real-world asset tokenization and fund infrastructure:
+- Asset-backed token management
+- Proof of reserves and audit trails
+- Secondary market liquidity
+- Cross-chain RWA bridging
+
+### Clearing House (`src/clearing-house`)
+
+AI-native Central Counterparty Clearing (CCP) for autonomous AI funds:
+
+| Component | Description |
+|-----------|-------------|
+| **Central Clearing Layer** | Trade registration, obligation matching, settlement tracking, default management. Acts as a CCP guaranteeing settlement between AI participants. |
+| **AI Risk Netting Engine** | Aggregates exposures, calculates net obligations via bilateral/multilateral/cross-asset netting, detects concentration risk. Frees capital through compression. |
+| **Collateral Management** | Initial/maintenance margin, dynamic volatility-adjusted margin models, real-time liquidation prevention, automated collateral rebalancing. |
+| **Default Resolution** | Automatic liquidation pipeline, insurance pool activation, default fund draw-down, socialized loss mechanism for risk containment. |
+| **Real-Time Settlement** | Near-instant settlement via DvP, atomic multi-leg settlement, cross-chain bridge settlement orchestration, RWA legal settlement mapping. |
+| **Audit & Transparency** | Immutable audit logs with cryptographic signatures, exposure dashboards, systemic risk snapshots, compliance-ready institutional reports. |
+
+### Systemic Risk & Stability (`src/systemic-risk`)
+
+Protocol-wide risk containment and stability controls:
+
+| Component | Description |
+|-----------|-------------|
+| **Global Exposure Monitoring** | Real-time cross-fund/agent/asset tracking, heat maps, concentration alerts, risk clustering detection |
+| **Dynamic Leverage Governor** | Volatility-adjusted limits, market-stress-triggered reductions (crisis: 2x, bear: 5x, neutral: 8x, bull: 10x) |
+| **Circuit Breaker System** | 6 rules: extreme volatility, liquidity evaporation, oracle failure, large liquidation wave, cascade risk, insurance depleted |
+| **Insurance & Stability Fund** | Tiered tranche pool (junior→mezzanine→senior), claim lifecycle, emergency liquidity backstop |
+| **AI Stress Testing Engine** | 5 built-in scenarios: 2008 crisis, exchange failure, stablecoin depeg, RWA illiquidity, black swan correlation |
+| **GAAMP Stability Index** | Public 0–100 score with AAA–D grade, 5 weighted components, trend tracking |
 
 ---
 
@@ -787,6 +897,95 @@ We welcome contributions from the community! Please read our contributing guidel
 
 ---
 
+## Global Autonomous Asset Management Protocol (GAAMP)
+
+> Transforming the platform from an AI agent product into **infrastructure for autonomous global asset management**.
+
+GAAMP is an open, standardized, protocol-level infrastructure built on The Open Network (TON) and designed for global cross-chain expansion. It enables creation of AI-managed funds, on-chain clearing & settlement, cross-chain capital orchestration, institutional-grade compliance, and DAO-governed capital systems.
+
+### Vision
+
+Comparable to the world's largest financial infrastructure — but autonomous, AI-native, programmable, and decentralized:
+
+| Institution | Scale | GAAMP Equivalent |
+|-------------|-------|------------------|
+| **BlackRock** | Asset management at scale | AI-native AUM at global scale |
+| **DTCC** | Clearing backbone | On-chain AI netting & settlement |
+| **Vanguard** | Systemic capital management | Programmable autonomous fund management |
+
+### Architecture
+
+```
+Users / Institutions
+        ↓
+  AI Funds  ←────────── Agent Layer (allocate/rebalance/hedge/report/shutdown)
+        ↓
+  Prime Brokerage  ←─── Prime & Liquidity Layer (aggregation + smart routing)
+        ↓
+  Liquidity Network
+        ↓
+  Clearing House  ←──── Clearing & Settlement Layer (AI netting + finality)
+        ↓
+  Settlement Layer
+        ↓
+  Protocol Governance ← Governance Layer (DAO parameter tuning + upgrades)
+        ↑
+  Compliance Layer  ←── Compliance & Identity Layer (KYC/AML + audit)
+```
+
+### Protocol Layers
+
+| Layer | Module | Description |
+|-------|--------|-------------|
+| **1. Agent Layer** | `src/gaamp/agent-layer.ts` | Standardized AI agent interface v1: allocate, rebalance, hedge, report, shutdown |
+| **2. Fund Layer** | `src/gaamp/fund-layer.ts` | Tokenized funds, DAO funds, institutional vehicles — NAV + performance tracking |
+| **3. Prime & Liquidity** | `src/gaamp/prime-liquidity-layer.ts` | AI-optimized routing, liquidity aggregation, internal netting |
+| **4. Clearing & Settlement** | `src/gaamp/clearing-settlement-layer.ts` | AI netting engine, margin management, default resolution, settlement finality |
+| **5. Governance** | `src/gaamp/governance-layer.ts` | DAO voting, protocol parameters, insurance pools, upgrade mechanisms |
+| **6. Compliance & Identity** | `src/gaamp/compliance-identity-layer.ts` | KYC/AML, jurisdiction-aware access, audit trail, compliance reporting |
+
+### Quick Start
+
+```typescript
+import { createGAAMPProtocol } from '@tonaiagent/core/gaamp';
+
+const protocol = createGAAMPProtocol({ chainId: 'ton' });
+
+// Register participant
+const participant = protocol.compliance.registerParticipant({
+  name: 'Alpha Capital',
+  type: 'institution',
+  institutionalType: 'hedge_fund',
+  primaryJurisdiction: 'US',
+});
+protocol.compliance.approveKYC(participant.id, 'institutional');
+
+// Create AI fund
+const fund = protocol.fundLayer.createFund({
+  name: 'TON Alpha AI Fund',
+  type: 'hedge',
+  fundClass: 'institutional',
+  chain: 'ton',
+  initialCapital: 10_000_000,
+});
+
+// Deploy trading agent
+const agent = protocol.agentLayer.registerAgent({
+  name: 'Alpha Bot',
+  type: 'trading',
+  fundId: fund.id,
+});
+protocol.agentLayer.activateAgent(agent.id);
+
+// System status
+const status = protocol.getSystemStatus();
+console.log('GAAMP v1:', status);
+```
+
+For full documentation, see [docs/gaamp.md](docs/gaamp.md).
+
+---
+
 ## Roadmap
 
 ### MVP (Current Focus)
@@ -831,6 +1030,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 
 - [ ] Omnichain / Multi-chain support
 - [ ] Protocol layer (Open Agent Protocol)
+- [x] GAAMP v1 — Global Autonomous Asset Management Protocol (6-layer stack)
 - [ ] Plugin marketplace
 - [ ] Launchpad
 - [ ] Super App layer
