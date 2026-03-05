@@ -915,6 +915,152 @@ export {
   type DaoEventCallback,
 } from './dao-governance';
 
+// Systemic Risk & Stability Framework (Issue #122)
+// System-wide risk containment and stability controls analogous to BIS/Federal Reserve
+// but fully transparent, algorithmic, AI-supervised, and on-chain enforceable.
+// Components: Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker,
+//             Insurance & Stability Fund, AI Stress Testing Engine, GAAMP Stability Index.
+// Architecture: Agents/Funds → Prime Brokerage → Clearing House
+//               → Systemic Risk Engine → Leverage Governor → Stability Fund
+// Note: Import separately from '@tonaiagent/core/systemic-risk' for full access.
+export * as SystemicRisk from './systemic-risk';
+export {
+  // Unified manager
+  DefaultSystemicRiskManager,
+  createSystemicRiskManager,
+  // Exposure Monitoring
+  DefaultGlobalExposureMonitor,
+  createGlobalExposureMonitor,
+  // Leverage Governor
+  DefaultDynamicLeverageGovernor,
+  createDynamicLeverageGovernor,
+  // Circuit Breaker
+  DefaultCircuitBreakerSystem,
+  createCircuitBreakerSystem,
+  DEFAULT_CIRCUIT_BREAKER_RULES,
+  // Insurance Fund
+  DefaultInsuranceAndStabilityFund,
+  createInsuranceAndStabilityFund,
+  // Stress Testing
+  DefaultAIStressTestingEngine,
+  createAIStressTestingEngine,
+  // Stability Score
+  DefaultStabilityScoreEngine,
+  createStabilityScoreEngine,
+  // Types
+  type SystemicRiskManager,
+  type SystemicRiskSystemStatus,
+  type SystemicRiskConfig,
+  type SystemicRiskEvent,
+  type SystemicRiskEventCallback,
+  // Note: exported as SystemicRiskCircuitBreakerState to avoid conflict with dao-governance module
+  type CircuitBreakerState as SystemicRiskCircuitBreakerState,
+  // Note: exported as SystemicRiskCircuitBreakerEvent to avoid conflict with investment module
+  type CircuitBreakerEvent as SystemicRiskCircuitBreakerEvent,
+} from './systemic-risk';
+
+// Inter-Protocol Liquidity Standard (Issue #124)
+// Standardized framework for cross-protocol liquidity routing, risk-aware capital
+// allocation, shared clearing logic, and institutional interoperability.
+// Enables any IPLS-compliant protocol to act as a LiquidityProvider or
+// LiquidityConsumer with full on-chain trust guarantees.
+// Architecture: GAAMP → Liquidity Network → IPLS Layer → External Protocols → Cross-chain Liquidity
+// Note: Import separately from '@tonaiagent/core/ipls' for full access.
+export * as IPLSModule from './ipls';
+export {
+  // Unified manager
+  DefaultIPLSManager,
+  createIPLSManager,
+  DEFAULT_IPLS_CONFIG,
+  // Liquidity Standard
+  DefaultLiquidityStandardManager,
+  createLiquidityStandardManager,
+  // Cross-Protocol Risk
+  DefaultCrossProtocolRiskManager,
+  createCrossProtocolRiskManager,
+  // Liquidity Passport
+  DefaultLiquidityPassportManager,
+  createLiquidityPassportManager,
+  // Adapter Layer
+  DefaultAdapterLayerManager,
+  createAdapterLayerManager,
+  // Protocol API
+  DefaultProtocolApiManager,
+  createProtocolApiManager,
+  // Types
+  type IPLSManager,
+  type IPLSConfig,
+  type IPLSHealth,
+  type IPLSEventCallback,
+  type LiquidityProvider,
+  type LiquidityConsumer,
+  type LiquidityRequest,
+  type LiquidityResponse,
+  type LiquidityRoute,
+  type ExposureReport,
+  type CrossProtocolRiskAssessment,
+  type LiquidityPassport,
+  type CrossChainAdapter,
+  type ClearingSession,
+  type CapitalRequest,
+  type ReportingPayload,
+  type RiskDisclosure,
+  type GovernanceHook,
+  type IPLSEvent,
+  type LiquidityStandardManager,
+  type CrossProtocolRiskManager,
+  type LiquidityPassportManager,
+  type AdapterLayerManager,
+  type ProtocolApiManager,
+} from './ipls';
+
+// Autonomous Capital Markets Stack (ACMS) — Issue #125
+// Vertically integrated, AI-native capital markets infrastructure on TON.
+// Unifies 9 protocol layers: Asset → Agent/Fund → Liquidity → Prime Brokerage →
+// Clearing/Settlement → Risk/Stability → Monetary/Treasury → Inter-Protocol → Governance
+// Replaces BlackRock, Goldman Sachs, NASDAQ, DTCC, Federal Reserve with AI-coordinated stack.
+// Note: Import separately from '@tonaiagent/core/acms' for full access to all 9 layers.
+export * as ACMS from './acms';
+export {
+  // Unified manager
+  DefaultACMSManager,
+  createACMSManager,
+  DEFAULT_ACMS_CONFIG,
+  // Layer 1: Asset Layer
+  DefaultAssetLayerManager,
+  createAssetLayerManager,
+  // Layer 2: Agent & Fund Layer
+  DefaultAgentFundLayerManager,
+  createAgentFundLayerManager,
+  // Layer 3: Liquidity Layer
+  DefaultLiquidityLayerManager,
+  createLiquidityLayerManager,
+  // Layer 4: Prime Brokerage Layer (ACMS)
+  DefaultPrimeBrokerageLayerManager,
+  createPrimeBrokerageLayerManager,
+  // Layer 5: Clearing & Settlement Layer
+  DefaultClearingSettlementLayerManager,
+  createClearingSettlementLayerManager,
+  // Layer 6: Risk & Stability Layer
+  DefaultRiskStabilityLayerManager,
+  createRiskStabilityLayerManager,
+  // Layer 7: Monetary & Treasury Layer
+  DefaultMonetaryTreasuryLayerManager,
+  createMonetaryTreasuryLayerManager,
+  // Layer 8: Inter-Protocol Layer
+  DefaultInterProtocolLayerManager,
+  createInterProtocolLayerManager,
+  // Layer 9: Governance Layer (ACMS)
+  DefaultGovernanceLayerManager,
+  createGovernanceLayerManager,
+  // Types
+  type ACMSManager,
+  type ACMSConfig,
+  type ACMSStackStatus,
+  type ACMSEvent,
+  type ACMSEventCallback,
+} from './acms';
+
 // AI-native Global Financial Infrastructure (AGFI)
 // Six interconnected pillars forming institutional-grade global capital coordination:
 // 1. Global Capital Layer - Sovereign funds, institutional allocators, DAO treasuries

@@ -257,6 +257,42 @@ TON AI Agent is a comprehensive platform that enables:
 | **DAO Governance** | Proposal creation, voting, and execution |
 | **Anti-Exploit** | Sybil resistance, rate limiting, emission controls |
 
+### AI Monetary Policy & Treasury Layer
+
+| Feature | Description |
+|---------|-------------|
+| **Protocol Treasury Vault** | Multi-category reserves: liquidity buffer, insurance fund, strategic capital, stabilization fund |
+| **AI Monetary Engine** | Continuously analyzes stability index, liquidity depth, market volatility to generate policy recommendations |
+| **Adaptive Emission Control** | Phase-based tokenomics: inflation (growth), deflation (stress), burn (profit), incentive boost (liquidity gap) |
+| **Treasury Capital Allocator** | Strategic deployment of reserves with AI-auto / multisig / DAO-vote approval tiers |
+| **Stability-Linked Incentives** | Reward multipliers and yield boosts tied to protocol health and participant behavior |
+| **Monetary Governance** | AI Analysis → DAO Proposal → Vote → Smart Contract Execution with emergency override support |
+
+### Protocol Constitution & Governance Charter
+
+The Protocol Constitution is the foundational constitutional layer that defines the protocol's governance structure, AI authority boundaries, and immutable protections.
+
+```
+Token Holders (DAO)
+      ↓
+Governance Proposals → AI Advisory Analysis → Risk Oversight Review
+      ↓
+Vote & Timelock → On-chain Execution
+      ↓
+Constitutional Limits (Hard limits · AI prohibition list · Immutable clauses)
+```
+
+| Section | Description |
+|---------|-------------|
+| **Foundational Principles** | Protocol purpose, economic mission, risk tolerance, decentralization commitment |
+| **Governance Architecture** | Token holder DAO, treasury council, risk oversight council, emergency committee, AI advisory layer |
+| **AI Authority Spec** | Bounded autonomous actions, advisory-only actions, and absolutely prohibited actions |
+| **Risk Boundaries** | Immutable hard limits (max leverage, systemic exposure, insurance reserve floor) |
+| **Monetary Governance Rules** | Emission policy, inflation/deflation bounds, AI monetary adjustment limits |
+| **Emergency Framework** | Trigger conditions, emergency powers, auto-sunset (max 7 days), post-emergency review |
+| **Amendment Process** | Community review → audit → DAO vote → timelock → enactment; supermajority for constitutional changes |
+| **Institutional Compliance** | KYC/AML, custody standards, RWA regulatory mapping, jurisdiction-aware rules |
+
 ---
 
 ## System Architecture
@@ -338,6 +374,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Multi-Agent** | ❌ Phase 2 | Swarm coordination, shared memory, task delegation | [docs/multi-agent.md](docs/multi-agent.md) |
 | **Marketplace** | ❌ Phase 2 | Strategy discovery, copy trading, creator monetization | [docs/marketplace.md](docs/marketplace.md) |
 | **Tokenomics** | ❌ Phase 2 | TONAI token, staking, governance, reputation | [docs/tokenomics.md](docs/tokenomics.md) |
+| **Monetary Policy** | ❌ Phase 2 | AI-driven emission control, treasury management, DAO monetary governance | (src/monetary-policy) |
 | **Institutional** | ❌ Phase 2 | KYC/AML, compliance, reporting, custody | [docs/institutional.md](docs/institutional.md) |
 | **Hedge Fund** | ❌ Phase 2 | Autonomous fund management with AI strategies | [docs/hedgefund.md](docs/hedgefund.md) |
 | **Ecosystem Fund** | ❌ Phase 2 | Grants, incubation, capital allocation | [docs/ecosystem-fund.md](docs/ecosystem-fund.md) |
@@ -359,6 +396,10 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **GAAMP** | ❌ Phase 3 | Global Autonomous Asset Management Protocol — open protocol standard | [docs/gaamp.md](docs/gaamp.md) |
 | **Liquidity Network** | ❌ Phase 4 | Aggregated pools, smart routing, vaults, internal liquidity | [docs/liquidity-network.md](docs/liquidity-network.md) |
 | **Clearing House** | ❌ Phase 4 | AI-native CCP: netting, settlement, default resolution | (src/clearing-house) |
+| **Systemic Risk & Stability** | ❌ Phase 4 | Protocol-wide risk containment, circuit breakers, insurance fund, GAAMP Stability Index | (src/systemic-risk) |
+| **Inter-Protocol Liquidity Standard (IPLS)** | ❌ Phase 4 | Cross-protocol liquidity routing, risk-aware capital allocation, clearing, and institutional interoperability | (src/ipls) |
+| **ACMS** | ❌ Phase 4 | Autonomous Capital Markets Stack — 9-layer unified infrastructure | [docs/acms.md](docs/acms.md) |
+| **Protocol Constitution** | ❌ Phase 4 | Governance charter, AI authority spec, risk hard limits, emergency framework | (src/protocol-constitution) |
 
 ---
 
@@ -366,7 +407,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 
 > Built on The Open Network for institutional-grade autonomous finance
 
-The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, and Clearing capabilities.
+The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, Clearing capabilities, and a Systemic Risk & Stability Framework.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -388,8 +429,13 @@ The platform provides a comprehensive institutional infrastructure stack integra
 │  │  Funds          │  │  (Partners)     │  │                 │               │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘               │
 │                                                                               │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                   Systemic Risk & Stability Framework                   │  │
+│  │  Leverage Governor | Circuit Breakers | Insurance Fund | Stability Index│  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
 │  Architecture:                                                                │
-│  Agents/Funds → Prime Brokerage → Liquidity Network → Clearing House → Finality│
+│  Agents/Funds → Prime Brokerage → Clearing House → Systemic Risk Engine → Finality│
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -447,6 +493,198 @@ AI-native Central Counterparty Clearing (CCP) for autonomous AI funds:
 | **Default Resolution** | Automatic liquidation pipeline, insurance pool activation, default fund draw-down, socialized loss mechanism for risk containment. |
 | **Real-Time Settlement** | Near-instant settlement via DvP, atomic multi-leg settlement, cross-chain bridge settlement orchestration, RWA legal settlement mapping. |
 | **Audit & Transparency** | Immutable audit logs with cryptographic signatures, exposure dashboards, systemic risk snapshots, compliance-ready institutional reports. |
+
+### Systemic Risk & Stability (`src/systemic-risk`)
+
+Protocol-wide risk containment and stability controls:
+
+| Component | Description |
+|-----------|-------------|
+| **Global Exposure Monitoring** | Real-time cross-fund/agent/asset tracking, heat maps, concentration alerts, risk clustering detection |
+| **Dynamic Leverage Governor** | Volatility-adjusted limits, market-stress-triggered reductions (crisis: 2x, bear: 5x, neutral: 8x, bull: 10x) |
+| **Circuit Breaker System** | 6 rules: extreme volatility, liquidity evaporation, oracle failure, large liquidation wave, cascade risk, insurance depleted |
+| **Insurance & Stability Fund** | Tiered tranche pool (junior→mezzanine→senior), claim lifecycle, emergency liquidity backstop |
+| **AI Stress Testing Engine** | 5 built-in scenarios: 2008 crisis, exchange failure, stablecoin depeg, RWA illiquidity, black swan correlation |
+| **GAAMP Stability Index** | Public 0–100 score with AAA–D grade, 5 weighted components, trend tracking |
+
+---
+
+## Inter-Protocol Liquidity Standard (IPLS)
+
+IPLS v1 is a standardized cross-protocol liquidity and interoperability framework that enables any compliant protocol on The Open Network to act as a `LiquidityProvider` or `LiquidityConsumer` with institutional-grade trust guarantees.
+
+### Architecture
+
+```
+GAAMP → Liquidity Network → IPLS Layer → External Protocols → Cross-chain Liquidity
+```
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| **LiquidityStandard** | IPLS v1 provider/consumer interfaces — deposit, withdraw, quote, route, reportExposure, requestLiquidity, returnLiquidity, reportRisk |
+| **CrossProtocolRisk** | External protocol exposure assessment, liquidity depth analysis, volatility scoring, smart contract risk, AI-driven capital allocation |
+| **LiquidityPassport** | On-chain capital origin verification, risk scoring, compliance status, jurisdictional flags, credit history, endorsements |
+| **AdapterLayer** | Cross-chain vault management, bridge abstraction, gas-aware routing, circuit-breaker failover |
+| **ProtocolAPI** | Capital request standards, reporting format, risk disclosure, governance hooks |
+
+### Quick Start
+
+```typescript
+import { createIPLSManager } from '@tonaiagent/core/ipls';
+
+const ipls = createIPLSManager({
+  version: '1.0.0',
+  crossChainEnabled: true,
+  aiRiskEnabled: true,
+  governanceEnabled: true,
+});
+
+// Register a liquidity provider
+const provider = await ipls.liquidity.registerProvider({
+  name: 'TON AMM Pool',
+  type: 'dex',
+  chainIds: ['ton'],
+  supportedAssets: ['ton', 'usdt', 'usdc'],
+});
+await ipls.liquidity.updateProviderStatus(provider.id, 'active');
+await ipls.liquidity.deposit(provider.id, 'usdt', '1000000', 'ton');
+
+// Issue a Liquidity Passport
+const passport = await ipls.passport.issuePassport({
+  holderId: provider.id,
+  holderName: provider.name,
+  capitalOrigin: { primaryChain: 'ton', capitalType: 'native' },
+  compliance: { status: 'compliant', kycLevel: 'institutional' },
+});
+
+// Assess cross-protocol risk with AI insights
+const assessment = await ipls.risk.assessProtocol({
+  protocolId: provider.id,
+  protocolName: provider.name,
+  includeAIInsights: true,
+});
+console.log(`Risk Tier: ${assessment.riskTier}, Score: ${assessment.overallScore}`);
+
+// Register a cross-chain adapter
+const adapter = await ipls.adapter.registerAdapter({
+  name: 'TON↔ETH Bridge',
+  bridgeType: 'lock_mint',
+  supportedChains: ['ton', 'ethereum'],
+  supportedAssets: ['usdt', 'usdc'],
+  config: {},
+});
+await ipls.adapter.setAdapterStatus(adapter.id, 'active');
+
+// Request liquidity (consumer side)
+const consumer = await ipls.liquidity.registerConsumer({
+  name: 'Derivatives Protocol',
+  type: 'derivatives',
+  requestedChains: ['ton'],
+  preferredAssets: ['usdt'],
+});
+await ipls.liquidity.updateConsumerStatus(consumer.id, 'active');
+
+const response = await ipls.liquidity.requestLiquidity(consumer.id, {
+  id: 'req_001',
+  consumerId: consumer.id,
+  asset: 'usdt',
+  amount: '50000',
+  targetChain: 'ton',
+  urgency: 'standard',
+  strategy: 'ai_optimized',
+  maxFeeBps: 50,
+  deadline: new Date(Date.now() + 3600000),
+  createdAt: new Date(),
+});
+console.log(`Liquidity ${response.approved ? 'approved' : 'rejected'}: ${response.allocatedAmount}`);
+
+// Submit a governance proposal
+const proposal = await ipls.api.proposeGovernanceAction({
+  action: 'fee_adjustment',
+  targetModule: 'liquidity_standard',
+  proposedBy: provider.id,
+  parameters: { newFeesBps: 8 },
+  rationale: 'Reduce fees to improve capital efficiency',
+  quorumRequired: 50,
+  votingDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+});
+
+console.log('IPLS Health:', ipls.getHealth());
+```
+
+### Key IPLS Features
+
+- **Standardized Interfaces**: `LiquidityProvider` and `LiquidityConsumer` follow IPLS v1 spec with defined deposit/withdraw/quote/route/expose methods
+- **Cross-Protocol Risk Scoring**: Multi-dimensional risk assessment covering smart contract safety, liquidity depth, volatility, concentration, and operational risk
+- **AI-Driven Allocation**: ML-based capital allocation recommendations with scenario analysis and contagion risk modeling
+- **Liquidity Passport**: On-chain verifiable protocol identity with capital origin proof, credit history, compliance status, and peer endorsements
+- **Adapter Abstraction**: Unified bridge API supporting lock-mint, burn-mint, atomic swap, optimistic, and ZK-proof bridge types
+- **Gas-Aware Routing**: Dynamic gas price estimation with configurable buffers, chain-specific limits, and failover adapter support
+- **Clearing Compatibility**: Bilateral and multilateral netting, portable collateral, configurable haircuts, and settlement finality guarantees
+- **Governance Hooks**: On-chain parameter governance with quorum voting, proposal lifecycle, and execution via multi-sig
+
+---
+
+## Autonomous Capital Markets Stack (ACMS)
+
+TONAIAgent implements the **Autonomous Capital Markets Stack** — a vertically integrated, AI-native capital markets infrastructure that replaces the fragmented traditional financial system with a unified, programmable, AI-coordinated protocol on TON.
+
+### Institutional Comparison
+
+| ACMS Layer | Replaces |
+|---|---|
+| Asset Layer (L1) + Agent/Fund Layer (L2) | BlackRock / Global Asset Managers |
+| Liquidity Layer (L3) | NASDAQ / Institutional Liquidity Venues |
+| Prime Brokerage Layer (L4) | Goldman Sachs / Prime Brokers |
+| Clearing & Settlement Layer (L5) | DTCC / Central Counterparties (CCPs) |
+| Risk & Stability Layer (L6) | Basel Committee / Prudential Regulators |
+| Monetary & Treasury Layer (L7) | Federal Reserve / Central Banks |
+| Inter-Protocol Layer (L8) | SWIFT / BIS Cross-border Infrastructure |
+| Governance Layer (L9) | SEC / CFTC / Protocol DAO |
+
+### Stack Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Layer 9: Governance         — DAO governance, parameter tuning      │
+│  Layer 8: Inter-Protocol     — IPLS, cross-chain routing, passports  │
+│  Layer 7: Monetary/Treasury  — Emission control, treasury allocation  │
+│  Layer 6: Risk & Stability   — Circuit breakers, Stability Index      │
+│  Layer 5: Clearing/Settlement— AI netting, collateral, default rescue │
+│  Layer 4: Prime Brokerage    — Margin, leverage, capital efficiency   │
+│  Layer 3: Liquidity          — Smart routing, cross-chain liquidity   │
+│  Layer 2: Agent & Fund       — AI hedge funds, strategy agents        │
+│  Layer 1: Asset              — Crypto, RWA tokenization, funds        │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Quick Start
+
+```typescript
+import { createACMSManager } from '@tonaiagent/core/acms';
+
+const acms = createACMSManager({ networkId: 'ton-mainnet', environment: 'mainnet' });
+
+// Layer 1: Issue a tokenized fund
+const fund = acms.assetLayer.createTokenizedFund({ ... });
+
+// Layer 2: Deploy AI agents
+const agent = acms.agentFundLayer.deployAgent({ type: 'arbitrage_agent', ... });
+
+// Layer 3: Route a large order
+const route = acms.liquidityLayer.routeOrder({ orderType: 'twap', amountIn: 1_000_000, ... });
+
+// Layer 6: Monitor stability
+const stability = acms.riskStabilityLayer.computeStabilityIndex({ liquidityScore: 85, ... });
+console.log('Stability Index:', stability.score, stability.riskLevel);
+
+// Full stack status
+const status = acms.getStackStatus();
+```
+
+See [docs/acms.md](docs/acms.md) for full documentation.
 
 ---
 
@@ -934,6 +1172,94 @@ const permissions = {
 
 ---
 
+## AI Monetary Policy & Treasury Layer
+
+The AI Monetary Policy & Treasury Layer is a programmable central bank for the TON AI Agent ecosystem. Inspired conceptually by the Federal Reserve, ECB, and IMF — but transparent, algorithmic, AI-managed, and DAO-governed.
+
+### How Emissions Are Controlled
+
+The **Adaptive Emission Controller** replaces fixed tokenomics with a phase-based adaptive model:
+
+```
+Market Conditions
+       ↓
+AI Monetary Engine (Stability Index + Liquidity + Volatility + Growth)
+       ↓
+Emission Phase Decision:
+  • Growth Phase  → Inflation: boost emissions to incentivize participation
+  • Stress Phase  → Deflation: reduce emissions to stabilize token price
+  • Profit Phase  → Burn: destroy tokens to increase long-term value
+  • Gap Phase     → Incentive Boost: attract liquidity providers
+  • Stable Phase  → Maintain: keep current emission rate
+       ↓
+Adaptive Emission Controller (clamped to min/max bounds)
+```
+
+### How Reserves Are Managed
+
+The **Protocol Treasury Vault** maintains five reserve categories:
+
+| Reserve | Target Allocation | Purpose |
+|---------|------------------|---------|
+| Liquidity Buffer | 30% | Short-term liquidity for withdrawals and operations |
+| Insurance Fund | 20% | Backstop against unexpected losses |
+| Strategic Capital | 20% | Long-term strategic investments and co-investments |
+| Stabilization Fund | 15% | Ecosystem stability interventions |
+| Protocol Reserves | 15% | Core protocol operations and upgrades |
+
+Revenue flows from performance fees, marketplace fees, RWA yield, prime brokerage revenue, and token issuance.
+
+The **Treasury Capital Allocator** deploys reserves with a three-tier approval system:
+- **AI Auto-deploy** (≤5% of treasury): For low-urgency, small deployments
+- **Multi-sig** (5–10%): Requires multiple authorized signers
+- **DAO Vote** (>10%): Full governance vote required
+
+### How Stability Is Enforced
+
+The **Stability-Linked Incentive System** ties rewards to protocol health:
+
+```
+Stability Score + Liquidity Depth + Risk Exposure + Agent Performance
+                              ↓
+                    Incentive Multiplier (0.5x – 2.0x)
+                              ↓
+              Base Yield × Multiplier + Tier Yield Boost
+```
+
+Reward tiers encourage conservative, long-term, capital-disciplined behavior:
+- **Conservative** (≤5% drawdown, 90+ day hold) → +3% yield boost
+- **Balanced** (≤15% drawdown, 30+ day hold) → +1.5% yield boost
+- **Growth** (≤25% drawdown, 7+ day hold) → +0.5% yield boost
+- **Aggressive** → Base yield only
+
+### Why the Token Model Is Sustainable
+
+The adaptive emission model ensures long-term sustainability through:
+
+1. **Demand-driven supply**: Emissions increase when protocol growth demands more participation incentives and decrease when markets are stressed
+2. **Revenue-backed reserves**: Treasury grows from protocol revenue, not token inflation
+3. **Deflationary mechanisms**: Burns reduce supply during high profitability, creating long-term value accrual
+4. **AI-optimized allocation**: Treasury capital is continuously redeployed to maximize yield and minimize risk
+5. **DAO governance**: Token holders vote on major monetary policy changes, ensuring community alignment
+
+### Monetary Governance Flow
+
+```
+AI Analysis (Monetary Policy Engine)
+            ↓
+  Monetary Proposal (type, recommendation, rationale)
+            ↓
+        DAO Vote (7-day voting period, 51% threshold)
+            ↓
+  Execution Smart Contract (2-day timelock)
+            ↓
+  Protocol-wide Economic Impact
+```
+
+Emergency overrides (emission pause, treasury freeze, yield cap) are available for critical situations that cannot wait for the standard governance cycle.
+
+---
+
 ## Contributing
 
 We welcome contributions from the community! Please read our contributing guidelines before submitting a pull request.
@@ -1110,6 +1436,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Growth and referral engine
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
+- [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
 - [ ] Full decentralization
 
 ---
