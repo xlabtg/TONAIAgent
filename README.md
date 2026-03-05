@@ -33,9 +33,10 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 14. [Security Best Practices](#security-best-practices)
 15. [Contributing](#contributing)
 16. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-17. [Roadmap](#roadmap)
-18. [Community](#community)
-19. [License](#license)
+17. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
+18. [Roadmap](#roadmap)
+19. [Community](#community)
+20. [License](#license)
 
 ---
 
@@ -1379,6 +1380,135 @@ For full documentation, see [docs/gaamp.md](docs/gaamp.md).
 
 ---
 
+## Autonomous Global Financial Network (AGFN)
+
+> Transforming infrastructure into a **globally connected autonomous financial network**.
+
+The Autonomous Global Financial Network (AGFN) extends AGFI capabilities into a distributed, AI-coordinated network that connects multiple jurisdictions, integrates sovereign and institutional nodes, routes global liquidity, and executes AI-managed capital flows 24/7.
+
+### Vision
+
+Comparable in systemic role to the world's largest financial networks — but AI-managed, on-chain native, and governance-bounded:
+
+| Traditional System | AGFN Equivalent | Key Capability |
+|---|---|---|
+| **SWIFT** | Global Node Architecture + Settlement Mesh | Cross-jurisdiction capital routing |
+| **CLS Group** | Global Settlement Mesh | Multi-region FX settlement |
+| **Visa Inc** | Cross-Jurisdiction Routing | Real-time transaction routing |
+| **BIS** | AI Coordination Layer | Global systemic risk coordination |
+
+### Network Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              AGFN - Autonomous Global Financial Network                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Global Node Architecture    │  Sovereign, institutional, custodian      │
+│  2. Cross-Jurisdiction Routing  │  Compliance-aware, liquidity passport     │
+│  3. Global Settlement Mesh      │  Multi-region, atomic transfers           │
+│  4. AI Coordination Layer       │  Liquidity balance, risk clusters         │
+│  5. Multi-Reserve Treasury      │  Regional pools, multi-asset vaults       │
+│  6. Global Stability Dashboard  │  Exposure, liquidity, stability index     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Core Network Components
+
+| Component | Module | Description |
+|-----------|--------|-------------|
+| **1. Global Node Architecture** | `src/agfn/global-node-architecture.ts` | Sovereign, institutional, custodian, liquidity, clearing, and AI computation nodes with defined permissions and capital exposure limits |
+| **2. Cross-Jurisdiction Routing** | `src/agfn/cross-jurisdiction-routing.ts` | Compliance-aware capital routing, liquidity passport validation, jurisdiction-aware execution |
+| **3. Global Settlement Mesh** | `src/agfn/global-settlement-mesh.ts` | Multi-region settlement, cross-chain finality, atomic cross-jurisdiction transfers, time-zone independent settlement |
+| **4. AI Coordination Layer** | `src/agfn/ai-coordination-layer.ts` | Global liquidity balancing, risk cluster detection, autonomous capital reallocation, crisis mitigation coordination |
+| **5. Multi-Reserve Treasury** | `src/agfn/multi-reserve-treasury.ts` | Regional reserve pools, multi-asset treasury vaults, cross-chain reserve management, stability buffers |
+| **6. Global Stability Dashboard** | `src/agfn/global-stability-dashboard.ts` | Public-facing metrics: global exposure, regional capital allocation, liquidity depth, leverage levels, stability index |
+
+### Quick Start
+
+```typescript
+import { createAGFNManager } from '@tonaiagent/core/agfn';
+
+// Initialize AGFN
+const agfn = createAGFNManager();
+
+// Register a sovereign node
+const ecbNode = agfn.nodeArchitecture.registerNode({
+  name: 'ECB Primary Node',
+  type: 'sovereign',
+  jurisdiction: 'EU',
+  chain: 'ethereum',
+  operatorId: 'ecb_001',
+  capacityUSD: 500_000_000_000, // $500B
+  complianceLevel: 'sovereign',
+});
+
+// Register an institutional node
+const jpMorganNode = agfn.nodeArchitecture.registerNode({
+  name: 'JPMorgan Custody Node',
+  type: 'institutional',
+  jurisdiction: 'US',
+  chain: 'ton',
+  operatorId: 'jpm_001',
+  capacityUSD: 100_000_000_000, // $100B
+  complianceLevel: 'enhanced',
+});
+
+// Compute cross-jurisdiction capital route
+const route = agfn.capitalRouting.computeRoute({
+  sourceNodeId: ecbNode.id,
+  destinationNodeId: jpMorganNode.id,
+  amount: 1_000_000_000, // $1B
+  currency: 'USD',
+  strategy: 'compliance_first',
+});
+
+// Execute settlement
+const settlement = agfn.settlementMesh.initiateSettlement({
+  routeId: route.id,
+  settlementType: 'atomic',
+  sourceNodeId: route.sourceNodeId,
+  destinationNodeId: route.destinationNodeId,
+  amount: route.finalAmount,
+  currency: route.currency,
+});
+
+// Monitor global stability
+const status = agfn.getSystemStatus();
+console.log('AGFN Network Status:', {
+  activeNodes: status.activeNodes,
+  sovereignNodes: status.sovereignNodes,
+  institutionalNodes: status.institutionalNodes,
+  activeRiskClusters: status.activeRiskClusters,
+  stabilityIndex: status.stabilityIndex,
+  stabilityIndicator: status.stabilityIndicator,
+});
+```
+
+### Node Types
+
+| Node Type | Description | Typical Operators |
+|-----------|-------------|-------------------|
+| **Sovereign** | Central bank and government-backed nodes | ECB, Fed, BoJ, PBoC |
+| **Institutional** | Large financial institution nodes | JPMorgan, Goldman, BlackRock |
+| **Custodian** | Qualified custodian nodes | State Street, BNY Mellon |
+| **Liquidity** | Market maker and liquidity provider nodes | Citadel, Jump, Jane Street |
+| **Clearing** | Central counterparty clearing nodes | DTCC, LCH, CME |
+| **AI Computation** | AI model inference and coordination nodes | AGFN AI Infrastructure |
+
+### Key Capabilities
+
+- **Cross-Border Capital Flows**: Compliance-aware routing across 190+ jurisdictions
+- **AI-Managed Liquidity**: Real-time global liquidity balancing and optimization
+- **Risk Cluster Detection**: Proactive identification of concentration, correlation, and contagion risks
+- **Atomic Multi-Region Settlement**: Time-zone independent cross-chain settlement
+- **Crisis Mitigation**: Autonomous crisis detection and coordinated response
+- **Multi-Reserve Treasury**: Regional reserve pools with stability buffers
+- **Public Transparency**: Real-time stability dashboard with institutional visibility
+
+For full documentation, see [docs/agfn.md](docs/agfn.md).
+
+---
+
 ## Roadmap
 
 ### MVP (Current Focus)
@@ -1437,6 +1567,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
 - [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
+- [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
 - [ ] Full decentralization
 
 ---
