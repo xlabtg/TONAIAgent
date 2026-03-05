@@ -912,3 +912,47 @@ export {
   type DaoEventType,
   type DaoEventCallback,
 } from './dao-governance';
+
+// Systemic Risk & Stability Framework (Issue #122)
+// System-wide risk containment and stability controls analogous to BIS/Federal Reserve
+// but fully transparent, algorithmic, AI-supervised, and on-chain enforceable.
+// Components: Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker,
+//             Insurance & Stability Fund, AI Stress Testing Engine, GAAMP Stability Index.
+// Architecture: Agents/Funds → Prime Brokerage → Clearing House
+//               → Systemic Risk Engine → Leverage Governor → Stability Fund
+// Note: Import separately from '@tonaiagent/core/systemic-risk' for full access.
+export * as SystemicRisk from './systemic-risk';
+export {
+  // Unified manager
+  DefaultSystemicRiskManager,
+  createSystemicRiskManager,
+  // Exposure Monitoring
+  DefaultGlobalExposureMonitor,
+  createGlobalExposureMonitor,
+  // Leverage Governor
+  DefaultDynamicLeverageGovernor,
+  createDynamicLeverageGovernor,
+  // Circuit Breaker
+  DefaultCircuitBreakerSystem,
+  createCircuitBreakerSystem,
+  DEFAULT_CIRCUIT_BREAKER_RULES,
+  // Insurance Fund
+  DefaultInsuranceAndStabilityFund,
+  createInsuranceAndStabilityFund,
+  // Stress Testing
+  DefaultAIStressTestingEngine,
+  createAIStressTestingEngine,
+  // Stability Score
+  DefaultStabilityScoreEngine,
+  createStabilityScoreEngine,
+  // Types
+  type SystemicRiskManager,
+  type SystemicRiskSystemStatus,
+  type SystemicRiskConfig,
+  type SystemicRiskEvent,
+  type SystemicRiskEventCallback,
+  // Note: exported as SystemicRiskCircuitBreakerState to avoid conflict with dao-governance module
+  type CircuitBreakerState as SystemicRiskCircuitBreakerState,
+  // Note: exported as SystemicRiskCircuitBreakerEvent to avoid conflict with investment module
+  type CircuitBreakerEvent as SystemicRiskCircuitBreakerEvent,
+} from './systemic-risk';

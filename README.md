@@ -273,6 +273,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **GAAMP** | ❌ Phase 3 | Global Autonomous Asset Management Protocol — open protocol standard | [docs/gaamp.md](docs/gaamp.md) |
 | **Liquidity Network** | ❌ Phase 4 | Aggregated pools, smart routing, vaults, internal liquidity | [docs/liquidity-network.md](docs/liquidity-network.md) |
 | **Clearing House** | ❌ Phase 4 | AI-native CCP: netting, settlement, default resolution | (src/clearing-house) |
+| **Systemic Risk & Stability** | ❌ Phase 4 | Protocol-wide risk containment, circuit breakers, insurance fund, GAAMP Stability Index | (src/systemic-risk) |
 
 ---
 
@@ -280,7 +281,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 
 > Built on The Open Network for institutional-grade autonomous finance
 
-The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, and Clearing capabilities.
+The platform provides a comprehensive institutional infrastructure stack integrating Prime Brokerage, a decentralized Liquidity Network, Risk Engine, RWA tokenization, Clearing capabilities, and a Systemic Risk & Stability Framework.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -302,8 +303,13 @@ The platform provides a comprehensive institutional infrastructure stack integra
 │  │  Funds          │  │  (Partners)     │  │                 │               │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘               │
 │                                                                               │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                   Systemic Risk & Stability Framework                   │  │
+│  │  Leverage Governor | Circuit Breakers | Insurance Fund | Stability Index│  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
 │  Architecture:                                                                │
-│  Agents/Funds → Prime Brokerage → Liquidity Network → Clearing House → Finality│
+│  Agents/Funds → Prime Brokerage → Clearing House → Systemic Risk Engine → Finality│
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -361,6 +367,19 @@ AI-native Central Counterparty Clearing (CCP) for autonomous AI funds:
 | **Default Resolution** | Automatic liquidation pipeline, insurance pool activation, default fund draw-down, socialized loss mechanism for risk containment. |
 | **Real-Time Settlement** | Near-instant settlement via DvP, atomic multi-leg settlement, cross-chain bridge settlement orchestration, RWA legal settlement mapping. |
 | **Audit & Transparency** | Immutable audit logs with cryptographic signatures, exposure dashboards, systemic risk snapshots, compliance-ready institutional reports. |
+
+### Systemic Risk & Stability (`src/systemic-risk`)
+
+Protocol-wide risk containment and stability controls:
+
+| Component | Description |
+|-----------|-------------|
+| **Global Exposure Monitoring** | Real-time cross-fund/agent/asset tracking, heat maps, concentration alerts, risk clustering detection |
+| **Dynamic Leverage Governor** | Volatility-adjusted limits, market-stress-triggered reductions (crisis: 2x, bear: 5x, neutral: 8x, bull: 10x) |
+| **Circuit Breaker System** | 6 rules: extreme volatility, liquidity evaporation, oracle failure, large liquidation wave, cascade risk, insurance depleted |
+| **Insurance & Stability Fund** | Tiered tranche pool (junior→mezzanine→senior), claim lifecycle, emergency liquidity backstop |
+| **AI Stress Testing Engine** | 5 built-in scenarios: 2008 crisis, exchange failure, stablecoin depeg, RWA illiquidity, black swan correlation |
+| **GAAMP Stability Index** | Public 0–100 score with AAA–D grade, 5 weighted components, trend tracking |
 
 ---
 
@@ -1024,6 +1043,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Growth and referral engine
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
+- [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
 - [ ] Full decentralization
 
 ---
