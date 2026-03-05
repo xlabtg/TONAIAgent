@@ -374,7 +374,7 @@ export class DefaultAgentLayer implements AgentLayer {
 
   private defaultCapabilitiesForType(type: AgentType): AgentCapability[] {
     const caps: Record<AgentType, AgentCapability[]> = {
-      trading: ['allocate', 'trade', 'report'],
+      trading: ['allocate', 'rebalance', 'hedge', 'trade', 'report'],
       strategy: ['allocate', 'rebalance', 'report'],
       risk: ['hedge', 'report', 'monitor'],
       treasury: ['allocate', 'report', 'govern'],
