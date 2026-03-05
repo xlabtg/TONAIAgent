@@ -140,9 +140,9 @@ export interface ConstitutionalProposal {
   aiAdvisoryNotes?: string[];
   auditRequired: boolean;
   auditCompleted?: boolean;
-  votingStartsAt?: Date;
-  votingEndsAt?: Date;
-  timelockEndsAt?: Date;
+  votingStartAt?: Date;
+  votingEndAt?: Date;
+  timelockEndAt?: Date;
   executedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
