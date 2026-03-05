@@ -752,6 +752,40 @@ export {
   type PrimeBrokerageEventCallback,
 } from './prime-brokerage';
 
+// Institutional Liquidity Network (Issue #119)
+// Deep liquidity infrastructure layer for institutional capital routing on TON.
+// Enables aggregated liquidity pools, cross-fund capital routing, smart order routing,
+// deep liquidity sourcing, and risk-controlled execution built on The Open Network.
+// Architecture: Agents/Funds → Prime Brokerage → Liquidity Network → DEX / OTC / Cross-chain
+// Note: Import separately from '@tonaiagent/core/liquidity-network' for full access.
+export * as LiquidityNetwork from './liquidity-network';
+export {
+  // Unified manager
+  DefaultLiquidityNetworkManager,
+  createLiquidityNetworkManager,
+  // Aggregation Layer
+  DefaultLiquidityAggregationManager,
+  createLiquidityAggregationManager,
+  // Smart Order Routing
+  DefaultSmartOrderRoutingEngine,
+  createSmartOrderRoutingEngine,
+  // Internal Liquidity Pools
+  DefaultInternalLiquidityPoolManager,
+  createInternalLiquidityPoolManager,
+  // Deep Liquidity Vaults
+  DefaultDeepLiquidityVaultManager,
+  createDeepLiquidityVaultManager,
+  // Risk-Controlled Execution
+  DefaultRiskControlledExecutionManager,
+  createRiskControlledExecutionManager,
+  // Types
+  type LiquidityNetworkManager,
+  type LiquidityNetworkSystemStatus,
+  type LiquidityNetworkConfig,
+  type LiquidityNetworkEvent,
+  type LiquidityNetworkEventCallback,
+} from './liquidity-network';
+
 // DAO Governance & Treasury Layer (Issue #103)
 // Self-governing AI financial protocol with on-chain treasury management,
 // multi-tier voting, AI-driven capital allocation within governance constraints,
