@@ -269,6 +269,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Growth** | ❌ Phase 4 | Viral mechanics, gamification, referrals | [docs/growth.md](docs/growth.md) |
 | **Personal Finance** | ❌ Phase 4 | AI-native wealth management and financial literacy | [docs/personal-finance.md](docs/personal-finance.md) |
 | **Institutional Network** | ❌ Phase 4 | Funds, banks, custodians, liquidity providers | [docs/institutional-network.md](docs/institutional-network.md) |
+| **Systemic Risk & Stability** | ❌ Phase 4 | Protocol-wide risk containment, circuit breakers, insurance fund, GAAMP Stability Index | (src/systemic-risk) |
 
 ---
 
@@ -842,6 +843,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Growth and referral engine
 - [ ] Decentralized AI training
 - [ ] Agent-to-agent economy
+- [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
 - [ ] Full decentralization
 
 ---
