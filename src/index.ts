@@ -1181,3 +1181,51 @@ export {
   type AIFOSEvent,
   type AIFOSEventCallback,
 } from './aifos';
+
+// Sovereign Digital Asset Coordination Layer (SDACL)
+// Five components enabling sovereign digital asset coordination:
+// 1. CBDC Integration Interface - Issuer verification, supply validation, settlement routing
+// 2. Sovereign Treasury Bridge - Treasury allocations, bond issuance, reserve visibility
+// 3. Cross-Sovereign Coordination Engine - AI capital flows, liquidity balancing, risk management
+// 4. Jurisdiction Enforcement Layer - Geographic restrictions, eligibility, sanction-aware routing
+// 5. Sovereign Transparency Dashboard - Exposure metrics, compliance reporting, alerts
+// Note: Import SDACL module separately from '@tonaiagent/core/sdacl'
+// for full access to all SDACL types, managers, and factory functions
+export * as SDACL from './sdacl';
+export {
+  // Main SDACL manager
+  DefaultSDACLService,
+  createSDACLService,
+  // Component factories
+  createCBDCIntegrationManager,
+  createSovereignTreasuryBridgeManager,
+  createCrossSovereignCoordinationManager,
+  createJurisdictionEnforcementManager,
+  createSovereignTransparencyManager,
+  // Component classes
+  DefaultCBDCIntegrationManager,
+  DefaultSovereignTreasuryBridgeManager,
+  DefaultCrossSovereignCoordinationManager,
+  DefaultJurisdictionEnforcementManager,
+  DefaultSovereignTransparencyManager,
+  // Key types
+  type SDACLConfig,
+  type SDACLService,
+  type SDACLSystemStatus,
+  type SDACLEvent,
+  type SDACLEventCallback,
+  type SovereignAsset,
+  type SovereignAssetId,
+  type IssuerVerificationResult,
+  type SettlementRoute,
+  type TreasuryAllocation as SDACLTreasuryAllocation,
+  type SovereignBond,
+  type CrossBorderFlow,
+  type LiquidityBalance,
+  type JurisdictionRule,
+  type ParticipantEligibility,
+  type ExposureMetric,
+  type ComplianceReport,
+  type DashboardSnapshot,
+  type DashboardAlert,
+} from './sdacl';

@@ -942,7 +942,6 @@ describe('InstitutionalReportingSuite', () => {
 
     it('should export audit trail for date range', () => {
       const from = new Date(Date.now() - 3600000);
-      const to = new Date();
 
       suite.createAuditLog({
         eventType: 'test_event',
@@ -954,6 +953,9 @@ describe('InstitutionalReportingSuite', () => {
         details: {},
         outcome: 'success',
       });
+
+      // Set 'to' after creating the log to ensure the log's timestamp falls within range
+      const to = new Date(Date.now() + 1000);
 
       const trail = suite.exportAuditTrail(from, to);
       expect(trail.length).toBeGreaterThan(0);
