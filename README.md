@@ -183,6 +183,31 @@ TON AI Agent is a comprehensive platform that enables:
 | **Stability-Linked Incentives** | Reward multipliers and yield boosts tied to protocol health and participant behavior |
 | **Monetary Governance** | AI Analysis → DAO Proposal → Vote → Smart Contract Execution with emergency override support |
 
+### Protocol Constitution & Governance Charter
+
+The Protocol Constitution is the foundational constitutional layer that defines the protocol's governance structure, AI authority boundaries, and immutable protections.
+
+```
+Token Holders (DAO)
+      ↓
+Governance Proposals → AI Advisory Analysis → Risk Oversight Review
+      ↓
+Vote & Timelock → On-chain Execution
+      ↓
+Constitutional Limits (Hard limits · AI prohibition list · Immutable clauses)
+```
+
+| Section | Description |
+|---------|-------------|
+| **Foundational Principles** | Protocol purpose, economic mission, risk tolerance, decentralization commitment |
+| **Governance Architecture** | Token holder DAO, treasury council, risk oversight council, emergency committee, AI advisory layer |
+| **AI Authority Spec** | Bounded autonomous actions, advisory-only actions, and absolutely prohibited actions |
+| **Risk Boundaries** | Immutable hard limits (max leverage, systemic exposure, insurance reserve floor) |
+| **Monetary Governance Rules** | Emission policy, inflation/deflation bounds, AI monetary adjustment limits |
+| **Emergency Framework** | Trigger conditions, emergency powers, auto-sunset (max 7 days), post-emergency review |
+| **Amendment Process** | Community review → audit → DAO vote → timelock → enactment; supermajority for constitutional changes |
+| **Institutional Compliance** | KYC/AML, custody standards, RWA regulatory mapping, jurisdiction-aware rules |
+
 ---
 
 ## System Architecture
@@ -288,6 +313,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Systemic Risk & Stability** | ❌ Phase 4 | Protocol-wide risk containment, circuit breakers, insurance fund, GAAMP Stability Index | (src/systemic-risk) |
 | **Inter-Protocol Liquidity Standard (IPLS)** | ❌ Phase 4 | Cross-protocol liquidity routing, risk-aware capital allocation, clearing, and institutional interoperability | (src/ipls) |
 | **ACMS** | ❌ Phase 4 | Autonomous Capital Markets Stack — 9-layer unified infrastructure | [docs/acms.md](docs/acms.md) |
+| **Protocol Constitution** | ❌ Phase 4 | Governance charter, AI authority spec, risk hard limits, emergency framework | (src/protocol-constitution) |
 
 ---
 
