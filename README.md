@@ -37,9 +37,11 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 18. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
 19. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
 20. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
-21. [Roadmap](#roadmap)
-22. [Community](#community)
-23. [License](#license)
+21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
+22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
+23. [Roadmap](#roadmap)
+24. [Community](#community)
+25. [License](#license)
 
 ---
 
@@ -1822,6 +1824,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [x] Systemic Risk & Stability Framework (Issue #122) — Global Exposure Monitor, Dynamic Leverage Governor, Circuit Breaker, Insurance Fund, AI Stress Testing, GAAMP Stability Index
 - [x] Global Regulatory Integration Framework (Issue #139) — Jurisdiction-Aware Deployment, Regulatory Mapping Matrix, Compliance Module Interface, Transparency Portal, Audit & Attestation, Regulatory Dialogue
 - [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
+- [x] AIFOS v1 — AI-native Financial Operating System (Issue #143) — Financial Kernel, Financial Modules, AI Orchestration Layer, Application Layer, Permission & Identity Layer, Interoperability Layer
 - [x] GAEI v1 — Global Autonomous Economic Infrastructure (Issue #147) — Capital Coordination Layer, Real Economy Integration, AI Economic Orchestration, Monetary Coordination, Economic Node Architecture, Stability Dashboard
 - [ ] Full decentralization
 
@@ -1942,6 +1945,319 @@ The GRIF makes the protocol sustainable across regulatory jurisdictions by:
 4. **No single point of control** — Transparency without centralization
 
 **Full GRIF Documentation**: [docs/grif.md](docs/grif.md)
+
+---
+
+## Sovereign Digital Asset Coordination Layer (SDACL)
+
+> **Infrastructure designed to coordinate — not disrupt — sovereign systems.**
+
+The Sovereign Digital Asset Coordination Layer (SDACL) enables CBDCs, sovereign tokenized bonds, national digital treasuries, and state-backed RWA instruments to integrate, interoperate, and coordinate within the AIFOS stack.
+
+Initially built on The Open Network with multi-chain compatibility.
+
+### Strategic Vision
+
+CBDCs and sovereign digital assets are being explored by institutions connected to:
+
+- Bank for International Settlements (BIS)
+- International Monetary Fund (IMF)
+- Central banks worldwide
+
+SDACL positions the protocol as a **coordination layer** — not a replacement — for sovereign monetary systems.
+
+### Architecture
+
+```
+Sovereign Digital Assets
+          ↓
+Sovereign Asset Module (CBDC Integration)
+          ↓
+Financial OS (Kernel)
+          ↓
+Liquidity / Clearing / Risk
+          ↓
+Global Financial Network
+```
+
+### Five Core Components
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│            SDACL — Sovereign Digital Asset Coordination Layer               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. CBDC Integration Interface    │ Issuer verify, supply validate, settle  │
+│  2. Sovereign Treasury Bridge     │ Treasury alloc, bond issuance, reserves │
+│  3. Cross-Sovereign Coordination  │ AI capital flows, liquidity balancing   │
+│  4. Jurisdiction Enforcement      │ Geo restrict, eligibility, sanctions    │
+│  5. Sovereign Transparency        │ Exposure metrics, compliance, alerts    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Component | Description |
+|-----------|-------------|
+| **CBDC Integration Interface** | Issuer verification, supply validation, jurisdiction rule enforcement, settlement routing, authority reporting |
+| **Sovereign Treasury Bridge** | National treasury allocations, sovereign fund participation, bond issuance integration, configurable reserve visibility |
+| **Cross-Sovereign Coordination** | AI-assisted cross-border capital flows, liquidity balancing, risk concentration management, settlement timing |
+| **Jurisdiction Enforcement Layer** | Geographic restrictions, participant eligibility, sovereign asset isolation, sanction-aware routing |
+| **Sovereign Transparency Dashboard** | Exposure metrics, liquidity depth, risk index, compliance reporting (observer/allocator/strategic partner modes) |
+
+### Quick Start
+
+```typescript
+import { createSDACLService } from '@tonaiagent/core/sdacl';
+
+const sdacl = createSDACLService({
+  networkId: 'ton-mainnet',
+  environment: 'sandbox',
+  sanctionCheckEnabled: true,
+  crossBorderRoutingEnabled: true,
+});
+
+// Register a CBDC
+const cbdc = sdacl.cbdcIntegration.registerSovereignAsset({
+  issuerId: 'ECB',
+  issuerName: 'European Central Bank',
+  assetType: 'cbdc',
+  symbol: 'EURC',
+  name: 'Digital Euro',
+  jurisdictionCode: 'EU',
+  totalSupply: 1_000_000_000,
+  reserveRatio: 1.0,
+  chainId: 'ton',
+});
+
+// Verify issuer
+const verification = sdacl.cbdcIntegration.verifyIssuer('ECB', 'EU');
+console.log('ECB verified:', verification.verified);
+// → ECB verified: true
+
+// Create treasury allocation
+const allocation = sdacl.treasuryBridge.createAllocation({
+  sovereignFundId: 'GPFG',
+  sovereignFundName: 'Government Pension Fund Global',
+  jurisdictionCode: 'NO',
+  allocationAmountUsd: 500_000_000,
+  allocationCurrency: 'NOK',
+  targetAssetId: cbdc.id,
+});
+
+// Initiate cross-border flow with AI risk assessment
+const flow = sdacl.crossSovereignCoordination.initiateFlow({
+  flowType: 'capital_transfer',
+  sourceJurisdiction: 'EU',
+  destinationJurisdiction: 'NO',
+  assetId: cbdc.id,
+  amountUsd: 10_000_000,
+  complianceVerified: true,
+});
+console.log('Risk level:', flow.riskLevel);
+console.log('AI recommendation:', flow.aiRecommendation);
+
+// Check participant eligibility with sanction screening
+const eligibility = sdacl.jurisdictionEnforcement.checkParticipantEligibility({
+  participantId: 'inst-001',
+  jurisdictionCode: 'EU',
+  kycLevel: 'institutional',
+});
+
+// Generate transparency dashboard
+const dashboard = sdacl.sovereignTransparency.generateDashboardSnapshot();
+console.log('Stability score:', dashboard.stabilityScore);
+console.log('Compliance rate:', dashboard.complianceRate);
+
+// Get full system status
+const status = sdacl.getSystemStatus();
+console.log('System stability index:', status.systemStabilityIndex);
+```
+
+### How Sovereign Assets Integrate
+
+1. **Issuer Verification** — Central banks and treasuries are verified against a sovereign registry (BIS, IMF scorecards)
+2. **Supply Validation** — Circulating supply and reserve ratios are continuously validated
+3. **Settlement Routing** — Cross-border settlements are routed through TON bridge infrastructure with compliance checks
+4. **Authority Reporting** — Automated generation of daily position, settlement summary, and reserve attestation reports
+
+### How Risk Is Contained
+
+- **AI Risk Assessment** — Every cross-border flow is scored for concentration risk, spillover risk, and systemic impact
+- **Stability Index Protection** — High-risk flows require emergency committee approval
+- **Systemic Spillover Detection** — AI monitors for cascade effects across jurisdictions
+- **Circuit Breakers** — Automatic flow blocking when stability thresholds are exceeded
+
+### How Cross-Border Routing Works
+
+```
+Source Jurisdiction
+        ↓
+Liquidity Balance Check → AI Rebalancing Suggestion
+        ↓
+Compliance Verification (KYC, AML, Sanctions)
+        ↓
+Risk Assessment (Concentration, Spillover, Systemic)
+        ↓
+Settlement Routing (TON Bridge Infrastructure)
+        ↓
+Destination Jurisdiction
+        ↓
+Authority Reporting & Transparency Dashboard Update
+```
+
+### How Compliance Boundaries Are Enforced
+
+The Jurisdiction Enforcement Layer implements:
+
+| Restriction Type | Description |
+|-----------------|-------------|
+| **Geographic** | Block or flag transactions from/to specific regions |
+| **Participant Eligibility** | KYC tier requirements, institutional-only access |
+| **Asset Isolation** | Restrict certain assets to specific jurisdictions |
+| **Sanction-Aware Routing** | Screen against OFAC, EU Sanctions, and other lists |
+| **Volume Limits** | Daily/transaction caps per jurisdiction |
+| **KYC Thresholds** | Enhanced verification for high-value transactions |
+
+### Why the Protocol Is Sovereign-Compatible
+
+SDACL is designed to **coordinate with** — not replace — sovereign monetary systems:
+
+1. **Neutral Infrastructure** — No monetary policy interference; pure coordination layer
+2. **Jurisdiction Respect** — Full opt-in enforcement rules per jurisdiction
+3. **Transparency Without Centralization** — On-chain dashboards without central control
+4. **Pluggable Compliance** — Adaptable to evolving regulatory requirements
+5. **AI-Managed Risk** — Stability protection without human intervention delays
+
+---
+
+## AI-native Financial Operating System (AIFOS)
+
+> **From Financial Network → Financial Operating System**: The AIFOS abstracts the entire infrastructure into a programmable, modular, AI-coordinated financial OS — comparable to Windows/iOS/Linux, but for capital markets & global finance.
+
+### What is AIFOS?
+
+The AI-native Financial Operating System (AIFOS) transforms the platform from a global financial network into a programmable financial operating system that:
+
+- **Manages capital** — Kernel-level capital state management with risk boundaries
+- **Allocates liquidity** — Module-based liquidity routing and optimization
+- **Executes strategies** — AI orchestration layer for agent decision coordination
+- **Controls risk** — Immutable risk caps with stability index triggers
+- **Enforces governance** — Constitutional governance with override mechanisms
+- **Interfaces globally** — Cross-chain abstraction and external API integration
+
+### OS Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                 AIFOS - AI-native Financial Operating System                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Applications (Funds / DAOs / Sovereigns)                                    │
+│                        ↓                                                     │
+│  Financial Modules (Asset / Liquidity / Clearing / Treasury / Compliance)    │
+│                        ↓                                                     │
+│  AI Orchestration Layer (Agent decisions / Risk / Crisis response)           │
+│                        ↓                                                     │
+│  Financial Kernel (Capital state / Risk / Monetary / Governance)             │
+│                        ↓                                                     │
+│  Blockchain Infrastructure (TON + cross-chain)                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Permission & Identity Layer (across all layers)                             │
+│  Interoperability Layer (cross-chain / external APIs / protocol bridges)     │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Six Core Layers
+
+| Layer | Description |
+|-------|-------------|
+| **1. Financial Kernel** | The immutable logic core — capital state management, risk boundaries enforcement, monetary parameter control, governance execution |
+| **2. Financial Modules** | Plug-in modules with defined APIs: Asset, Liquidity, Clearing, Treasury, Compliance — each upgradeable within constitutional limits |
+| **3. AI Orchestration Layer** | Coordinates agent decisions, risk recalibration, capital reallocation, crisis response — bounded by hard risk caps and governance overrides |
+| **4. Application Layer** | Built on top of AIFOS: AI hedge funds, institutional vaults, sovereign allocation nodes, strategy marketplaces, retail finance apps |
+| **5. Permission & Identity Layer** | Institutional role management, node permissions, governance delegation, compliance gating |
+| **6. Interoperability Layer** | Extends IPLS and global routing — cross-chain abstraction, external API integration, protocol-to-protocol compatibility |
+
+### Quick AIFOS Example
+
+```typescript
+import { createAIFOSManager } from '@tonaiagent/core/aifos';
+
+// Initialize the Financial OS
+const aifos = createAIFOSManager();
+
+// Check kernel state
+console.log('Kernel state:', aifos.kernel.getState());
+// → 'active'
+
+// Plug the liquidity module
+const modules = aifos.modules.listModules({ moduleType: 'liquidity' });
+console.log('Liquidity module:', modules[0].name);
+
+// Run AI orchestration decision
+const decision = aifos.orchestration.proposeDecision({
+  agentId: 'agent-001',
+  decisionType: 'capital_reallocation',
+  rationale: 'Optimize yield across modules',
+  targetModules: [modules[0].id],
+  proposedActions: [],
+  estimatedRiskImpact: -5,
+  estimatedCapitalImpact: 1_000_000,
+});
+
+// Execute governance parameter update
+const override = aifos.kernel.applyGovernanceOverride({
+  overrideType: 'parameter_update',
+  proposedBy: 'governance-council',
+  approvalPercent: 67,
+  targetParameter: 'globalRiskCap',
+  targetValue: 'elevated',
+  reason: 'Temporary risk appetite increase',
+});
+
+// Launch a demo application
+const app = aifos.applications.registerApp({
+  name: 'AI Hedge Fund Alpha',
+  appType: 'ai_hedge_fund',
+  developer: 'dev-001',
+  version: '1.0.0',
+  description: 'Autonomous hedge fund running on AIFOS',
+  capitalBudget: 100_000_000,
+});
+
+// Get full system status
+const status = aifos.getSystemStatus();
+console.log('AIFOS Status:', status);
+// → { kernelState: 'active', totalManagedCapitalUSD: ..., currentRiskLevel: ..., ... }
+```
+
+### Strategic Impact
+
+With AIFOS, the project evolves from:
+
+> **Global financial network** → **Programmable financial operating system**
+
+This enables:
+
+- **Ecosystem expansion** — Others can build applications on top without touching the core kernel
+- **Institutional integration** — Institutions can integrate as modules with defined APIs
+- **Sovereign deployment** — Sovereigns can deploy customized AIFOS instances
+- **Developer extensibility** — Developers can extend functionality through the module system
+
+### Governance Enforcement
+
+The Financial Kernel enforces constitutional governance:
+
+- **Hard risk caps** — Immutable boundaries that cannot be overridden
+- **Stability index triggers** — Automatic actions when stability drops below thresholds
+- **Governance quorum** — Parameter updates require constitutional approval (default: 51%)
+- **Emergency halt** — Kernel can halt the entire system when critical thresholds are breached
+
+### Module Interoperability
+
+Each Financial Module:
+
+- Has a **defined API** — Standard interface for operations
+- Is **upgradeable** — Can be updated without kernel changes
+- Operates within **constitutional limits** — Bounded by kernel parameters
+- Emits **typed events** — All operations are auditable
 
 ---
 
