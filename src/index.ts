@@ -1280,3 +1280,53 @@ export {
   type RuntimeUnsubscribe,
   type AgentRuntimeErrorCode,
 } from './agent-runtime';
+
+// Live Trading Infrastructure (Issue #151)
+// Enables AI agents to execute real trades through integrated liquidity venues.
+// Supports DEX, CEX, and DeFi protocols — initially optimized for the TON ecosystem.
+// Components:
+//   1. Exchange Connector Layer — modular connectors for DEX/CEX/DeFi
+//   2. Order Execution Engine   — routing, slippage control, retries, partial fills
+//   3. Market Data Integration  — price feeds, order books, trade history, volatility
+//   4. Risk Control Module      — pre-execution safety guardrails
+//   5. Portfolio Synchronization — balances, positions, realized/unrealized PnL
+//   6. Secure Key Management    — encrypted credentials, never exposed to agent logic
+// Note: Import live-trading module separately from '@tonaiagent/core/live-trading'
+// for full access to all types and factory functions.
+export * as LiveTrading from './live-trading';
+export {
+  // Main infrastructure factory
+  createLiveTradingInfrastructure,
+  DefaultLiveTradingInfrastructure,
+  // Connector layer
+  createSimulatedConnector,
+  createConnectorRegistry,
+  isTerminalOrderStatus,
+  ConnectorError,
+  // Execution engine
+  createExecutionEngine,
+  ExecutionError,
+  // Market data
+  createMarketDataService,
+  // Risk controls
+  createRiskControlsService,
+  buildRiskProfile,
+  // Portfolio
+  createPortfolioService,
+  // Key management
+  createKeyManagementService,
+  KeyManagementError,
+  // Key types
+  type LiveTradingConfig,
+  type LiveTradingHealth,
+  type LiveTradingMetrics,
+  type LiveTradingEvent,
+  type LiveTradingEventCallback,
+  type ExchangeConnectorConfig,
+  type ExecutionRequest,
+  type ExecutionResult,
+  type PortfolioState,
+  type PortfolioSummary,
+  type RiskProfile,
+  type RiskCheckResult as LiveTradingRiskCheckResult,
+} from './live-trading';
