@@ -1229,3 +1229,42 @@ export {
   type DashboardSnapshot,
   type DashboardAlert,
 } from './sdacl';
+
+// Production Agent Runtime (Issue #149)
+// Core execution environment for autonomous financial agents on TON.
+// Implements the full agent execution lifecycle, 9-step pipeline, simulation mode,
+// risk controls, observability, and event system.
+// Architecture: Agent Applications → Agent Runtime API → Execution Engine → Event Bus → State Store → Financial Infrastructure
+// Note: Import separately from '@tonaiagent/core/agent-runtime' for full access.
+export * as AgentRuntimeModule from './agent-runtime';
+export {
+  // Orchestrator
+  AgentRuntimeOrchestrator,
+  createAgentRuntimeOrchestrator,
+  DEFAULT_RUNTIME_CONFIG,
+  // Error
+  AgentRuntimeError,
+  // Types
+  type AgentLifecycleState,
+  type LifecycleTransitionReason,
+  type LifecycleTransition,
+  type PipelineStep,
+  type PipelineStepStatus,
+  type PipelineStepResult,
+  type PipelineExecution,
+  type SimulationConfig,
+  type SimulatedTransaction,
+  type RuntimeAgentConfig,
+  type RuntimeRiskLimits,
+  type RuntimeSchedule,
+  type RuntimeAgentState,
+  type AgentRuntimeConfig,
+  type ObservabilityConfig,
+  type OrchestratorMetrics as RuntimeOrchestratorMetrics,
+  type OrchestratorHealth as RuntimeOrchestratorHealth,
+  type RuntimeEventType,
+  type RuntimeEvent,
+  type RuntimeEventHandler,
+  type RuntimeUnsubscribe,
+  type AgentRuntimeErrorCode,
+} from './agent-runtime';

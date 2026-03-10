@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.19.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.25.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -39,9 +39,10 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 20. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
 21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
 22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
-23. [Roadmap](#roadmap)
-24. [Community](#community)
-25. [License](#license)
+23. [Production Agent Runtime](#production-agent-runtime)
+24. [Roadmap](#roadmap)
+25. [Community](#community)
+26. [License](#license)
 
 ---
 
@@ -475,7 +476,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **AGFI** | ✅ Phase 2 | AI-native Global Financial Infrastructure (6 pillars) | [docs/agfi.md](docs/agfi.md) |
 | **GAEI** | ✅ Phase 3 | Global Autonomous Economic Infrastructure (6 domains) | [docs/gaei.md](docs/gaei.md) |
 | **Demo Agent** | ✅ MVP Core | Agent REST API, 4 strategies, risk manager | (src/demo-agent) |
-| **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine | (src/agent-runtime) |
+| **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine, simulation mode, risk controls | [Production Agent Runtime](#production-agent-runtime) |
 | **AI Layer** | ✅ MVP Core | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
 | **TON Factory** | ✅ MVP Core | Wallet creation, smart contracts, transactions | (src/ton-factory) |
 | **Admin Dashboard** | ✅ MVP Core | Agent monitoring, risk controls, RBAC | (src/mvp/admin-dashboard) |
@@ -1826,6 +1827,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
 - [x] AIFOS v1 — AI-native Financial Operating System (Issue #143) — Financial Kernel, Financial Modules, AI Orchestration Layer, Application Layer, Permission & Identity Layer, Interoperability Layer
 - [x] GAEI v1 — Global Autonomous Economic Infrastructure (Issue #147) — Capital Coordination Layer, Real Economy Integration, AI Economic Orchestration, Monetary Coordination, Economic Node Architecture, Stability Dashboard
+- [x] Production Agent Runtime (Issue #149) — Agent Execution Engine, Agent State Management, Event & Trigger System, Observability & Monitoring, Security & Isolation, Integration Interfaces
 - [ ] Full decentralization
 
 ---
@@ -2258,6 +2260,200 @@ Each Financial Module:
 - Is **upgradeable** — Can be updated without kernel changes
 - Operates within **constitutional limits** — Bounded by kernel parameters
 - Emits **typed events** — All operations are auditable
+
+---
+
+## Production Agent Runtime
+
+> **A production-grade execution environment for autonomous financial agents.**
+
+The Production Agent Runtime (PAR) is the core execution layer where all AI financial agents operate on the TON blockchain. It transitions the platform from architectural specification to a real, runnable production environment — providing lifecycle management, execution pipelines, simulation mode, risk controls, and full observability.
+
+### Why PAR?
+
+All higher-level components of the ecosystem — trading agents, portfolio agents, treasury agents, governance agents — ultimately execute within this runtime. PAR provides:
+
+- **Reliable** execution with deterministic lifecycle state transitions
+- **Safe** operation via simulation mode and multi-layer risk controls
+- **Observable** behavior with structured logging, metrics, and event streams
+- **Scalable** infrastructure supporting up to 50 concurrent agents per instance
+
+### Runtime Architecture
+
+```
+Agent Applications
+        ↓
+Agent Runtime API
+        ↓
+Execution Engine (9-step pipeline)
+        ↓
+Event Bus + Scheduler
+        ↓
+State Store (durable per-agent state)
+        ↓
+Financial Infrastructure (TON blockchain)
+```
+
+### Agent Lifecycle Management
+
+Agents transition through a well-defined state machine:
+
+```
+Created → Funded → Active ↔ Paused
+                  ↓
+            Suspended | Migrated | Terminated
+```
+
+Each transition is recorded with full audit trail (actor, reason, timestamp, metadata).
+
+### 9-Step Execution Pipeline
+
+Every agent execution runs through a standardized pipeline:
+
+| Step | Description |
+|------|-------------|
+| `fetch_data` | Fetch market prices and on-chain state |
+| `load_memory` | Load agent memory and execution context |
+| `call_ai` | Call AI model for autonomous decision |
+| `validate_risk` | Enforce risk controls and daily limits |
+| `generate_plan` | Generate transaction execution plan |
+| `simulate_tx` | Simulate transactions before execution |
+| `execute_onchain` | Execute on TON (or mock in simulation mode) |
+| `record_outcome` | Record result to agent registry |
+| `update_analytics` | Update performance analytics |
+
+### Simulation Mode
+
+Simulation mode is critical for safe MVP testing and demonstration without real funds:
+
+- **Fake balances** — Simulated wallet with configurable nanoTON balance
+- **Mock execution** — Full pipeline runs without on-chain transactions
+- **Historical replay** — Backtest strategies against historical market data
+- **Configurable slippage & latency** — Realistic simulation parameters
+
+### Risk Controls
+
+The runtime enforces multi-layer risk limits per agent:
+
+- Maximum loss per execution
+- Maximum daily loss
+- Maximum daily gas budget
+- Maximum transaction size
+- Maximum daily transaction count
+- Emergency suspension on consecutive failures
+
+### Observability & Monitoring
+
+Every runtime operation is observable:
+
+- **Structured JSON logs** with configurable log levels (debug/info/warn/error)
+- **Metrics** — agent counts, pipeline executions, transaction volumes, uptime
+- **Health endpoint** — overall status, AI availability, TON factory availability
+- **Event stream** — subscribe to all lifecycle, pipeline, and risk events
+
+### Quick Start
+
+```typescript
+import {
+  createAgentRuntimeOrchestrator,
+} from '@tonaiagent/core/agent-runtime';
+
+// Create and start the runtime
+const runtime = createAgentRuntimeOrchestrator({
+  observability: { enableLogging: true, logLevel: 'info' },
+});
+runtime.start();
+
+// Subscribe to all events
+runtime.subscribe((event) => {
+  console.log(`[${event.type}]`, event.data);
+});
+
+// Register an agent in simulation mode
+runtime.registerAgent({
+  agentId: 'agent-001',
+  name: 'DCA Bot',
+  ownerId: 'telegram_user_123',
+  ownerAddress: 'EQD...',
+  strategyIds: ['dca-strategy-1'],
+  simulation: {
+    enabled: true,
+    fakeBalance: BigInt(10_000_000_000), // 10 TON simulated
+  },
+  riskLimits: {
+    maxLossPerExecutionNano: BigInt(1_000_000_000),   // 1 TON
+    maxDailyLossNano: BigInt(5_000_000_000),           // 5 TON
+    maxDailyGasBudgetNano: BigInt(500_000_000),        // 0.5 TON
+    maxTransactionSizeNano: BigInt(2_000_000_000),     // 2 TON
+    maxTransactionsPerDay: 100,
+    maxConsecutiveFailures: 3,
+  },
+  maxConcurrentExecutions: 2,
+  enableObservability: true,
+});
+
+// Fund and start the agent
+runtime.fundAgent('agent-001', BigInt(5_000_000_000));
+await runtime.startAgent('agent-001');
+
+// Run a full pipeline execution
+const result = await runtime.runPipeline('agent-001', 'dca-strategy-1');
+console.log('Pipeline success:', result.success);
+console.log('Steps:', result.steps.map(s => `${s.step}:${s.status}`).join(' → '));
+
+// Check health and metrics
+const health = runtime.getHealth();
+const metrics = runtime.getMetrics();
+console.log('Health:', health.overall);
+console.log('Active agents:', metrics.activeAgents);
+
+// Cleanup
+runtime.stop();
+```
+
+### Multi-Agent Execution
+
+Run multiple concurrent agents with full isolation:
+
+```typescript
+const agentTypes = ['trading', 'portfolio', 'risk', 'treasury', 'governance'];
+
+for (const [index, type] of agentTypes.entries()) {
+  runtime.registerAgent({
+    agentId: `agent-${type}`,
+    name: `${type.charAt(0).toUpperCase() + type.slice(1)} Agent`,
+    ownerId: 'system',
+    ownerAddress: `EQD...${index}`,
+    strategyIds: [`${type}-strategy`],
+    simulation: { enabled: true, fakeBalance: BigInt(10_000_000_000) },
+    riskLimits: { /* per-agent risk limits */ },
+    maxConcurrentExecutions: 2,
+    enableObservability: true,
+  });
+  runtime.fundAgent(`agent-${type}`, BigInt(1_000_000_000));
+  await runtime.startAgent(`agent-${type}`);
+}
+
+// Run all agents concurrently
+const results = await Promise.all(
+  agentTypes.map(type => runtime.runPipeline(`agent-${type}`))
+);
+
+console.log(`All ${results.filter(r => r.success).length}/${results.length} pipelines succeeded`);
+```
+
+### State Recovery After Restart
+
+```typescript
+// Save agent state snapshot before shutdown
+const snapshot = runtime.getAgentState('agent-001');
+
+// After restart — restore agent and resume from last known state
+runtime.registerAgent(savedConfig);
+// State is rehydrated; agent resumes from 'funded' state
+```
+
+**Full PAR Documentation**: [src/agent-runtime](src/agent-runtime)
 
 ---
 
