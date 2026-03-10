@@ -216,6 +216,42 @@ export {
   type SubscriptionStatus,
 } from './freemium';
 
+// Export strategy registry
+export {
+  DefaultStrategyRegistry,
+  createStrategyRegistry,
+  type StrategyRegistry,
+  type StrategyRegistryConfig,
+  type StrategyRegistryEntry,
+  type RegisterStrategyInput,
+  type UpdatePerformanceInput as RegistryUpdatePerformanceInput,
+  type UpdateCapitalAllocationInput,
+  type RegistryFilter,
+  type RegistryDiscoveryResult,
+  type AssetType,
+  type StrategyType,
+  type VerificationLevel,
+  type CreatorRevenueConfig,
+  type RegistryPerformanceMetrics,
+  type StrategyCapitalAllocation,
+  type StrategyDeploymentConfig,
+  type StrategySecurityInfo,
+  type HistoricalReturnSnapshot,
+} from './strategy-registry';
+
+// Export marketplace API
+export {
+  DefaultMarketplaceAPI,
+  createMarketplaceAPI,
+  type MarketplaceAPI,
+  type MarketplaceAPIConfig,
+  type DeployStrategyInput,
+  type DeployedStrategyAgent,
+  type AllocateCapitalInput,
+  type CapitalAllocation,
+  type CreatorRevenueRecord,
+} from './marketplace-api';
+
 // ============================================================================
 // Marketplace Service - Unified Entry Point
 // ============================================================================

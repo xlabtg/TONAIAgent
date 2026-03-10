@@ -134,6 +134,18 @@ export {
 // Re-export marketplace types with namespace to avoid conflicts
 export type * as MarketplaceTypes from './marketplace/types';
 
+// Strategy Marketplace v1 — unified module namespace
+// Exposes: Strategy Registry, Marketplace API, and all v1 marketplace components
+export * as StrategyMarketplaceModule from './marketplace';
+export {
+  // Strategy Registry
+  createStrategyRegistry,
+  DefaultStrategyRegistry,
+  // Marketplace API
+  createMarketplaceAPI,
+  DefaultMarketplaceAPI,
+} from './marketplace';
+
 // Re-export omnichain with namespace to avoid naming conflicts
 // (omnichain defines its own ActionResult, ChainId, and other common types)
 export * as Omnichain from './omnichain';
