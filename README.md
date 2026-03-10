@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.25.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.27.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -39,10 +39,12 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 20. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
 21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
 22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
-23. [Live Trading Infrastructure](#live-trading-infrastructure)
-24. [Roadmap](#roadmap)
-25. [Community](#community)
-26. [License](#license)
+23. [Production Agent Runtime](#production-agent-runtime)
+24. [Strategy Marketplace](#strategy-marketplace)
+25. [Live Trading Infrastructure](#live-trading-infrastructure)
+26. [Roadmap](#roadmap)
+27. [Community](#community)
+28. [License](#license)
 
 ---
 
@@ -476,7 +478,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **AGFI** | ✅ Phase 2 | AI-native Global Financial Infrastructure (6 pillars) | [docs/agfi.md](docs/agfi.md) |
 | **GAEI** | ✅ Phase 3 | Global Autonomous Economic Infrastructure (6 domains) | [docs/gaei.md](docs/gaei.md) |
 | **Demo Agent** | ✅ MVP Core | Agent REST API, 4 strategies, risk manager | (src/demo-agent) |
-| **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine | (src/agent-runtime) |
+| **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine, simulation mode, risk controls | [Production Agent Runtime](#production-agent-runtime) |
 | **AI Layer** | ✅ MVP Core | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
 | **TON Factory** | ✅ MVP Core | Wallet creation, smart contracts, transactions | (src/ton-factory) |
 | **Admin Dashboard** | ✅ MVP Core | Agent monitoring, risk controls, RBAC | (src/mvp/admin-dashboard) |
@@ -1827,6 +1829,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [x] AGFN v1 — Autonomous Global Financial Network (Issue #141) — Global Node Architecture, Cross-Jurisdiction Capital Routing, Global Settlement Mesh, AI Coordination Layer, Multi-Reserve Treasury, Global Stability Dashboard
 - [x] AIFOS v1 — AI-native Financial Operating System (Issue #143) — Financial Kernel, Financial Modules, AI Orchestration Layer, Application Layer, Permission & Identity Layer, Interoperability Layer
 - [x] GAEI v1 — Global Autonomous Economic Infrastructure (Issue #147) — Capital Coordination Layer, Real Economy Integration, AI Economic Orchestration, Monetary Coordination, Economic Node Architecture, Stability Dashboard
+- [x] Production Agent Runtime (Issue #149) — Agent Execution Engine, Agent State Management, Event & Trigger System, Observability & Monitoring, Security & Isolation, Integration Interfaces
 - [ ] Full decentralization
 
 ---
@@ -2259,6 +2262,458 @@ Each Financial Module:
 - Is **upgradeable** — Can be updated without kernel changes
 - Operates within **constitutional limits** — Bounded by kernel parameters
 - Emits **typed events** — All operations are auditable
+
+---
+
+## Production Agent Runtime
+
+> **A production-grade execution environment for autonomous financial agents.**
+
+The Production Agent Runtime (PAR) is the core execution layer where all AI financial agents operate on the TON blockchain. It transitions the platform from architectural specification to a real, runnable production environment — providing lifecycle management, execution pipelines, simulation mode, risk controls, and full observability.
+
+### Why PAR?
+
+All higher-level components of the ecosystem — trading agents, portfolio agents, treasury agents, governance agents — ultimately execute within this runtime. PAR provides:
+
+- **Reliable** execution with deterministic lifecycle state transitions
+- **Safe** operation via simulation mode and multi-layer risk controls
+- **Observable** behavior with structured logging, metrics, and event streams
+- **Scalable** infrastructure supporting up to 50 concurrent agents per instance
+
+### Runtime Architecture
+
+```
+Agent Applications
+        ↓
+Agent Runtime API
+        ↓
+Execution Engine (9-step pipeline)
+        ↓
+Event Bus + Scheduler
+        ↓
+State Store (durable per-agent state)
+        ↓
+Financial Infrastructure (TON blockchain)
+```
+
+### Agent Lifecycle Management
+
+Agents transition through a well-defined state machine:
+
+```
+Created → Funded → Active ↔ Paused
+                  ↓
+            Suspended | Migrated | Terminated
+```
+
+Each transition is recorded with full audit trail (actor, reason, timestamp, metadata).
+
+### 9-Step Execution Pipeline
+
+Every agent execution runs through a standardized pipeline:
+
+| Step | Description |
+|------|-------------|
+| `fetch_data` | Fetch market prices and on-chain state |
+| `load_memory` | Load agent memory and execution context |
+| `call_ai` | Call AI model for autonomous decision |
+| `validate_risk` | Enforce risk controls and daily limits |
+| `generate_plan` | Generate transaction execution plan |
+| `simulate_tx` | Simulate transactions before execution |
+| `execute_onchain` | Execute on TON (or mock in simulation mode) |
+| `record_outcome` | Record result to agent registry |
+| `update_analytics` | Update performance analytics |
+
+### Simulation Mode
+
+Simulation mode is critical for safe MVP testing and demonstration without real funds:
+
+- **Fake balances** — Simulated wallet with configurable nanoTON balance
+- **Mock execution** — Full pipeline runs without on-chain transactions
+- **Historical replay** — Backtest strategies against historical market data
+- **Configurable slippage & latency** — Realistic simulation parameters
+
+### Risk Controls
+
+The runtime enforces multi-layer risk limits per agent:
+
+- Maximum loss per execution
+- Maximum daily loss
+- Maximum daily gas budget
+- Maximum transaction size
+- Maximum daily transaction count
+- Emergency suspension on consecutive failures
+
+### Observability & Monitoring
+
+Every runtime operation is observable:
+
+- **Structured JSON logs** with configurable log levels (debug/info/warn/error)
+- **Metrics** — agent counts, pipeline executions, transaction volumes, uptime
+- **Health endpoint** — overall status, AI availability, TON factory availability
+- **Event stream** — subscribe to all lifecycle, pipeline, and risk events
+
+### Quick Start
+
+```typescript
+import {
+  createAgentRuntimeOrchestrator,
+} from '@tonaiagent/core/agent-runtime';
+
+// Create and start the runtime
+const runtime = createAgentRuntimeOrchestrator({
+  observability: { enableLogging: true, logLevel: 'info' },
+});
+runtime.start();
+
+// Subscribe to all events
+runtime.subscribe((event) => {
+  console.log(`[${event.type}]`, event.data);
+});
+
+// Register an agent in simulation mode
+runtime.registerAgent({
+  agentId: 'agent-001',
+  name: 'DCA Bot',
+  ownerId: 'telegram_user_123',
+  ownerAddress: 'EQD...',
+  strategyIds: ['dca-strategy-1'],
+  simulation: {
+    enabled: true,
+    fakeBalance: BigInt(10_000_000_000), // 10 TON simulated
+  },
+  riskLimits: {
+    maxLossPerExecutionNano: BigInt(1_000_000_000),   // 1 TON
+    maxDailyLossNano: BigInt(5_000_000_000),           // 5 TON
+    maxDailyGasBudgetNano: BigInt(500_000_000),        // 0.5 TON
+    maxTransactionSizeNano: BigInt(2_000_000_000),     // 2 TON
+    maxTransactionsPerDay: 100,
+    maxConsecutiveFailures: 3,
+  },
+  maxConcurrentExecutions: 2,
+  enableObservability: true,
+});
+
+// Fund and start the agent
+runtime.fundAgent('agent-001', BigInt(5_000_000_000));
+await runtime.startAgent('agent-001');
+
+// Run a full pipeline execution
+const result = await runtime.runPipeline('agent-001', 'dca-strategy-1');
+console.log('Pipeline success:', result.success);
+console.log('Steps:', result.steps.map(s => `${s.step}:${s.status}`).join(' → '));
+
+// Check health and metrics
+const health = runtime.getHealth();
+const metrics = runtime.getMetrics();
+console.log('Health:', health.overall);
+console.log('Active agents:', metrics.activeAgents);
+
+// Cleanup
+runtime.stop();
+```
+
+### Multi-Agent Execution
+
+Run multiple concurrent agents with full isolation:
+
+```typescript
+const agentTypes = ['trading', 'portfolio', 'risk', 'treasury', 'governance'];
+
+for (const [index, type] of agentTypes.entries()) {
+  runtime.registerAgent({
+    agentId: `agent-${type}`,
+    name: `${type.charAt(0).toUpperCase() + type.slice(1)} Agent`,
+    ownerId: 'system',
+    ownerAddress: `EQD...${index}`,
+    strategyIds: [`${type}-strategy`],
+    simulation: { enabled: true, fakeBalance: BigInt(10_000_000_000) },
+    riskLimits: { /* per-agent risk limits */ },
+    maxConcurrentExecutions: 2,
+    enableObservability: true,
+  });
+  runtime.fundAgent(`agent-${type}`, BigInt(1_000_000_000));
+  await runtime.startAgent(`agent-${type}`);
+}
+
+// Run all agents concurrently
+const results = await Promise.all(
+  agentTypes.map(type => runtime.runPipeline(`agent-${type}`))
+);
+
+console.log(`All ${results.filter(r => r.success).length}/${results.length} pipelines succeeded`);
+```
+
+### State Recovery After Restart
+
+```typescript
+// Save agent state snapshot before shutdown
+const snapshot = runtime.getAgentState('agent-001');
+
+// After restart — restore agent and resume from last known state
+runtime.registerAgent(savedConfig);
+// State is rehydrated; agent resumes from 'funded' state
+```
+
+**Full PAR Documentation**: [src/agent-runtime](src/agent-runtime)
+
+---
+
+## Strategy Marketplace
+
+> **The economic layer of the AI agent ecosystem.**
+
+Strategy Marketplace v1 introduces the first economic flywheel for the TON AI Agent platform: developers monetize their trading strategies, users access AI-driven investment tools, and the platform scales through network effects. It becomes the foundation for AI hedge funds, automated portfolio management, and decentralized investment platforms.
+
+### Why Strategy Marketplace?
+
+The marketplace connects strategy creators with capital allocators through a transparent, permissionless infrastructure:
+
+- **Creators** publish and monetize trading/investment strategies
+- **Investors** discover, evaluate, and allocate capital to strategies
+- **AI Agents** execute strategies autonomously via the Production Agent Runtime
+- **Platform** earns a share while enabling a self-sustaining economic flywheel
+
+### Marketplace Architecture
+
+```
+Strategy Creators
+      ↓
+Strategy Registry       ← stores metadata, performance, deployment config
+      ↓
+Marketplace API         ← unified interface for all marketplace operations
+      ↓
+Agent Runtime           ← executes strategies as autonomous AI agents
+      ↓
+Execution & Performance Tracking
+```
+
+### Core Components
+
+#### Strategy Registry
+
+Central store for all strategy metadata:
+
+| Field | Description |
+|-------|-------------|
+| `id`, `creator`, `name`, `description` | Identity |
+| `asset_types` | TON, Jetton, LP_Token, NFT, DeFi_Yield, RWA, Stablecoin, Cross_Chain |
+| `strategy_type` | defi_yield, arbitrage, ai_trading, portfolio_management, dca, grid_trading, … |
+| `risk_score` | 0–100, automatically calculated |
+| `performance_metrics` | ROI, Sharpe ratio, max drawdown, win rate, historical returns |
+| `deployment_config` | min/max capital, protocols, rebalance interval, stop-loss, slippage |
+| `revenue_config` | Performance fee (20%), management fee (2%), creator share |
+| `security_info` | Verification level, sandbox status, audit badge, verified creator |
+
+#### Performance Tracking
+
+Metrics are updated automatically by the Agent Runtime after each execution cycle:
+
+- **ROI** — total, 30d, 90d, 365d return on investment
+- **Sharpe ratio** — risk-adjusted return
+- **Max drawdown** — largest peak-to-trough loss
+- **Win rate** — percentage of profitable executions
+- **Historical returns** — timestamped return snapshots (up to 365 data points)
+
+#### Capital Allocation
+
+Three allocation models are supported:
+
+| Model | Description |
+|-------|-------------|
+| **Direct allocation** | Deploy strategy with your own capital as a dedicated AI agent |
+| **Copy trading** | Copy a creator's strategy trades proportionally |
+| **Fund-style pooling** | Pool capital with other users into a shared strategy fund |
+
+#### Creator Revenue Model
+
+Creators earn revenue automatically when their strategies generate returns:
+
+| Fee Type | Default Rate | Description |
+|----------|-------------|-------------|
+| Performance fee | 20% | Applied to profits above high-water mark |
+| Management fee | 2% / year | Applied to AUM monthly |
+| Creator share | 80% | Creator's portion of collected fees |
+| Platform share | 20% | Platform's portion of collected fees |
+
+Fees are configurable per-strategy (performance fee max 30%, management fee max 5%).
+
+#### Strategy Discovery
+
+Filter and search strategies by:
+
+- **Asset class** — TON, Jetton, LP tokens, RWA, stablecoins, cross-chain
+- **Risk level** — risk score (0–100), max drawdown threshold
+- **Performance** — minimum ROI, minimum Sharpe ratio, win rate
+- **Strategy type** — DeFi yield, arbitrage, AI trading, portfolio management, DCA
+- **Creator reputation** — verified creator only, verification level (unverified/basic/audited/certified)
+- **Custom tags** — user-defined search tags
+
+#### Strategy Security & Verification
+
+Every strategy has a security profile:
+
+| Level | Description |
+|-------|-------------|
+| `unverified` | Default — not reviewed |
+| `basic` | Platform basic checks passed |
+| `audited` | Third-party audit completed |
+| `certified` | Full platform certification |
+
+Additional security features:
+- Sandbox execution (simulation mode before live deployment)
+- Risk validation via Agent Runtime risk controls
+- Code verification by platform
+- Creator reputation scoring
+- Verified creator badge
+
+### Publishing a Strategy
+
+```typescript
+import { createMarketplaceAPI } from '@tonaiagent/core/marketplace';
+
+const marketplace = createMarketplaceAPI();
+
+// Step 1: Publish strategy to registry
+const strategy = await marketplace.publishStrategy({
+  creatorId: 'creator_alice',
+  name: 'DeFi Yield Optimizer',
+  description: 'Automated yield farming across TON DeFi protocols',
+  category: 'yield_farming',
+  strategyType: 'defi_yield',
+  assetTypes: ['TON', 'Jetton', 'LP_Token'],
+  deploymentConfig: {
+    minCapital: 100,        // 100 TON minimum
+    maxCapital: 500_000,    // 500K TON maximum
+    protocols: ['STON.fi', 'DeDust', 'Tonstakers'],
+    stopLossPercent: 10,
+    maxSlippagePercent: 1,
+    sandboxEnabled: true,
+  },
+  revenueConfig: {
+    performanceFeePercent: 20,        // 20% performance fee
+    managementFeeAnnualPercent: 2,    // 2% annual management fee
+    creatorSharePercent: 80,          // creator keeps 80%
+  },
+  tags: ['yield', 'defi', 'automated'],
+});
+
+// Step 2: Make strategy live on marketplace
+const active = await marketplace.activateStrategy(strategy.id);
+console.log(`Strategy live: ${active.id}, status: ${active.status}`);
+```
+
+### Discovering Strategies
+
+```typescript
+// List strategies with filters
+const results = await marketplace.listStrategies({
+  categories: ['yield_farming', 'arbitrage'],
+  assetTypes: ['TON'],
+  minROI: 10,              // at least 10% ROI
+  minSharpeRatio: 1.5,    // risk-adjusted quality filter
+  maxDrawdownMax: 20,      // max 20% drawdown allowed
+  verifiedCreatorOnly: true,
+  sortBy: 'roi',
+  sortOrder: 'desc',
+  limit: 20,
+});
+
+console.log(`Found ${results.total} strategies`);
+results.entries.forEach(s => {
+  console.log(`  ${s.name}: ROI=${s.performanceMetrics.roi}%, Sharpe=${s.performanceMetrics.sharpeRatio}`);
+});
+
+// Get top strategies
+const top5 = await marketplace.getTopStrategies('sharpe', 5);
+```
+
+### Allocating Capital
+
+```typescript
+// Allocate capital via copy trading
+const allocation = await marketplace.allocateCapital({
+  userId: 'investor_bob',
+  strategyId: strategy.id,
+  amountTON: 5000,
+  allocationType: 'copy_trading',
+});
+
+// Or deploy strategy as dedicated AI agent
+const agent = await marketplace.deployStrategy({
+  strategyId: strategy.id,
+  userId: 'investor_bob',
+  capitalTON: 5000,
+  simulationMode: false,   // set true for paper trading
+  agentName: 'Bob\'s Yield Agent',
+});
+
+console.log(`Agent deployed: ${agent.agentId}, status: ${agent.status}`);
+```
+
+### Running a Strategy via AI Agent
+
+After deployment, the agent runs autonomously via the Production Agent Runtime (PAR). The runtime executes the full 9-step pipeline on each cycle:
+
+```
+fetch_data → load_memory → call_ai → validate_risk →
+generate_plan → simulate_tx → execute_onchain → record_outcome → update_analytics
+```
+
+Performance metrics are automatically pushed back to the Strategy Registry after each `update_analytics` step.
+
+### Tracking Performance Metrics
+
+```typescript
+// Performance is updated automatically by the agent runtime
+// You can also update manually (e.g., in tests or simulations):
+await marketplace.updatePerformance(strategy.id, {
+  roi: 25.5,
+  roi30d: 8.2,
+  sharpeRatio: 1.9,
+  maxDrawdown: 11.3,
+  winRate: 68.5,
+  historicalReturnSnapshot: {
+    timestamp: new Date(),
+    cumulativeReturn: 25.5,
+    periodReturn: 8.2,
+  },
+});
+
+// Get current strategy with live metrics
+const current = await marketplace.getStrategy(strategy.id);
+console.log('ROI:', current.performanceMetrics.roi);
+console.log('Sharpe:', current.performanceMetrics.sharpeRatio);
+console.log('AUM:', current.capitalAllocation.totalAUM, 'TON');
+```
+
+### Creator Revenue Reporting
+
+```typescript
+// Calculate monthly creator revenue
+const revenue = await marketplace.calculateCreatorRevenue('creator_alice', '2026-03');
+revenue.forEach(r => {
+  console.log(`Strategy ${r.strategyId}:`);
+  console.log(`  Performance fees: ${r.performanceFees} TON`);
+  console.log(`  Management fees: ${r.managementFees} TON`);
+  console.log(`  Creator share (80%): ${r.creatorShare} TON`);
+});
+```
+
+### Success Metrics
+
+The marketplace tracks the following flywheel indicators:
+
+| Metric | Description |
+|--------|-------------|
+| Strategies published | Number of live strategies in the registry |
+| Active strategy agents | Number of AI agents currently executing strategies |
+| Capital allocated | Total AUM across all strategies (in TON) |
+| Creator revenue | Total fees generated and distributed to creators |
+| Strategy performance transparency | Historical return data points stored per strategy |
+
+**Full Marketplace Documentation**: [src/marketplace](src/marketplace)
+
 
 ---
 
