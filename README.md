@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.19.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.25.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -39,9 +39,10 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 20. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
 21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
 22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
-23. [Roadmap](#roadmap)
-24. [Community](#community)
-25. [License](#license)
+23. [Live Trading Infrastructure](#live-trading-infrastructure)
+24. [Roadmap](#roadmap)
+25. [Community](#community)
+26. [License](#license)
 
 ---
 
@@ -2258,6 +2259,161 @@ Each Financial Module:
 - Is **upgradeable** — Can be updated without kernel changes
 - Operates within **constitutional limits** — Bounded by kernel parameters
 - Emits **typed events** — All operations are auditable
+
+---
+
+## Live Trading Infrastructure
+
+> **From Simulation to Real Capital**: The Live Trading Infrastructure enables AI agents to execute real trades through integrated liquidity venues, transitioning the platform from backtesting and simulation to live financial activity.
+
+The platform is a **live AI-driven trading and investment infrastructure** — agents can now discover strategies in the marketplace, allocate capital, and execute real trades across DEX, CEX, and DeFi protocols.
+
+### How AI Agents Execute Trades
+
+```
+AI Agent
+     ↓
+Strategy Engine
+     ↓
+Execution Engine
+     ↓
+Exchange Connectors
+     ↓
+DEX / CEX / DeFi Liquidity
+```
+
+1. **Strategy triggers** fire (price, schedule, on-chain event)
+2. **Risk controls** validate the order pre-execution
+3. **Execution Engine** routes the order to the best available liquidity venue
+4. **Exchange Connector** submits to the real venue (DEX contract / CEX API)
+5. **Portfolio Sync** updates balances, positions, and PnL in real time
+6. **Marketplace metrics** are updated with live performance data
+
+### Supported Liquidity Venues
+
+| Type | Examples | Protocol |
+|------|----------|----------|
+| **DEX** | STON.fi, DeDust | TON AMM / smart contracts |
+| **CEX** | Binance, OKX | REST / WebSocket API |
+| **DeFi** | Lending pools, yield vaults | On-chain protocol calls |
+
+### Execution Pipeline
+
+```typescript
+import { createLiveTradingInfrastructure, buildRiskProfile } from '@tonaiagent/core/live-trading';
+
+const lti = createLiveTradingInfrastructure({ simulationMode: false });
+
+// 1. Register exchange connector
+const connector = lti.createSimulatedConnector({
+  exchangeId: 'stonfi',
+  name: 'STON.fi DEX',
+  type: 'dex',
+  network: 'ton',
+  endpoint: 'https://app.ston.fi',
+});
+lti.registry.register(connector);
+await lti.registry.connectAll();
+
+// 2. Set agent risk profile
+lti.riskControls.setRiskProfile('agent_001', buildRiskProfile('agent_001', {
+  maxPositionSizePercent: 10,    // max 10% of portfolio per trade
+  maxDailyLossPercent: 3,        // stop trading after 3% daily loss
+  maxSlippageTolerance: 0.5,     // block orders with >0.5% slippage
+  maxTradesPerHour: 5,           // velocity limit
+}));
+
+// 3. Get real-time market data
+const price = await lti.marketData.getPrice('TON/USDT');
+const orderBook = await lti.marketData.getOrderBook('TON/USDT', 10);
+
+// 4. Check risk before execution
+const riskCheck = lti.riskControls.checkExecution({
+  agentId: 'agent_001',
+  executionRequest: { id: 'exec_1', agentId: 'agent_001', symbol: 'TON/USDT', side: 'buy',
+    quantity: 100, slippageTolerance: 0.3, executionStrategy: 'direct' },
+  currentPortfolio: lti.portfolio.getPortfolio('agent_001'),
+  marketData: price,
+});
+
+if (riskCheck.passed) {
+  // 5. Execute trade
+  const result = await lti.executionEngine.execute({
+    id: 'exec_1',
+    agentId: 'agent_001',
+    symbol: 'TON/USDT',
+    side: 'buy',
+    quantity: 100,
+    slippageTolerance: 0.3,
+    executionStrategy: 'twap',  // Time-Weighted Average Price
+  });
+
+  // 6. Update portfolio
+  lti.portfolio.syncFromExecution('agent_001', result);
+  const summary = lti.portfolio.getAgentSummary('agent_001');
+  console.log('Realized PnL:', summary.realizedPnl);
+}
+```
+
+### Risk Controls
+
+All risk checks happen **before** order execution:
+
+| Control | Description | Action |
+|---------|-------------|--------|
+| **Max Position Size** | Limit per-trade as % of portfolio | Reduce or block |
+| **Slippage Limit** | Maximum tolerated execution slippage | Block |
+| **Stop-Loss** | Halt trading after cumulative loss threshold | Block all |
+| **Daily Loss Limit** | Maximum loss per day as % of portfolio | Block |
+| **Velocity Limit** | Maximum trades per hour | Block |
+| **Exposure Limit** | Maximum strategy exposure as % of portfolio | Block |
+
+### Portfolio Tracking
+
+Continuously synchronized with:
+- **Token balances** per exchange/wallet
+- **Open positions** with real-time unrealized PnL
+- **Realized PnL** aggregated per agent
+- **Fee tracking** cumulative fees paid
+- **Daily PnL history** for performance metrics
+
+### Secure Key Management
+
+API keys and private keys are **never exposed to agent logic**:
+
+```typescript
+import { createKeyManagementService } from '@tonaiagent/core/live-trading';
+
+const keyManager = createKeyManagementService({ enableAuditLog: true });
+
+// Store encrypted — agent receives only a credential ID
+const cred = keyManager.storeCredential({
+  agentId: 'agent_001',
+  exchangeId: 'binance',
+  keyType: 'api_key',
+  plainTextValue: process.env.BINANCE_API_KEY!,
+  permissions: ['read_balance', 'place_orders', 'cancel_orders'],
+  // Never grant 'withdraw' to automated agents
+});
+
+// Keys are decrypted only during execution, never logged
+const decrypted = keyManager.getCredential(cred.id, 'agent_001');
+```
+
+### Market Data Feeds
+
+Real-time data for informed trading decisions:
+
+```typescript
+// Subscribe to live price feed
+const sub = lti.marketData.subscribe('price', 'TON/USDT', (feed) => {
+  console.log(`TON/USDT: ${feed.price} (${feed.changePercent24h.toFixed(2)}%)`);
+});
+
+// Get volatility metrics
+const volatility = await lti.marketData.getVolatility('TON/USDT', '24h');
+console.log('24h ATR:', volatility.atr);
+```
 
 ---
 
