@@ -35,6 +35,11 @@ import {
   StrategyType,
   VerificationLevel,
   CreatorRevenueConfig,
+  RegistryPerformanceMetrics,
+  StrategyCapitalAllocation,
+  StrategyDeploymentConfig,
+  StrategySecurityInfo,
+  HistoricalReturnSnapshot,
 } from './strategy-registry';
 
 // ============================================================================
