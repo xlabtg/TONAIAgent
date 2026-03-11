@@ -106,6 +106,10 @@ export * as MultiAgent from './multi-agent';
 
 // No-code module is available as separate import: '@tonaiagent/core/no-code'
 
+// Autonomous Strategy Discovery Engine — available as separate import:
+// '@tonaiagent/core/autonomous-discovery'
+export * as AutonomousDiscovery from './autonomous-discovery';
+
 // Marketplace exports (with explicit exports to avoid conflicts)
 export {
   // Marketplace service
