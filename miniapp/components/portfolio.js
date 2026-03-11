@@ -14,7 +14,12 @@
 
     async loadPortfolio() {
       let data = await API.get('/portfolio');
-      if (!data) data = DemoData.portfolio();
+      // Use demo mode data if enabled and no API data
+      if (!data && window.DemoMode && window.DemoMode.isEnabled()) {
+        data = window.DemoMode.getDemoPortfolio();
+      } else if (!data) {
+        data = DemoData.portfolio();
+      }
       State.portfolio = data;
       this.renderPortfolio(data);
     },

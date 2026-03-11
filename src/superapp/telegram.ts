@@ -450,7 +450,16 @@ export class DefaultTelegramManager implements TelegramManager {
   private getDefaultHandler(command: string): CommandHandler {
     const handlers: Record<string, CommandHandler> = {
       start: async (_ctx) => {
-        return `Welcome to TONAIAgent! 🤖\n\nI'm your AI-powered financial assistant on TON blockchain.\n\nOpen the app to get started: ${this.config.miniAppUrl}`;
+        return `Welcome to TONAIAgent! 🤖
+
+Launch your AI trading agent in seconds.
+
+Your personal AI will:
+📊 Monitor markets 24/7
+📈 Execute strategies automatically
+💰 Track your portfolio in real-time
+
+Tap the button below to create your first agent!`;
       },
       help: async (_ctx) => {
         const commandList = this.config.commands

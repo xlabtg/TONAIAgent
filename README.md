@@ -1499,7 +1499,43 @@ await engine.manager.pauseStrategy(strategy.id, 'User requested pause');
 
 ## Telegram Integration
 
-### Bot Setup
+### Getting Started (For Users)
+
+Get started with your first AI trading agent in under 2 minutes:
+
+```
+1. Open Telegram Bot
+   Find @TONAIAgentBot and tap "Start"
+
+2. Launch Mini App
+   Tap "Open AI Dashboard" button
+
+3. Create Your First Agent
+   - Name your agent (e.g., "My First AI Agent")
+   - Select a strategy (Momentum, Mean Reversion, or Trend Following)
+   - Tap "Start Agent"
+
+4. View Your Dashboard
+   - Portfolio value and P&L displayed immediately
+   - Demo mode shows simulated trades
+   - Real-time notifications when trades execute
+```
+
+**Available Strategies:**
+
+| Strategy | Risk Level | Behavior |
+|----------|------------|----------|
+| **Momentum** | Medium | Buys when price rises, sells when momentum weakens |
+| **Mean Reversion** | Low | Buys dips, sells rallies (contrarian approach) |
+| **Trend Following** | High | Follows long-term trends, holds positions longer |
+
+**Demo Mode:**
+Your agent starts in demo mode with simulated trades. No real funds are required to explore the platform. You'll see:
+- Preloaded trade history
+- Simulated portfolio with live updates
+- Active demo agent running your selected strategy
+
+### Bot Setup (For Developers)
 
 1. Create a bot with [@BotFather](https://t.me/BotFather)
 2. Get your bot token

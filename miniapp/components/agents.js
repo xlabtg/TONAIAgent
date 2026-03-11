@@ -11,8 +11,13 @@
   const Agents = {
     async refresh() {
       let data = await API.get('/agents');
-      if (!data) data = DemoData.agents();
-      else if (Array.isArray(data.agents)) data = data.agents;
+      // Use demo mode data if enabled and no API data
+      if (!data && window.DemoMode && window.DemoMode.isEnabled()) {
+        data = window.DemoMode.getDemoAgents();
+      } else if (!data) {
+        data = DemoData.agents();
+      }
+      if (Array.isArray(data.agents)) data = data.agents;
       State.agents = Array.isArray(data) ? data : [];
       this.render();
     },

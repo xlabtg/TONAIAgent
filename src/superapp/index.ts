@@ -194,6 +194,22 @@ export {
   type GetStrategiesInput,
 } from './telegram-superapp';
 
+// Export Onboarding Manager
+export {
+  DefaultOnboardingManager,
+  createOnboardingManager,
+  ONBOARDING_STRATEGIES,
+  type OnboardingManager,
+  type OnboardingStrategy,
+  type OnboardingState,
+  type OnboardingStep,
+  type OnboardingAgentRequest,
+  type OnboardingResult,
+  type DemoPortfolioData,
+  type DemoTrade,
+  type AgentNotification,
+} from './onboarding';
+
 // ============================================================================
 // Super App Service - Unified Entry Point
 // ============================================================================
