@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.28.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.29.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -42,10 +42,14 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 23. [Production Agent Runtime](#production-agent-runtime)
 24. [Agent Plugin System](#agent-plugin-system)
 25. [Strategy Marketplace](#strategy-marketplace)
-26. [Live Trading Infrastructure](#live-trading-infrastructure)
-27. [Roadmap](#roadmap)
-28. [Community](#community)
-29. [License](#license)
+26. [Strategy Reputation System](#strategy-reputation-system)
+27. [Live Trading Infrastructure](#live-trading-infrastructure)
+28. [AI Fund Manager](#ai-fund-manager)
+29. [Investor Demo](#investor-demo)
+30. [Strategy Backtesting](#strategy-backtesting)
+31. [Community](#community)
+32. [Risk Engine](#risk-engine)
+33. [License](#license)
 
 ---
 
@@ -1216,6 +1220,183 @@ const agent = await superApp.agentDashboard.createAgent({
 - Language localization
 - Notification preferences
 - Dashboard widgets
+
+---
+
+## Telegram SuperApp
+
+The TONAIAgent Telegram SuperApp provides a complete mobile-first investment platform directly within Telegram. It combines a bot interface, Mini App UI, real-time notifications, and seamless wallet integration.
+
+### Architecture
+
+```
+Telegram Bot → Telegram Mini App → Platform API → Agent Runtime → Trading Infrastructure
+```
+
+### Bot Commands
+
+| Command | Description | Auth Required |
+|---------|-------------|--------------|
+| `/start` | Initialize account & welcome message | No |
+| `/portfolio` | View your investment portfolio | Yes |
+| `/strategies` | Browse strategy marketplace | Yes |
+| `/create_fund` | Create a new investment fund | Yes |
+| `/analytics` | View portfolio analytics & risk | Yes |
+
+### Quick Start
+
+```typescript
+import { createTelegramSuperAppManager } from '@tonaiagent/core/superapp';
+
+const superApp = createTelegramSuperAppManager({
+  botToken: process.env.TELEGRAM_BOT_TOKEN,
+  miniAppUrl: 'https://t.me/TONAIAgentBot/app',
+  maxFundsPerUser: 10,
+  minFundCapital: 10,
+  riskAlertThresholds: {
+    drawdown: 15,      // Alert when drawdown exceeds 15%
+    volatility: 30,    // Alert when volatility exceeds 30%
+    concentration: 50, // Alert when concentration exceeds 50%
+  },
+});
+
+// Handle /start command — onboards new users, welcomes returning users
+const result = await superApp.handleStart(telegramUserId, startParam);
+await bot.sendMessage(chatId, result.message, { reply_markup: result.keyboard });
+```
+
+### User Onboarding
+
+```typescript
+// Onboard or retrieve existing user
+const user = await superApp.onboardUser({
+  telegramId: 123456789,
+  username: 'alice_trader',
+  firstName: 'Alice',
+  isPremium: true,
+  languageCode: 'en',
+});
+
+// Link TON wallet
+const wallet = await superApp.linkWallet({
+  userId: user.userId,
+  telegramId: user.telegramId,
+  walletAddress: 'EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2',
+  walletType: 'ton_connect',
+  tonBalance: 150.5,
+  usdtBalance: 1000,
+});
+```
+
+### Strategy Marketplace
+
+```typescript
+// Browse strategies (filtered by risk level)
+const strategies = await superApp.getStrategies({
+  riskLevel: 'moderate',
+  limit: 10,
+});
+
+// Get AI-powered personalized recommendations
+const recommended = await superApp.getRecommendedStrategies(user.userId);
+
+// Create an investment fund
+const fund = await superApp.createFund({
+  userId: user.userId,
+  name: 'My DeFi Fund',
+  strategyId: 'strategy_defi_yield',
+  capitalAllocated: 500,
+  currency: 'USDT',
+});
+```
+
+### Fund Management (Agent Interaction Commands)
+
+```typescript
+// Pause a running strategy
+await superApp.handlePauseStrategy(userId, fundId, 'Taking profits');
+
+// Resume a paused strategy
+await superApp.handleStartStrategy(userId, fundId);
+
+// Adjust capital allocation
+await superApp.handleAdjustAllocation(userId, fundId, 750);
+
+// Get performance summary
+const summary = await superApp.handlePerformanceSummary(userId, fundId);
+```
+
+### Portfolio Analytics
+
+```typescript
+// Full portfolio analytics
+const analytics = await superApp.getPortfolioAnalytics(userId);
+console.log(`Total Value: $${analytics.totalValue}`);
+console.log(`P&L: ${analytics.totalPnlPercent.toFixed(2)}%`);
+console.log(`Risk Score: ${analytics.riskScore}/100`);
+
+// Performance summary for specific period
+const summary = await superApp.getPerformanceSummary(userId, '30d');
+```
+
+### Real-Time Notifications & Risk Monitoring
+
+```typescript
+// Monitor portfolio risk
+const riskMonitor = await superApp.getRiskMonitor(userId);
+if (riskMonitor.overallRiskLevel === 'extreme') {
+  // Send critical alert
+  const alerts = await superApp.getRiskAlerts(userId);
+  for (const alert of alerts) {
+    await bot.sendMessage(chatId, `⚠️ ${alert.title}\n${alert.message}`);
+  }
+}
+
+// Trigger portfolio rebalancing
+const rebalanceEvent = await superApp.triggerRebalance(userId, fundId, 'drift');
+await bot.sendMessage(chatId,
+  `🔄 Rebalancing ${rebalanceEvent.fundName}...\nEst. cost: $${rebalanceEvent.estimatedCost.toFixed(2)}`
+);
+
+// Subscribe to all platform events
+superApp.onEvent((event) => {
+  if (event.type === 'superapp_fund_created') {
+    console.log(`New fund created: ${JSON.stringify(event.data)}`);
+  }
+  if (event.type === 'superapp_rebalance_triggered') {
+    console.log(`Rebalance triggered: ${JSON.stringify(event.data)}`);
+  }
+});
+```
+
+### Supported Strategy Categories
+
+| Category | Description | Risk |
+|----------|-------------|------|
+| `dca` | Dollar-Cost Averaging | Conservative |
+| `yield` | DeFi Yield Farming | Moderate |
+| `trading` | AI-Powered Momentum | Aggressive |
+| `arbitrage` | Cross-exchange Arb | Moderate |
+| `index` | Ecosystem Index | Moderate |
+
+### Wallet Integration
+
+TONAIAgent SuperApp supports three wallet types for maximum flexibility:
+
+| Wallet Type | Description | Security |
+|------------|-------------|----------|
+| `ton_connect` | External TON wallet via TON Connect | User-controlled |
+| `mpc` | Multi-Party Computation wallet | Highest security |
+| `smart_contract` | On-chain smart contract wallet | Programmable |
+
+### Mobile-First UX
+
+The Mini App is optimized for mobile with:
+- **Inline keyboards** for quick navigation and actions
+- **Deep linking** to specific views (`/portfolio`, `/fund/:id`, `/strategies`)
+- **Contextual menus** based on user state (no wallet, empty portfolio, active funds)
+- **Rich notifications** with action buttons (view agent, approve, dismiss)
+- **Dark/light theme** following Telegram's native color scheme
 
 ---
 
@@ -2955,6 +3136,226 @@ The marketplace tracks the following flywheel indicators:
 
 ---
 
+## Strategy Reputation System
+
+> **Trust and quality assurance for the Strategy Marketplace.**
+
+The Strategy Reputation & Ranking System evaluates strategies based on performance, risk, reliability, and user feedback. It helps users identify high-quality strategies, avoid risky or unreliable ones, and compare performance across the marketplace.
+
+### Why a Reputation System?
+
+As the marketplace grows, users need a reliable way to evaluate strategies beyond raw performance numbers. The reputation system provides:
+
+- **Objective scoring** — composite model weighing performance, risk, stability, and community trust
+- **Badge recognition** — visual signals for Top Performer, Low Risk, Verified, Trending, Most Trusted
+- **Sortable leaderboards** — four ranking categories with real-time updates
+- **User feedback** — verified investor reviews with voting and moderation
+- **Performance history** — monthly returns, volatility, and drawdown tracking for trust building
+
+### Scoring Model
+
+The overall reputation score is a weighted composite:
+
+```
+Overall Score = Performance Score × 35%
+              + Risk Adjustment Score × 25%
+              + Stability Score × 20%
+              + Reputation Score × 20%
+```
+
+#### Performance Score (35%)
+
+Evaluates ROI, Sharpe ratio, win rate, and profit factor:
+
+| Metric | Weight | Notes |
+|--------|--------|-------|
+| 30-day ROI | 40% | Normalized: -50% → 0, +50% → 100 |
+| Sharpe ratio | 30% | <0 → 0, 1.0 → 70, 2.0 → 100 |
+| Win rate | 20% | Percentage of profitable executions |
+| Profit factor | 10% | Total profit / total loss |
+
+#### Risk Adjustment Score (25%)
+
+Starts at 100 and subtracts penalties for risk factors sourced from Risk Engine v1:
+
+| Risk Factor | Penalty |
+|-------------|---------|
+| Max drawdown 25% | -35 pts |
+| Annualized volatility >20% | Up to -30 pts |
+| Leverage >2× | Up to -20 pts |
+
+#### Stability Score (20%)
+
+Rewards longer, more consistent histories:
+
+| Factor | Weight |
+|--------|--------|
+| History length (saturates at 24 months) | 50% |
+| Positive months % | 30% |
+| Sortino ratio | 20% |
+
+#### Reputation Score (20%)
+
+Aggregates user trust signals:
+
+```
+Reputation Score = User Rating (weighted by verified reviews)
+                 + Active Investors (log-scaled)
+                 + Strategy Age (months of operation)
+```
+
+### Ranking Tiers
+
+| Tier | Requirements |
+|------|-------------|
+| **Emerging** | Score < 50 — New or unproven strategy |
+| **Established** | Score ≥ 50 — Proven but limited history |
+| **Trusted** | Score ≥ 70, ≥ 3 months history |
+| **Elite** | Score ≥ 85, ≥ 3 months history, ≥ 50 active investors |
+
+### Strategy Badges
+
+| Badge | Criteria |
+|-------|----------|
+| **Top Performer** | Performance score ≥ 80 |
+| **Low Risk** | Max drawdown ≤ 10% and annualized volatility ≤ 15% |
+| **Verified** | ≥ 6 months history and ≥ 5 user reviews |
+| **Trending** | ≥ 20 active investors |
+| **Most Trusted** | Average rating ≥ 4.5 with ≥ 10 reviews |
+| **Most Consistent** | Stability score ≥ 80 |
+| **High AUM** | Total AUM ≥ 100,000 TON |
+
+### Ranking Leaderboards
+
+Four sortable leaderboard categories are always available:
+
+| Category | Sort Field | Description |
+|----------|-----------|-------------|
+| **Top Performing** | Performance score | Highest ROI with good Sharpe ratios |
+| **Lowest Risk** | Risk adjustment score | Best drawdown and volatility control |
+| **Trending** | Active investors | Strategies gaining adoption quickly |
+| **Most Trusted** | Reputation score | Highest-rated by verified investors |
+
+### Quick Start
+
+```typescript
+import { createMarketplaceService } from '@tonaiagent/core/marketplace';
+
+const marketplace = createMarketplaceService();
+
+// Register a strategy for ranking
+const score = marketplace.ranking.registerStrategy({
+  strategyId: 'strategy_defi_001',
+  strategyName: 'DeFi Yield Optimizer',
+  creatorId: 'creator_alice',
+  publishedAt: new Date('2025-09-01'),
+  roi30d: 8.5,
+  sharpeRatio: 1.8,
+  maxDrawdown: 12.0,
+  winRate: 68.0,
+  volatility: 18.0,
+  avgUserRating: 4.3,
+  ratingCount: 15,
+  activeInvestors: 42,
+  totalAUM: 50_000,
+  monthsOfHistory: 6,
+  positiveMonthsPercent: 75,
+});
+
+console.log(`Overall score: ${score.overallScore}`);  // e.g. 72.4
+console.log(`Tier: ${score.tier}`);                   // e.g. 'trusted'
+console.log(`Badges: ${score.badges.join(', ')}`);    // e.g. 'verified, trending'
+
+// Get leaderboards
+const topPerforming = marketplace.ranking.getLeaderboard('top_performing');
+const lowestRisk    = marketplace.ranking.getLeaderboard('lowest_risk');
+const trending      = marketplace.ranking.getLeaderboard('trending');
+const mostTrusted   = marketplace.ranking.getLeaderboard('most_trusted');
+
+console.log('Top Performing Strategies:');
+for (const entry of topPerforming.entries.slice(0, 5)) {
+  console.log(`  #${entry.rank} ${entry.strategyName} — Score: ${entry.score.overallScore.toFixed(1)}`);
+}
+```
+
+### Recording Performance History
+
+```typescript
+// Record monthly returns (feeds into stability and trust scoring)
+await marketplace.performanceHistory.recordMonthlyReturn({
+  strategyId: 'strategy_defi_001',
+  year: 2026,
+  month: 3,
+  returnPercent: 7.2,
+  benchmarkReturn: 3.1,    // optional: vs TON index
+  volatility: 12.5,
+  tradingDays: 22,
+});
+
+// Record drawdown events
+await marketplace.performanceHistory.recordDrawdown({
+  strategyId: 'strategy_defi_001',
+  startDate: new Date('2026-02-10'),
+  peakValue: 105_000,
+  troughValue: 93_500,
+  drawdownPercent: 10.95,
+});
+
+// Compute consistency metrics
+const metrics = await marketplace.performanceHistory.computeConsistencyMetrics('strategy_defi_001');
+console.log(`Positive months: ${metrics.positiveMonthsPercent.toFixed(0)}%`);
+console.log(`Calmar ratio:    ${metrics.calmarRatio.toFixed(2)}`);
+console.log(`Trust score:     ${metrics.trustScore.toFixed(1)}/100`);
+```
+
+### User Feedback & Reviews
+
+```typescript
+// Investors submit verified reviews
+const feedback = await marketplace.userFeedback.submitFeedback({
+  strategyId: 'strategy_defi_001',
+  userId: 'investor_bob',
+  rating: 5,
+  title: 'Consistent yields with low drawdowns',
+  content: 'Running this for 4 months with 5000 TON. Monthly returns have been steady and the drawdown never worried me. Highly recommended for conservative DeFi exposure.',
+  capitalAllocated: 5000,
+  holdingDays: 120,
+  verified: true,    // Platform confirms this user deployed the strategy
+});
+
+// Vote on reviews
+await marketplace.userFeedback.voteFeedback(feedback.id, 'investor_carol', true); // helpful
+
+// Get feedback summary for a strategy
+const summary = await marketplace.userFeedback.getFeedbackSummary('strategy_defi_001');
+console.log(`Average rating: ${summary.averageRating.toFixed(1)}/5`);
+console.log(`Verified reviews: ${summary.verifiedReviewCount}`);
+console.log(`Trend: ${summary.recentTrend}`);  // 'improving' | 'stable' | 'declining'
+```
+
+### Architecture
+
+```
+Strategy Marketplace
+        ↓
+Performance Data (ROI, Sharpe, Drawdown, Win Rate)
+        ↓
+Risk Engine → Risk Adjustment Factor
+        ↓
+Reputation & Ranking Engine
+  ├── Performance Score
+  ├── Risk Adjustment Score
+  ├── Stability Score (Performance History)
+  └── Reputation Score (User Feedback + Investors + Age)
+        ↓
+Marketplace Leaderboards (Top Performing / Lowest Risk / Trending / Most Trusted)
+```
+
+**Full Reputation System Documentation**: [src/marketplace/ranking.ts](src/marketplace/ranking.ts), [src/marketplace/user-feedback.ts](src/marketplace/user-feedback.ts), [src/marketplace/performance-history.ts](src/marketplace/performance-history.ts)
+
+
+---
+
 ## Live Trading Infrastructure
 
 > **From Simulation to Real Capital**: The Live Trading Infrastructure enables AI agents to execute real trades through integrated liquidity venues, transitioning the platform from backtesting and simulation to live financial activity.
@@ -3110,6 +3511,473 @@ console.log('24h ATR:', volatility.atr);
 
 ---
 
+## AI Fund Manager
+
+> **From strategy marketplace to AI-native hedge fund infrastructure.**
+
+The AI Fund Manager transforms the platform from a strategy marketplace into a **full investment platform** — enabling AI-managed investment funds built from multiple strategies and managed through autonomous agents.
+
+Each fund allocates capital across strategies, rebalances portfolios automatically, manages risk exposure, tracks performance metrics, and distributes returns to investors.
+
+### Architecture
+
+```
+Investors
+    ↓
+AI Fund Manager
+    ↓
+Allocation Engine
+    ↓
+Strategy Agents (via Agent Runtime)
+    ↓
+Live Trading Infrastructure
+```
+
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **Fund Creation Framework** | Create and configure AI-managed funds with strategy allocations, risk profiles, and fee structures |
+| **Allocation Engine** | Distributes investor capital across strategies according to target weights |
+| **Rebalancing Engine** | Automatically rebalances on drift, schedule, volatility, or risk triggers |
+| **Risk Management** | Fund-level controls: max drawdown, strategy exposure, daily loss limits, emergency stop |
+| **Investor Participation** | Open/private/institutional fund models with deposit, withdraw, and position tracking |
+| **Performance Tracking** | Returns, Sharpe ratio, Sortino ratio, max drawdown, win rate, volatility |
+| **Fee Distribution** | Management (2% annual) and performance (20% of profits) fees distributed to creators, developers, and treasury |
+
+### Fund Creation
+
+```typescript
+import { createAIFundManager } from '@tonaiagent/core/fund-manager';
+
+const manager = createAIFundManager({ enabled: true });
+manager.start();
+
+// Create a multi-strategy AI fund
+const fund = manager.funds.createFund({
+  name: 'Alpha Growth Fund',
+  description: 'AI-managed diversified DeFi fund on TON',
+  creatorId: 'creator_001',
+  type: 'open',           // open | private | institutional
+  baseAsset: 'TON',
+  strategyAllocations: [
+    { strategyId: 'dca-strategy-1',       targetWeightPercent: 40 },
+    { strategyId: 'yield-optimizer-1',    targetWeightPercent: 35 },
+    { strategyId: 'grid-trading-1',       targetWeightPercent: 25 },
+  ],
+  riskProfile: 'moderate',        // conservative | moderate | aggressive
+  managementFeePercent: 2.0,      // 2% annual management fee
+  performanceFeePercent: 20.0,    // 20% performance fee on profits
+});
+
+// Activate the fund to accept investor capital
+manager.funds.activateFund(fund.fundId);
+```
+
+### Capital Allocation
+
+```typescript
+// Investor deposits 100 TON into the fund
+const portfolio = manager.funds.getFundPortfolio(fund.fundId)!;
+const deposit = manager.investors.deposit(
+  {
+    fundId: fund.fundId,
+    investorId: 'investor_001',
+    investorAddress: 'EQD...',
+    amount: BigInt(100_000_000_000), // 100 TON in nanoTON
+  },
+  fund,
+  portfolio
+);
+console.log('Shares issued:', deposit.sharesIssued.toString());
+
+// Allocate capital across strategies
+const { updatedPortfolio, result } = manager.allocation.allocateDeposit(
+  portfolio, fund, BigInt(100_000_000_000)
+);
+console.log('Capital allocated to strategies:');
+for (const alloc of result.allocations) {
+  console.log(`  ${alloc.strategyId}: ${alloc.amountAllocated} nanoTON (${alloc.weightPercent}%)`);
+}
+```
+
+### Automatic Rebalancing
+
+```typescript
+// Check if rebalancing is needed
+const trigger = manager.rebalancing.shouldRebalance(fund, updatedPortfolio);
+// Returns: 'drift_threshold' | 'scheduled_interval' | 'volatility_spike' | null
+
+if (trigger) {
+  // Generate rebalancing plan
+  const plan = manager.rebalancing.generatePlan(fund, updatedPortfolio, trigger);
+  console.log('Rebalancing actions:', plan.actions.length);
+  console.log('Estimated gas:', plan.estimatedGasCost.toString());
+
+  // Execute plan — moves capital between strategy agents
+  const { result } = await manager.rebalancing.executePlan(plan, updatedPortfolio);
+  console.log('Rebalanced:', result.actionsCompleted, 'actions completed');
+}
+```
+
+### Risk Management
+
+```typescript
+// Assess fund risk status
+const riskStatus = manager.riskManagement.assessRisk(fund, updatedPortfolio);
+console.log('Risk score:', riskStatus.riskScore, '/ 100');
+console.log('Drawdown:', riskStatus.currentDrawdownPercent.toFixed(2) + '%');
+console.log('Breached limits:', riskStatus.breachedLimits);
+
+// Check for emergency stop condition
+const emergency = manager.riskManagement.checkEmergencyStop(fund, updatedPortfolio);
+if (emergency) {
+  manager.funds.emergencyStop(fund.fundId, emergency.reason);
+  console.log('Fund emergency stopped:', emergency.reason);
+}
+```
+
+### Performance Tracking
+
+```typescript
+// Record daily AUM snapshot
+manager.performance.recordSnapshot(updatedPortfolio, investorCount);
+
+// Calculate performance metrics
+const metrics = manager.performance.calculateMetrics(fund.fundId, 'all_time');
+console.log('Total return:', metrics.totalReturnPercent.toFixed(2) + '%');
+console.log('Sharpe ratio:', metrics.sharpeRatio.toFixed(2));
+console.log('Max drawdown:', metrics.maxDrawdownPercent.toFixed(2) + '%');
+console.log('Win rate:', metrics.winRatePercent.toFixed(1) + '%');
+```
+
+### Fee Distribution
+
+```typescript
+// Collect management fee (accrued daily, 2% annual)
+const mgmtFee = manager.fees.collectManagementFee(fund, updatedPortfolio);
+if (mgmtFee) {
+  console.log('Management fee collected:', mgmtFee.totalAmount.toString());
+  for (const dist of mgmtFee.distributions) {
+    console.log(`  ${dist.recipientType}: ${dist.amount} (${dist.sharePercent}%)`);
+  }
+}
+
+// Collect performance fee (only on new all-time highs above high-water mark)
+const perfFee = manager.fees.collectPerformanceFee(fund, updatedPortfolio);
+if (perfFee) {
+  console.log('Performance fee collected:', perfFee.totalAmount.toString());
+}
+```
+
+### Fee Structure
+
+```
+Management Fee: 2% annually (default)
+Performance Fee: 20% of profits above high-water mark (default)
+
+Fee Distribution:
+  Fund Creator:        70% of fees
+  Platform Treasury:   30% of fees
+```
+
+---
+
+## Investor Demo
+
+The Investor Demo Flow provides a structured, interactive demonstration of the platform's
+full end-to-end investment lifecycle — from discovering strategies in the marketplace to
+monitoring a live AI-managed fund. The demo runs in **5–10 minutes** and is suitable
+for investor presentations, fundraising, partnership discussions, and community onboarding.
+
+### How the Demo Works
+
+The demo orchestrates six stages that mirror the real platform workflow:
+
+```
+Strategy Marketplace → AI Fund Manager → Agent Runtime → Live Trading Infrastructure
+```
+
+1. **Strategy Discovery** — Browse strategies in the Strategy Marketplace. Each strategy
+   shows its creator, performance metrics (annual return, Sharpe ratio, max drawdown), and
+   risk level. Investors select the strategies they want included in their fund.
+
+2. **AI Fund Creation** — Configure the fund with selected strategies, capital allocation
+   percentages, and initial capital. The AI Fund Manager automatically deploys the fund
+   and creates an on-chain smart contract.
+
+3. **Agent Deployment** — One strategy agent is launched per selected strategy via the
+   Production Agent Runtime. Capital is distributed according to the allocation breakdown.
+   Flow: `Investor → AI Fund Manager → Agent Runtime → Strategy Agents`
+
+4. **Live Execution Simulation** — Market events and trading activity are simulated across
+   all deployed agents. The demo shows executed trades, capital allocation changes, and
+   real-time strategy performance.
+
+5. **Performance Monitoring** — Investors see a dashboard with portfolio value, per-strategy
+   performance, allocation breakdown, and profit and loss. Example output:
+   ```
+   Total Capital:  $100,000
+   Current Value:  $104,200
+   Return:         +4.20%
+   ```
+
+6. **Rebalancing Demonstration** — Shows automatic portfolio rebalancing triggered by
+   performance drift. Adjusts strategy allocations and updates risk exposure — highlighting
+   the platform's autonomous management capability.
+
+### How Strategies Are Selected
+
+Strategies are discovered in the Strategy Marketplace, which displays:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | Strategy display name |
+| **Creator** | Strategy author / organization |
+| **Annual Return** | Historical or simulated annualized return (%) |
+| **Max Drawdown** | Worst peak-to-trough loss (%) |
+| **Sharpe Ratio** | Risk-adjusted return metric |
+| **Risk Level** | `low` / `medium` / `high` |
+
+The default demo configuration includes three strategies with a total allocation of 100%:
+
+| Strategy | Creator | Allocation | Risk |
+|----------|---------|-----------|------|
+| TON DCA Accumulator | AlphaLab | 40% | Low |
+| DeFi Yield Optimizer | YieldDAO | 35% | Low |
+| Cross-DEX Arbitrage | Quant42 | 25% | Medium |
+
+### How Funds Are Created
+
+```typescript
+import { createFundInvestorDemoManager } from '@tonaiagent/core/investor-demo';
+
+const demo = createFundInvestorDemoManager();
+
+// Run the full 6-stage demo (investor presentation mode)
+const session = await demo.runFullDemo({
+  fundName: 'TON AI Diversified Fund',
+  fundCapitalUsd: 100_000,
+  includeRebalancing: true,
+});
+
+console.log('Fund ID:', session.summary?.fundId);
+console.log('Return:', session.summary?.totalReturnPercent + '%');
+console.log('Agents deployed:', session.summary?.agentCount);
+```
+
+You can also step through the demo stage by stage:
+
+```typescript
+const demo = createFundInvestorDemoManager();
+const session = await demo.startSession({ fundCapitalUsd: 100_000 });
+
+// Stage 1: Strategy Discovery
+await demo.nextStage(session.sessionId);
+
+// Stage 2: Fund Creation
+await demo.nextStage(session.sessionId);
+
+// ... continue for all 6 stages
+```
+
+### How Agents Execute Strategies
+
+Once the fund is created, the AI Fund Manager deploys strategy agents through the
+Production Agent Runtime. Each agent:
+
+1. Receives its allocated capital from the fund
+2. Loads its strategy configuration
+3. Begins the 9-step execution pipeline (fetch market data → AI decision → risk validation → execute → log)
+4. Reports performance metrics back to the Fund Manager
+
+The demo simulates this entire flow with realistic trade data, market events, and
+performance metrics — all in simulation mode (no real funds).
+
+### How Performance Is Monitored
+
+The performance dashboard provides real-time visibility into:
+
+- **Portfolio value** — current total value vs. initial capital
+- **Strategy performance** — per-agent P&L, return %, and trade count
+- **Allocation breakdown** — current vs. target allocation percentages
+- **Rebalancing status** — drift detection and automatic correction
+
+Access the simulated dashboard at:
+```
+https://tonaiagent.com/funds/{fundId}/dashboard
+```
+
+### Running the Demo Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Run the fund investor demo example
+npx tsx examples/fund-investor-demo.ts
+```
+
+For the original 7-step individual agent demo (Issue #90):
+```bash
+npx tsx examples/investor-demo.ts
+```
+
+---
+
+## Strategy Backtesting
+
+> **Validate Before You Deploy**: The Strategy Backtesting Framework enables AI agents and developers to test strategies against historical data before committing live capital, generating structured performance reports and risk evaluations.
+
+### Overview
+
+The backtesting framework provides a complete pipeline from raw historical data to actionable strategy reports:
+
+```
+Historical Market Data (OHLCV, Trades, Order Books, Volatility)
+                    |
+          Historical Data Manager
+                    |
+         Market Replay Engine
+       (event-driven sequential replay)
+                    |
+    Strategy Logic via onCandle() callback
+                    |
+       Simulated Trading Engine
+  (slippage, fees, P&L tracking)
+                    |
+         Performance Analysis
+   (Sharpe, Sortino, drawdown, VaR)
+                    |
+     Risk Evaluation (Risk Engine v1)
+  (drawdown scenarios, concentration, grade)
+                    |
+       Structured Backtest Reports
+```
+
+### How Strategies Are Tested
+
+Strategies are defined as an event-driven callback that receives each historical candle sequentially:
+
+```typescript
+import { createBacktestingFramework, DEFAULT_SLIPPAGE_MODEL, DEFAULT_FEE_MODEL, DEFAULT_FILL_MODEL } from '@tonaiagent/core/backtesting';
+
+const framework = createBacktestingFramework();
+
+const result = await framework.run({
+  strategyId: 'dca_ton',
+  strategyName: 'DCA TON',
+  strategySpec: {
+    assets: ['TON'],
+    onCandle: async (candle, portfolio, placeOrder) => {
+      // Buy $100 of TON each day
+      if (portfolio.cash >= 100) {
+        await placeOrder({ asset: 'TON', side: 'buy', type: 'market', amount: 100, amountType: 'usd' });
+      }
+    },
+  },
+  dataConfig: {
+    type: 'synthetic',
+    assets: ['TON'],
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-06-30'),
+    granularity: '1d',
+  },
+  simulationConfig: {
+    initialCapital: 10000,
+    currency: 'USD',
+    slippageModel: DEFAULT_SLIPPAGE_MODEL,
+    feeModel: DEFAULT_FEE_MODEL,
+    fillModel: DEFAULT_FILL_MODEL,
+  },
+  riskEvaluation: true,
+  generateReport: true,
+});
+```
+
+### How Historical Data Is Replayed
+
+The Market Replay Engine processes data in strict chronological order:
+
+1. Load OHLCV candles for all requested assets
+2. Merge candles across assets and sort by timestamp
+3. For each time step, call the strategy's `onCandle` callback with current prices
+4. Strategy places simulated orders through the `placeOrder` API
+5. Orders are executed against current prices with slippage and fees applied
+
+**Supported data sources:** synthetic (Geometric Brownian Motion), JSON/CSV, external APIs.
+
+### How Performance Metrics Are Calculated
+
+| Metric | Description |
+|--------|-------------|
+| **Total Return** | `(ending_capital - starting_capital) / starting_capital × 100` |
+| **Annualized Return** | Normalized to 365 days: `(1 + total)^(365/days) - 1` |
+| **Sharpe Ratio** | Risk-adjusted return: `(R_p - R_f) / σ_p` |
+| **Max Drawdown** | Largest peak-to-trough equity decline |
+| **Win Rate** | Percentage of trades that were profitable |
+| **Profit Factor** | Gross profit divided by gross loss |
+| **VaR 95%** | Maximum loss at 95% confidence level |
+| **Sortino Ratio** | Return per unit of downside risk only |
+
+### How Risk Evaluation Is Performed
+
+Risk evaluation integrates with Risk Engine v1 to assess:
+
+1. **Drawdown Scenarios**: Simulates strategy survival through Market Correction (20%), Bear Market (40%), Crypto Crash (60%), and Flash Crash (30%) scenarios
+2. **Asset Concentration Risk**: Flags allocations that exceed portfolio concentration limits
+3. **Exposure Volatility**: Measures each asset's contribution to overall portfolio volatility
+4. **Risk Grading**: Assigns A/B/C/D/F grade based on composite risk score (0-100)
+
+```typescript
+// Risk evaluation results
+console.log(`Risk Grade: ${result.riskEvaluation.riskGrade}`);  // 'A' | 'B' | 'C' | 'D' | 'F'
+console.log(`Passed: ${result.riskEvaluation.passed}`);
+for (const rec of result.riskEvaluation.recommendations) {
+  console.log(`[${rec.severity}] ${rec.description}`);
+}
+```
+
+### Sample Backtest Report
+
+```
+Capital Start: 10,000 / Capital End: 13,450 / Return: +34.5% / Max Drawdown: -7.2% / Sharpe Ratio: 1.85
+
+BACKTEST REPORT: DCA TON
+===============================================================
+PERFORMANCE METRICS
+  Total Return:        34.50%
+  Annualized Return:   70.21%
+  Sharpe Ratio:        1.850
+  Sortino Ratio:       2.100
+  Max Drawdown:        7.20%
+  Volatility (ann.):   22.50%
+
+TRADE STATISTICS
+  Total Trades:        182
+  Win Rate:            60.4%
+  Profit Factor:       2.18
+  Total Fees Paid:     $120.50
+
+RISK EVALUATION
+  Risk Grade:          A
+  Risk Score:          82/100
+  Evaluation Status:   PASSED
+```
+
+### Marketplace Integration
+
+The backtesting framework generates marketplace-ready metrics for the Strategy Marketplace:
+- **Strategy Rating** (1–5 stars) based on backtested performance
+- **Risk Category**: conservative / moderate / aggressive / speculative
+- **Minimum Capital** requirements
+- **Backtest Score** (0–100 composite)
+- **Consistency Score** (0–100 return consistency)
+
+**Full Backtesting Documentation**: [docs/backtesting.md](docs/backtesting.md)
+
+---
+
 ## Community
 
 ### Connect With Us
@@ -3134,6 +4002,426 @@ console.log('24h ATR:', volatility.atr);
 - Check the documentation for guides
 
 ---
+
+## Risk Engine
+
+> **Risk-Aware AI Investment Infrastructure**: The Risk Engine v1 introduces a critical safety layer for the TON AI Agent platform. It enables the platform to safely support AI hedge funds, automated portfolio management, institutional capital allocation, and large-scale strategy marketplaces — ensuring autonomous agents operate within **strict and transparent risk boundaries**.
+
+The engine continuously evaluates risk exposure and enforces safety limits before and during trade execution.
+
+### Architecture
+
+```
+AI Agents
+     ↓
+Live Trading Infrastructure
+     ↓
+Risk Engine
+     ↓
+Execution Approval / Rejection
+```
+
+Risk checks occur **before trade execution** and **during runtime monitoring**.
+
+### Core Components
+
+#### 1. Strategy Risk Evaluator (`src/risk-engine/strategy-risk-evaluator.ts`)
+
+Evaluates each strategy's risk profile before deployment using weighted composite scoring:
+
+| Metric | Weight | Description |
+|--------|--------|-------------|
+| **Volatility** | 25% | Annualized price volatility |
+| **Max Drawdown** | 30% | Maximum historical drawdown |
+| **Leverage Usage** | 20% | Current leverage multiplier |
+| **Asset Concentration** | 15% | Top asset concentration fraction |
+| **Historical Stability** | 10% | Inverted: lower stability = higher risk |
+
+#### 2. Real-Time Exposure Monitor (`src/risk-engine/exposure-monitor.ts`)
+
+Continuously tracks portfolio exposure per asset, strategy allocations within funds, capital concentration risks, and unrealized losses. Emits alerts when thresholds are exceeded.
+
+#### 3. Risk Limits Enforcer (`src/risk-engine/risk-limits.ts`)
+
+Enforces configurable limits:
+
+| Limit | Default | Action |
+|-------|---------|--------|
+| **Max position size** | 20% of portfolio | Reduce |
+| **Max leverage** | 5x | Block |
+| **Max portfolio drawdown** | 15% | Rebalance |
+| **Max strategy allocation** | 30% of fund | Reduce |
+
+#### 4. Automated Risk Response (`src/risk-engine/risk-response.ts`)
+
+When risk thresholds are breached, the engine triggers automated responses:
+
+- **Rebalancing** — restore asset allocation targets
+- **Position Reduction** — reduce oversized positions
+- **Strategy Pause** — halt strategy execution temporarily
+- **Emergency Shutdown** — full agent shutdown for critical risk
+
+Response thresholds:
+
+| Risk Score | Category | Triggered Response |
+|------------|----------|--------------------|
+| 0–30 | Low | No response |
+| 31–60 | Moderate | No response |
+| 61–80 | High | Pause strategy + reduce position |
+| 81–100 | Critical | Emergency shutdown + pause strategy |
+
+#### 5. Risk Scoring Model (`src/risk-engine/risk-scorer.ts`)
+
+Maintains dynamic risk scores for strategies, funds, and agent portfolios:
+
+```
+Risk Score:
+  0–30   → Low Risk
+  31–60  → Moderate Risk
+  61–80  → High Risk
+  81–100 → Critical Risk
+```
+
+Scores update continuously based on current market conditions and exposure.
+
+#### 6. Risk Dashboard Integration (`src/risk-engine/risk-dashboard.ts`)
+
+Exposes risk metrics for transparency:
+
+- Portfolio risk exposure per agent
+- Strategy risk ratings
+- Drawdown alerts
+- Leverage monitoring
+- Overall system risk score
+
+### Quick Example
+
+```typescript
+import { createRiskEngine } from '@tonaiagent/core/risk-engine';
+
+const riskEngine = createRiskEngine({
+  riskLimits: {
+    maxPositionSizePercent: 20,
+    maxLeverageRatio: 5,
+    maxPortfolioDrawdownPercent: 15,
+    maxStrategyAllocationPercent: 30,
+  },
+  autoResponse: {
+    enableAutoRebalance: true,
+    enableAutoPauseStrategy: true,
+    enableEmergencyShutdown: true,
+    criticalScoreThreshold: 81,
+  },
+});
+
+// Evaluate a strategy before deployment
+const profile = riskEngine.strategyEvaluator.evaluate({
+  strategyId: 'strategy_001',
+  volatility: 0.25,
+  maxDrawdown: 0.15,
+  leverageRatio: 2.0,
+  assetConcentration: 0.40,
+  historicalStability: 0.80,
+});
+console.log('Risk score:', profile.riskScore.value, '/', 100);
+// Risk score: 28 / 100 (low)
+
+// Monitor portfolio exposure in real-time
+riskEngine.exposureMonitor.update({
+  agentId: 'agent_001',
+  totalValue: 100000,
+  assetExposures: [
+    { assetId: 'TON', value: 40000 },
+    { assetId: 'USDT', value: 60000 },
+  ],
+  unrealizedLosses: 5000,
+});
+
+// Check risk limits before trade execution
+const limitCheck = riskEngine.riskLimits.check({
+  entityId: 'agent_001',
+  entityType: 'agent',
+  positionSizePercent: 25,  // exceeds 20% limit
+  leverageRatio: 3,
+});
+
+if (!limitCheck.passed) {
+  console.log('Trade blocked:', limitCheck.violations[0].message);
+  // Trade blocked: Position size 25.00% exceeds limit of 20%. Action: reduce.
+}
+
+// Subscribe to risk events
+riskEngine.onEvent(event => {
+  if (event.type === 'risk_response_triggered') {
+    console.log('Automated risk response:', event.payload);
+  }
+});
+```
+
+### Demo Flow
+
+The risk engine can be demonstrated by:
+
+1. Launching strategies with different risk levels (low / moderate / high / critical)
+2. Triggering simulated market volatility (increasing drawdown and leverage)
+3. Exceeding a risk threshold (e.g., leverage > 5x)
+4. Watching automatic risk responses (position reduction, strategy pause, or emergency shutdown)
+
+This proves the platform can **protect investor capital automatically**.
+
+---
+
+## Developer SDK
+
+The Agent Developer SDK (Issue #158) provides a complete, standardized framework for building, testing, and deploying autonomous trading agents on the TON AI Agent platform.
+
+### Architecture
+
+```
+Developer → Agent SDK → Agent Runtime API → Production Agent Runtime → Trading Infrastructure
+```
+
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **Agent Development Framework** | Standardized agent structure: strategy, risk_rules, execution_logic, configuration, event_handlers |
+| **Runtime Integration API** | `getMarketData()`, `placeOrder()`, `getPortfolio()`, `allocateCapital()`, `getRiskMetrics()` |
+| **Strategy Development Toolkit** | Templates, example algorithms, risk configuration helpers, execution utilities |
+| **Backtesting Compatibility Layer** | `simulate()`, `analyze()`, `validate()` agents against historical data |
+
+### Creating an Agent
+
+Every agent follows a standardized five-pillar structure:
+
+```typescript
+import {
+  createAgentFramework,
+  createStrategyToolkit,
+  ExampleAlgorithms,
+  type AgentDefinition,
+} from '@tonaiagent/core/sdk';
+
+const framework = createAgentFramework();
+const toolkit = createStrategyToolkit();
+
+const agent: AgentDefinition = framework.defineAgent({
+  id: 'my-dca-agent',
+  name: 'Daily DCA Bot',
+  version: '1.0.0',
+  author: { name: 'Your Name' },
+
+  // 1. Strategy — what the agent does
+  strategy: {
+    type: 'dca',
+    parameters: { asset: 'TON', amountPerExecution: 100 },
+    intervalMs: 24 * 60 * 60 * 1000, // daily
+  },
+
+  // 2. Risk rules — safety guardrails
+  risk_rules: toolkit.buildRiskRules()
+    .conservative()
+    .withStopLoss(5)
+    .withMaxDailyLoss(200)
+    .build(),
+
+  // 3. Execution logic — the actual trading function
+  execution_logic: ExampleAlgorithms.dca('TON', 100),
+
+  // 4. Configuration — environment and runtime settings
+  configuration: {
+    environment: 'sandbox',
+    simulationMode: true,
+    initialCapital: 10000,
+  },
+
+  // 5. Event handlers — lifecycle and monitoring
+  event_handlers: {
+    onStart: () => console.log('Agent started'),
+    onStop: () => console.log('Agent stopped'),
+    onError: (err) => console.error('Error:', err),
+  },
+});
+```
+
+### Strategy Integration
+
+The Runtime Integration API gives your execution logic access to live market data and trading operations:
+
+```typescript
+import { createRuntimeAPI } from '@tonaiagent/core/sdk';
+
+// Simulation mode (safe for development)
+const api = createRuntimeAPI({ simulationMode: true, initialSimulationBalance: 10000 });
+
+// In your execution_logic:
+const agent = framework.defineAgent({
+  // ...
+  execution_logic: async (context) => {
+    // Get real-time market data
+    const ton = await context.getMarketData('TON');
+    console.log('TON price:', ton.current, 'RSI:', ton.rsi14);
+
+    // Get current portfolio
+    const portfolio = await context.getPortfolio();
+    console.log('Available balance:', portfolio.availableBalance);
+
+    // Place orders based on strategy signals
+    if (ton.rsi14 && ton.rsi14 < 30) {
+      await context.placeOrder({
+        asset: 'TON',
+        side: 'buy',
+        amount: 100,
+        type: 'market',
+      });
+    }
+
+    // Check risk metrics
+    const risk = await context.getRiskMetrics();
+    if (risk.circuitBreakerActive) {
+      console.warn('Circuit breaker active — halting execution');
+    }
+  },
+  // ...
+});
+```
+
+### Runtime API Reference
+
+| Function | Description |
+|----------|-------------|
+| `getMarketData(asset)` | Current price, RSI, moving averages, volume, bid/ask |
+| `placeOrder(order)` | Execute buy/sell orders with slippage control |
+| `getPortfolio()` | Balances, positions, realized/unrealized PnL |
+| `allocateCapital(allocation)` | Smart capital distribution (fixed or percent mode) |
+| `getRiskMetrics()` | Drawdown, VaR, Sharpe ratio, circuit breaker status |
+
+### Strategy Templates
+
+Pre-built templates accelerate development:
+
+```typescript
+import { createStrategyToolkit, ExampleAlgorithms } from '@tonaiagent/core/sdk';
+
+const toolkit = createStrategyToolkit();
+
+// List available templates
+const templates = toolkit.listTemplates();
+// [dca-basic, momentum-rsi, ma-crossover, yield-optimizer]
+
+// Create agent from template
+const agent = toolkit.fromTemplate('momentum-rsi', {
+  id: 'my-momentum',
+  name: 'RSI Momentum Bot',
+  version: '1.0.0',
+  execution_logic: ExampleAlgorithms.momentum('TON', 30, 70, 10),
+  event_handlers: {},
+});
+```
+
+**Available Templates:**
+
+| Template ID | Strategy | Complexity |
+|-------------|----------|------------|
+| `dca-basic` | Dollar-Cost Averaging | Beginner |
+| `momentum-rsi` | RSI Momentum (buy oversold, sell overbought) | Intermediate |
+| `ma-crossover` | Moving Average Crossover (trend following) | Intermediate |
+| `yield-optimizer` | Yield farming with weekly rebalancing | Advanced |
+
+### Execution Utilities
+
+Technical analysis functions for strategy logic:
+
+```typescript
+const toolkit = createStrategyToolkit();
+
+// Technical indicators
+const prices = [2.5, 2.6, 2.4, 2.7, 2.8, 2.65];
+const sma20 = toolkit.utils.simpleMovingAverage(prices, 20);
+const ema12 = toolkit.utils.exponentialMovingAverage(prices, 12);
+const rsi = toolkit.utils.rsi(prices, 14);
+const bands = toolkit.utils.bollingerBands(prices, 20, 2);
+const macd = toolkit.utils.macd(prices, 12, 26, 9);
+
+// Position sizing (risk-based)
+const units = toolkit.utils.positionSize({
+  portfolioValue: 10000,
+  riskPercent: 2,     // risk 2% of portfolio
+  entryPrice: 2.50,
+  stopLossPrice: 2.25,
+});
+// units = 80 (risk $200 / $0.25 per unit)
+
+// Signal detection
+const isBullish = toolkit.utils.isCrossover(fastMAs, slowMAs);
+const isBearish = toolkit.utils.isCrossunder(fastMAs, slowMAs);
+```
+
+### Backtesting
+
+Test your agent against historical data before deploying:
+
+```typescript
+import { createBacktestingCompat } from '@tonaiagent/core/sdk';
+
+const backtester = createBacktestingCompat();
+
+// Run backtest
+const result = await backtester.simulate(agent, {
+  startDate: new Date('2024-01-01'),
+  endDate: new Date('2024-03-31'),
+  initialBalance: 10000,
+  assets: ['TON'],
+  stepMs: 24 * 60 * 60 * 1000,   // daily steps
+  tradingFeePercent: 0.1,          // 0.1% fee
+});
+
+// Analyze results
+console.log(backtester.analyze(result));
+// Backtest Analysis: my-dca-agent
+// ────────────────────────────────────────
+// Period: Mon Jan 01 2024 → Sun Mar 31 2024
+// Final Value: 10850.00 (+8.50%)
+// Sharpe Ratio: 1.42
+// Max Drawdown: 6.30%
+// Win Rate: 62.5%
+
+// Validate before deploying to production
+const validation = backtester.validate(result, {
+  minSharpeRatio: 1.0,
+  maxDrawdownPercent: 15,
+  minWinRate: 0.45,
+});
+
+if (validation.passed) {
+  console.log('Ready for production deployment!');
+  const deployment = await framework.deploy(agent, { mode: 'production' });
+}
+```
+
+### Marketplace Publishing
+
+Deploy your agent to the Strategy Marketplace:
+
+```typescript
+// 1. Define and validate your agent
+const validation = framework.validate(agent);
+if (!validation.valid) throw new Error(validation.errors.map(e => e.message).join(', '));
+
+// 2. Run and pass backtesting validation
+const result = await backtester.simulate(agent, { ... });
+const btValidation = backtester.validate(result, { minSharpeRatio: 1.0, maxDrawdownPercent: 20 });
+
+// 3. Deploy to sandbox for live testing
+const sandboxDeploy = await framework.deploy(agent, { mode: 'sandbox' });
+
+// 4. Promote to production and publish to marketplace
+const prodDeploy = await framework.deploy(agent, { mode: 'production' });
+// Now visible in Strategy Marketplace for copy trading
+```
+
+---
+
 
 ## License
 

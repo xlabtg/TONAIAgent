@@ -188,6 +188,10 @@ import { TONAIAgentSDK, createSDK } from './client';
 import { ExtensionRegistry, createExtensionRegistry } from './extensions';
 import { SandboxEnvironment, createSandbox } from './sandbox';
 import { SDKEventCallback } from './types';
+import { createAgentFramework } from './agent-framework';
+import { createRuntimeAPI } from './runtime-api';
+import { createStrategyToolkit } from './strategy-toolkit';
+import { createBacktestingCompat } from './backtesting-compat';
 
 // ==========================================================================
 // SDK Builder (Fluent API)
@@ -350,6 +354,97 @@ export const QuickStart = {
 };
 
 // ==========================================================================
+// Agent Development Framework (Issue #158)
+// ==========================================================================
+
+export {
+  AgentDeveloperFramework,
+  createAgentFramework,
+  AgentFrameworkError,
+  type AgentDefinition,
+  type AgentStrategySpec,
+  type AgentStrategyType,
+  type AgentCondition,
+  type AgentRiskRules,
+  type AgentExecutionContext,
+  type AgentExecutionLogic,
+  type AgentExecutionSummary,
+  type AgentConfiguration,
+  type AgentEventHandlers,
+  type AgentLogger,
+  type AgentMarketDataSnapshot,
+  type AgentOrderRequest,
+  type AgentOrderResult,
+  type AgentPortfolioSnapshot,
+  type AgentPosition,
+  type AgentCapitalAllocation,
+  type AgentAllocationResult,
+  type AgentRiskMetrics,
+  type AgentValidationResult,
+  type AgentValidationError,
+  type AgentValidationWarning,
+  type AgentDeploymentOptions,
+  type AgentDeploymentResult,
+  type AgentFrameworkErrorCode,
+} from './agent-framework';
+
+// ==========================================================================
+// Runtime Integration API (Issue #158)
+// ==========================================================================
+
+export {
+  DefaultRuntimeAPI,
+  createRuntimeAPI,
+  RuntimeAPIError,
+  type RuntimeAPI,
+  type RuntimeAPIConfig,
+  type RuntimeMarketData,
+  type OHLCVBar,
+  type MarketDataQuery,
+  type RuntimeOrderRequest,
+  type OrderBookEntry,
+  type RuntimePortfolio,
+  type RuntimeRiskMetrics,
+  type RuntimeSimulationState,
+  type RuntimeAPIErrorCode,
+} from './runtime-api';
+
+// ==========================================================================
+// Strategy Development Toolkit (Issue #158)
+// ==========================================================================
+
+export {
+  StrategyDevelopmentToolkit,
+  createStrategyToolkit,
+  RiskConfigHelper,
+  ExampleAlgorithms,
+  type StrategyTemplate,
+  type PositionSizeParams,
+  type BollingerBands,
+  type MACDResult,
+  type ExecutionUtils,
+} from './strategy-toolkit';
+
+// ==========================================================================
+// Backtesting Compatibility Layer (Issue #158)
+// ==========================================================================
+
+export {
+  BacktestingCompatLayer,
+  createBacktestingCompat,
+  type BacktestConfig,
+  type BacktestResult,
+  type BacktestPerformance,
+  type BacktestExecution,
+  type BacktestTrade,
+  type EquityCurvePoint,
+  type DrawdownPoint,
+  type BacktestValidationRequirements,
+  type BacktestValidationResult,
+  type BacktestValidationCheck,
+} from './backtesting-compat';
+
+// ==========================================================================
 // Default Export
 // ==========================================================================
 
@@ -359,4 +454,8 @@ export default {
   createSandbox,
   SDKBuilder,
   QuickStart,
+  createAgentFramework,
+  createRuntimeAPI,
+  createStrategyToolkit,
+  createBacktestingCompat,
 };

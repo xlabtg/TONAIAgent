@@ -252,6 +252,36 @@ export {
   type CreatorRevenueRecord,
 } from './marketplace-api';
 
+// Export ranking engine
+export {
+  DefaultRankingEngine,
+  createRankingEngine,
+  type RankingEngine,
+  type RankingEngineConfig,
+  type StrategyRankingInput,
+} from './ranking';
+
+// Export user feedback manager
+export {
+  DefaultUserFeedbackManager,
+  createUserFeedbackManager,
+  type UserFeedbackManager,
+  type UserFeedbackManagerConfig,
+  type SubmitFeedbackInput,
+  type UpdateFeedbackInput,
+} from './user-feedback';
+
+// Export performance history manager
+export {
+  DefaultPerformanceHistoryManager,
+  createPerformanceHistoryManager,
+  type PerformanceHistoryManager,
+  type PerformanceHistoryManagerConfig,
+  type RecordMonthlyReturnInput,
+  type RecordVolatilityInput,
+  type RecordDrawdownInput,
+} from './performance-history';
+
 // ============================================================================
 // Marketplace Service - Unified Entry Point
 // ============================================================================
@@ -271,6 +301,9 @@ import { DefaultRiskTransparencyManager, createRiskTransparencyManager, RiskTran
 import { DefaultSandboxManager, createSandboxManager } from './sandbox';
 import { DefaultRevenueDistributionEngine, createRevenueDistributionEngine } from './revenue-distribution';
 import { DefaultFreemiumManager, createFreemiumManager } from './freemium';
+import { DefaultRankingEngine, createRankingEngine, RankingEngineConfig } from './ranking';
+import { DefaultUserFeedbackManager, createUserFeedbackManager } from './user-feedback';
+import { DefaultPerformanceHistoryManager, createPerformanceHistoryManager } from './performance-history';
 
 export interface MarketplaceService {
   readonly enabled: boolean;
@@ -283,6 +316,9 @@ export interface MarketplaceService {
   readonly sandbox: DefaultSandboxManager;
   readonly revenueDistribution: DefaultRevenueDistributionEngine;
   readonly freemium: DefaultFreemiumManager;
+  readonly ranking: DefaultRankingEngine;
+  readonly userFeedback: DefaultUserFeedbackManager;
+  readonly performanceHistory: DefaultPerformanceHistoryManager;
 
   // Health check
   getHealth(): Promise<MarketplaceHealth>;
@@ -303,6 +339,9 @@ export interface MarketplaceHealth {
     sandbox: boolean;
     revenueDistribution: boolean;
     freemium: boolean;
+    ranking: boolean;
+    userFeedback: boolean;
+    performanceHistory: boolean;
   };
   lastCheck: Date;
   details: Record<string, unknown>;
@@ -319,6 +358,9 @@ export class DefaultMarketplaceService implements MarketplaceService {
   readonly sandbox: DefaultSandboxManager;
   readonly revenueDistribution: DefaultRevenueDistributionEngine;
   readonly freemium: DefaultFreemiumManager;
+  readonly ranking: DefaultRankingEngine;
+  readonly userFeedback: DefaultUserFeedbackManager;
+  readonly performanceHistory: DefaultPerformanceHistoryManager;
 
   private readonly eventCallbacks: MarketplaceEventCallback[] = [];
 
@@ -393,6 +435,23 @@ export class DefaultMarketplaceService implements MarketplaceService {
     // Initialize freemium manager
     this.freemium = createFreemiumManager();
 
+    // Initialize ranking engine
+    const rankingConfig: Partial<RankingEngineConfig> = {
+      performanceWeight: config.ranking?.performanceWeight,
+      riskWeight: config.ranking?.riskWeight,
+      stabilityWeight: config.ranking?.stabilityWeight,
+      reputationWeight: config.ranking?.reputationWeight,
+      minHistoryDaysForTrusted: config.ranking?.minHistoryDaysForTrusted,
+      minInvestorsForElite: config.ranking?.minInvestorsForElite,
+    };
+    this.ranking = createRankingEngine(rankingConfig);
+
+    // Initialize user feedback manager
+    this.userFeedback = createUserFeedbackManager();
+
+    // Initialize performance history manager
+    this.performanceHistory = createPerformanceHistoryManager();
+
     // Wire up event forwarding
     this.setupEventForwarding();
   }
@@ -408,6 +467,9 @@ export class DefaultMarketplaceService implements MarketplaceService {
       sandbox: true,
       revenueDistribution: true,
       freemium: true,
+      ranking: true,
+      userFeedback: true,
+      performanceHistory: true,
     };
 
     const healthyCount = Object.values(components).filter(Boolean).length;
@@ -457,6 +519,9 @@ export class DefaultMarketplaceService implements MarketplaceService {
     this.sandbox.onEvent(forwardEvent);
     this.revenueDistribution.onEvent(forwardEvent);
     this.freemium.onEvent(forwardEvent);
+    this.ranking.onEvent(forwardEvent);
+    this.userFeedback.onEvent(forwardEvent);
+    this.performanceHistory.onEvent(forwardEvent);
   }
 }
 
