@@ -1,27 +1,43 @@
 /**
- * TONAIAgent - Risk Engine v1
+ * TONAIAgent - Risk Management Engine
  * Issue #154: Risk Engine v1
+ * Issue #203: Risk Management Engine (enhanced)
  *
- * Dedicated risk management engine responsible for monitoring and controlling
- * risk across individual strategies, AI-managed funds, agent portfolios,
- * and the entire platform.
+ * Centralized risk control system that ensures strategies operate within safe parameters.
+ * The Risk Engine sits between the Strategy Engine and Trading Engine, protecting both
+ * individual agents and the overall portfolio.
  *
  * Architecture:
- *   AI Agents
+ *   Market Data
  *        ↓
- *   Live Trading Infrastructure
+ *   Strategy Engine
  *        ↓
- *   Risk Engine
+ *   Risk Engine (Trade Validator, Stop-Loss, Portfolio Protection)
  *        ↓
- *   Execution Approval / Rejection
+ *   Trading Engine
+ *        ↓
+ *   Portfolio Update
  *
- * Core Components:
+ * Core Components (v1 - Issue #154):
  *   1. Strategy Risk Evaluator    — evaluates each strategy's risk profile
  *   2. Real-Time Exposure Monitor — tracks portfolio exposure continuously
  *   3. Risk Limits Enforcer       — enforces configurable risk thresholds
  *   4. Risk Response Handler      — triggers automated risk responses
  *   5. Risk Scorer                — maintains dynamic risk scores
  *   6. Risk Dashboard             — exposes metrics for transparency
+ *
+ * Additional Components (v2 - Issue #203):
+ *   7. Trade Validator            — validates trades before execution
+ *   8. Stop-Loss Manager          — automatic stop-loss protection
+ *   9. Portfolio Protection       — coordinated portfolio protection system
+ *  10. Risk Metrics API           — real-time metrics for dashboards
+ *
+ * Risk Controls:
+ *   - Position Size Limits: max 5% of portfolio per trade
+ *   - Portfolio Exposure Limits: max 20% per asset
+ *   - Stop-Loss Protection: automatic exit at configurable levels
+ *   - Max Drawdown Protection: pause agent at 15% drawdown
+ *   - Daily Loss Limit: disable trading at 3% daily loss
  *
  * Risk Score Range:
  *   0–30   → Low Risk
@@ -139,6 +155,61 @@ export {
   type RiskDashboard,
 } from './risk-dashboard';
 
+// ─── Issue #203: Risk Management Engine Components ───────────────────────────
+
+export {
+  DefaultTradeValidator,
+  createTradeValidator,
+  DEFAULT_TRADE_VALIDATOR_CONFIG,
+  type TradeValidator,
+  type TradeValidatorConfig,
+  type TradeValidationRequest,
+  type TradeValidationResult,
+  type TradeWarning,
+  type TradeSuggestion,
+} from './trade-validator';
+
+export {
+  DefaultStopLossManager,
+  createStopLossManager,
+  DEFAULT_STOP_LOSS_CONFIG,
+  type StopLossManager,
+  type StopLossManagerConfig,
+  type StopLossConfig,
+  type StopLossType,
+  type Position,
+  type StopLossCheck,
+  type StopLossExitSignal,
+} from './stop-loss-manager';
+
+export {
+  DefaultPortfolioProtection,
+  createPortfolioProtection,
+  DEFAULT_PORTFOLIO_PROTECTION_CONFIG,
+  type PortfolioProtection,
+  type PortfolioProtectionConfig,
+  type ProtectedAgent,
+  type ProtectionMetrics,
+  type ProtectionAlert,
+  type AgentStatus,
+} from './portfolio-protection';
+
+export {
+  DefaultRiskMetricsAPI,
+  createRiskMetricsAPI,
+  type RiskMetricsAPI,
+  type RiskMetricsSnapshot,
+  type PortfolioRiskMetrics,
+  type AgentRiskMetrics,
+  type StrategyRiskMetrics,
+  type RiskAlertSummary,
+  type ActiveRiskControls,
+  type UserRiskOverview,
+  type QuickRiskAction,
+  type MarketplaceRiskRating,
+  type RiskFactor,
+} from './risk-metrics-api';
+
 // ─── Unified Risk Engine ──────────────────────────────────────────────────────
 
 import { DefaultStrategyRiskEvaluator } from './strategy-risk-evaluator';
@@ -147,6 +218,10 @@ import { DefaultRiskLimitsEnforcer } from './risk-limits';
 import { DefaultRiskResponseHandler } from './risk-response';
 import { DefaultRiskScorer } from './risk-scorer';
 import { DefaultRiskDashboard } from './risk-dashboard';
+import { DefaultTradeValidator } from './trade-validator';
+import { DefaultStopLossManager } from './stop-loss-manager';
+import { DefaultPortfolioProtection } from './portfolio-protection';
+import { DefaultRiskMetricsAPI } from './risk-metrics-api';
 
 import type { StrategyRiskEvaluator } from './strategy-risk-evaluator';
 import type { RealTimeExposureMonitor } from './exposure-monitor';
@@ -154,6 +229,10 @@ import type { RiskLimitsEnforcer } from './risk-limits';
 import type { RiskResponseHandler } from './risk-response';
 import type { RiskScorer } from './risk-scorer';
 import type { RiskDashboard } from './risk-dashboard';
+import type { TradeValidator, TradeValidatorConfig } from './trade-validator';
+import type { StopLossManager, StopLossManagerConfig } from './stop-loss-manager';
+import type { PortfolioProtection, PortfolioProtectionConfig, ProtectionMetrics } from './portfolio-protection';
+import type { RiskMetricsAPI, RiskMetricsSnapshot } from './risk-metrics-api';
 
 import type {
   RiskEngineConfig,
@@ -162,11 +241,27 @@ import type {
   RiskDashboardMetrics,
 } from './types';
 
+// ─── Extended Risk Engine Configuration (Issue #203) ─────────────────────────
+
+export interface ExtendedRiskEngineConfig extends RiskEngineConfig {
+  /** Trade validator configuration */
+  tradeValidator?: Partial<TradeValidatorConfig>;
+  /** Stop-loss manager configuration */
+  stopLossManager?: Partial<StopLossManagerConfig>;
+  /** Portfolio protection configuration */
+  portfolioProtection?: Partial<PortfolioProtectionConfig>;
+}
+
 export interface RiskEngineStatus {
   activeResponses: number;
   monitoredAgents: number;
   evaluatedStrategies: number;
   dashboardMetrics: RiskDashboardMetrics;
+  /** Issue #203: Additional status fields */
+  protectionMetrics: ProtectionMetrics;
+  metricsSnapshot: RiskMetricsSnapshot;
+  disabledAgents: string[];
+  activePositions: number;
 }
 
 export interface RiskEngine {
@@ -176,6 +271,14 @@ export interface RiskEngine {
   readonly riskResponse: RiskResponseHandler;
   readonly riskScorer: RiskScorer;
   readonly dashboard: RiskDashboard;
+  /** Issue #203: Trade validation layer */
+  readonly tradeValidator: TradeValidator;
+  /** Issue #203: Stop-loss protection */
+  readonly stopLossManager: StopLossManager;
+  /** Issue #203: Portfolio protection system */
+  readonly portfolioProtection: PortfolioProtection;
+  /** Issue #203: Risk metrics API */
+  readonly metricsAPI: RiskMetricsAPI;
   getStatus(): RiskEngineStatus;
   onEvent(callback: RiskEngineEventCallback): void;
 }
@@ -187,16 +290,31 @@ export class DefaultRiskEngine implements RiskEngine {
   readonly riskResponse: RiskResponseHandler;
   readonly riskScorer: RiskScorer;
   readonly dashboard: RiskDashboard;
+  /** Issue #203: Trade validation layer */
+  readonly tradeValidator: TradeValidator;
+  /** Issue #203: Stop-loss protection */
+  readonly stopLossManager: StopLossManager;
+  /** Issue #203: Portfolio protection system */
+  readonly portfolioProtection: PortfolioProtection;
+  /** Issue #203: Risk metrics API */
+  readonly metricsAPI: RiskMetricsAPI;
 
   private readonly globalCallbacks: RiskEngineEventCallback[] = [];
 
-  constructor(config?: RiskEngineConfig) {
+  constructor(config?: ExtendedRiskEngineConfig) {
+    // v1 Components (Issue #154)
     this.strategyEvaluator = new DefaultStrategyRiskEvaluator(config?.strategyEvaluator);
     this.exposureMonitor = new DefaultRealTimeExposureMonitor(config?.exposureMonitor);
     this.riskLimits = new DefaultRiskLimitsEnforcer(config?.riskLimits);
     this.riskResponse = new DefaultRiskResponseHandler(config?.autoResponse);
     this.riskScorer = new DefaultRiskScorer();
     this.dashboard = new DefaultRiskDashboard();
+
+    // v2 Components (Issue #203)
+    this.tradeValidator = new DefaultTradeValidator(config?.tradeValidator);
+    this.stopLossManager = new DefaultStopLossManager(config?.stopLossManager);
+    this.portfolioProtection = new DefaultPortfolioProtection(config?.portfolioProtection);
+    this.metricsAPI = new DefaultRiskMetricsAPI();
 
     this.setupEventForwarding();
   }
@@ -207,6 +325,11 @@ export class DefaultRiskEngine implements RiskEngine {
       monitoredAgents: this.exposureMonitor.getAllSnapshots().length,
       evaluatedStrategies: this.strategyEvaluator.getAllProfiles().length,
       dashboardMetrics: this.dashboard.getMetrics(),
+      // Issue #203: Extended status
+      protectionMetrics: this.portfolioProtection.getMetrics(),
+      metricsSnapshot: this.metricsAPI.getSnapshot(),
+      disabledAgents: this.tradeValidator.getDisabledAgents(),
+      activePositions: this.stopLossManager.getAllPositions().length,
     };
   }
 
@@ -225,16 +348,22 @@ export class DefaultRiskEngine implements RiskEngine {
       }
     };
 
+    // v1 Components
     this.strategyEvaluator.onEvent(forward);
     this.exposureMonitor.onEvent(forward);
     this.riskLimits.onEvent(forward);
     this.riskResponse.onEvent(forward);
     this.riskScorer.onEvent(forward);
     this.dashboard.onEvent(forward);
+
+    // v2 Components (Issue #203)
+    this.tradeValidator.onEvent(forward);
+    this.stopLossManager.onEvent(forward);
+    this.portfolioProtection.onEvent(forward);
   }
 }
 
-export function createRiskEngine(config?: RiskEngineConfig): DefaultRiskEngine {
+export function createRiskEngine(config?: ExtendedRiskEngineConfig): DefaultRiskEngine {
   return new DefaultRiskEngine(config);
 }
 
