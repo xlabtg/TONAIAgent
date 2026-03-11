@@ -2927,6 +2927,131 @@ SOFTWARE.
 
 ---
 
+## Autonomous Strategy Discovery
+
+> **Self-Improving Strategy Ecosystem**: The Autonomous Strategy Discovery Engine uses AI models to continuously generate, test, and evaluate new investment strategies — creating a living, self-evolving financial laboratory.
+
+The engine operates as a closed-loop autonomous pipeline:
+
+```
+AI Strategy Generator
+        ↓
+Backtesting Framework (#155)
+        ↓
+Risk Engine (#154)
+        ↓
+Strategy Ranking System (#159)
+        ↓
+Strategy Marketplace (#150)
+```
+
+### How AI Generates Strategies
+
+The **Strategy Generation Engine** produces candidate strategies using four AI-driven approaches:
+
+| Approach | Description |
+|----------|-------------|
+| `evolutionary` | Combines RSI, momentum, and volume indicators with genetic mutation |
+| `parameter_optimization` | Tunes DCA parameters (buy amount, intervals) for optimal performance |
+| `ai_rule_generation` | Creates MACD + trend-confirmation hybrid strategies |
+| `template_mutation` | Mutates existing portfolio rebalancing templates |
+
+Each approach generates strategies with dynamically adjusted risk controls, capital allocation, and position sizing based on the configured risk level (`low`, `medium`, `high`, `critical`).
+
+### How Strategies Are Tested Automatically
+
+Every generated candidate passes through the **Discovery Pipeline**:
+
+1. **Backtesting** — Runs a 90-day historical simulation using the `BacktestingEngine` with synthetic price data (or real data if a `HistoricalDataProvider` is configured)
+2. **Risk Filtering** — Applies configurable drawdown, stability, and leverage filters
+3. **Performance Evaluation** — Scores candidates using a weighted composite metric: ROI (30%), Sharpe ratio (30%), max drawdown (25%), win rate (15%)
+
+Only strategies meeting all thresholds advance to the next stage.
+
+### How Risk Filtering Works
+
+The **Risk Filter** applies three independent checks:
+
+| Check | Default | Description |
+|-------|---------|-------------|
+| Max drawdown | 35% | Rejects strategies with excessive loss exposure |
+| Stability score | 0.3 | Requires minimum return consistency (Sharpe + drawdown derived) |
+| Min thresholds | ROI ≥ 5%, Sharpe ≥ 0.5 | Evaluates against configurable performance thresholds |
+
+Strategies failing any check are discarded with a labeled rejection reason (`excessive_drawdown`, `unstable_returns`, `low_sharpe`, etc.).
+
+### How Successful Strategies Appear in the Marketplace
+
+The **Strategy Publisher** automatically publishes top-scoring strategies to the marketplace:
+
+- Only strategies with `status === 'passed'` and score above `publishThreshold` (default: 65) are submitted
+- Published strategies include full backtest metadata (ROI, Sharpe, drawdown, win rate)
+- The publisher integrates with any `MarketplacePublisher`-compatible interface (including `DefaultMarketplaceService`)
+- Unpublished strategies remain in the **Elite Pool** for future evolutionary cycles
+
+### Continuous Learning System
+
+The engine improves over time by tracking:
+
+- **Successful strategies**: Records which approaches and risk levels produce the best results
+- **Market condition correlation**: Links strategy performance to inferred market conditions (bullish/bearish/volatile)
+- **Sample merging**: Aggregates learning across multiple strategies with weighted averaging
+
+Insights from the learning system guide candidate generation in subsequent cycles — the engine learns which approaches work best and biases generation accordingly.
+
+### Quick Start
+
+```typescript
+import { createAutonomousDiscoveryEngine } from '@tonaiagent/core/autonomous-discovery';
+
+const engine = createAutonomousDiscoveryEngine({
+  maxCandidatesPerCycle: 10,
+  cycleIntervalMs: 3600000, // 1 hour
+  autoPublish: true,
+  publishThreshold: 70,
+  evaluationThresholds: {
+    minROI: 5,
+    minSharpe: 0.5,
+    maxDrawdown: 30,
+    minWinRate: 0.4,
+    minTrades: 5,
+  },
+});
+
+// Subscribe to discovery events
+engine.onEvent((event) => {
+  console.log(`[${event.type}]`, event.data);
+});
+
+// Run a single discovery cycle
+const cycle = await engine.runCycle();
+console.log(`Generated: ${cycle.candidatesGenerated}, Passed: ${cycle.evaluationsPassed}, Published: ${cycle.published}`);
+
+// Start automatic cycling (every hour)
+engine.start();
+
+// Access the elite pool of best strategies
+const elite = engine.getElitePool();
+
+// Get learning insights
+const insights = engine.getLearningInsights();
+console.log('Best approaches:', insights.topApproaches);
+
+engine.stop();
+```
+
+### Success Metrics
+
+| Metric | Description |
+|--------|-------------|
+| Strategies generated | Total candidates produced per cycle |
+| Pass rate | Percentage passing risk + evaluation filters |
+| Elite pool size | Number of top strategies retained across cycles |
+| Published strategies | Strategies submitted to the marketplace |
+| Learning records | Insights accumulated for self-improvement |
+
+---
+
 <p align="center">
   <strong>Built with ❤️ for the TON Ecosystem</strong>
 </p>
