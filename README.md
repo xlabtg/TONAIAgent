@@ -43,10 +43,11 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 24. [Strategy Marketplace](#strategy-marketplace)
 25. [Live Trading Infrastructure](#live-trading-infrastructure)
 26. [AI Fund Manager](#ai-fund-manager)
-27. [Risk Engine](#risk-engine)
-28. [Roadmap](#roadmap)
+27. [Investor Demo](#investor-demo)
+28. [Strategy Backtesting](#strategy-backtesting)
 29. [Community](#community)
-30. [License](#license)
+30. [Risk Engine](#risk-engine)
+31. [License](#license)
 
 ---
 
@@ -3185,6 +3186,159 @@ For the original 7-step individual agent demo (Issue #90):
 ```bash
 npx tsx examples/investor-demo.ts
 ```
+
+---
+
+## Strategy Backtesting
+
+> **Validate Before You Deploy**: The Strategy Backtesting Framework enables AI agents and developers to test strategies against historical data before committing live capital, generating structured performance reports and risk evaluations.
+
+### Overview
+
+The backtesting framework provides a complete pipeline from raw historical data to actionable strategy reports:
+
+```
+Historical Market Data (OHLCV, Trades, Order Books, Volatility)
+                    |
+          Historical Data Manager
+                    |
+         Market Replay Engine
+       (event-driven sequential replay)
+                    |
+    Strategy Logic via onCandle() callback
+                    |
+       Simulated Trading Engine
+  (slippage, fees, P&L tracking)
+                    |
+         Performance Analysis
+   (Sharpe, Sortino, drawdown, VaR)
+                    |
+     Risk Evaluation (Risk Engine v1)
+  (drawdown scenarios, concentration, grade)
+                    |
+       Structured Backtest Reports
+```
+
+### How Strategies Are Tested
+
+Strategies are defined as an event-driven callback that receives each historical candle sequentially:
+
+```typescript
+import { createBacktestingFramework, DEFAULT_SLIPPAGE_MODEL, DEFAULT_FEE_MODEL, DEFAULT_FILL_MODEL } from '@tonaiagent/core/backtesting';
+
+const framework = createBacktestingFramework();
+
+const result = await framework.run({
+  strategyId: 'dca_ton',
+  strategyName: 'DCA TON',
+  strategySpec: {
+    assets: ['TON'],
+    onCandle: async (candle, portfolio, placeOrder) => {
+      // Buy $100 of TON each day
+      if (portfolio.cash >= 100) {
+        await placeOrder({ asset: 'TON', side: 'buy', type: 'market', amount: 100, amountType: 'usd' });
+      }
+    },
+  },
+  dataConfig: {
+    type: 'synthetic',
+    assets: ['TON'],
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-06-30'),
+    granularity: '1d',
+  },
+  simulationConfig: {
+    initialCapital: 10000,
+    currency: 'USD',
+    slippageModel: DEFAULT_SLIPPAGE_MODEL,
+    feeModel: DEFAULT_FEE_MODEL,
+    fillModel: DEFAULT_FILL_MODEL,
+  },
+  riskEvaluation: true,
+  generateReport: true,
+});
+```
+
+### How Historical Data Is Replayed
+
+The Market Replay Engine processes data in strict chronological order:
+
+1. Load OHLCV candles for all requested assets
+2. Merge candles across assets and sort by timestamp
+3. For each time step, call the strategy's `onCandle` callback with current prices
+4. Strategy places simulated orders through the `placeOrder` API
+5. Orders are executed against current prices with slippage and fees applied
+
+**Supported data sources:** synthetic (Geometric Brownian Motion), JSON/CSV, external APIs.
+
+### How Performance Metrics Are Calculated
+
+| Metric | Description |
+|--------|-------------|
+| **Total Return** | `(ending_capital - starting_capital) / starting_capital × 100` |
+| **Annualized Return** | Normalized to 365 days: `(1 + total)^(365/days) - 1` |
+| **Sharpe Ratio** | Risk-adjusted return: `(R_p - R_f) / σ_p` |
+| **Max Drawdown** | Largest peak-to-trough equity decline |
+| **Win Rate** | Percentage of trades that were profitable |
+| **Profit Factor** | Gross profit divided by gross loss |
+| **VaR 95%** | Maximum loss at 95% confidence level |
+| **Sortino Ratio** | Return per unit of downside risk only |
+
+### How Risk Evaluation Is Performed
+
+Risk evaluation integrates with Risk Engine v1 to assess:
+
+1. **Drawdown Scenarios**: Simulates strategy survival through Market Correction (20%), Bear Market (40%), Crypto Crash (60%), and Flash Crash (30%) scenarios
+2. **Asset Concentration Risk**: Flags allocations that exceed portfolio concentration limits
+3. **Exposure Volatility**: Measures each asset's contribution to overall portfolio volatility
+4. **Risk Grading**: Assigns A/B/C/D/F grade based on composite risk score (0-100)
+
+```typescript
+// Risk evaluation results
+console.log(`Risk Grade: ${result.riskEvaluation.riskGrade}`);  // 'A' | 'B' | 'C' | 'D' | 'F'
+console.log(`Passed: ${result.riskEvaluation.passed}`);
+for (const rec of result.riskEvaluation.recommendations) {
+  console.log(`[${rec.severity}] ${rec.description}`);
+}
+```
+
+### Sample Backtest Report
+
+```
+Capital Start: 10,000 / Capital End: 13,450 / Return: +34.5% / Max Drawdown: -7.2% / Sharpe Ratio: 1.85
+
+BACKTEST REPORT: DCA TON
+===============================================================
+PERFORMANCE METRICS
+  Total Return:        34.50%
+  Annualized Return:   70.21%
+  Sharpe Ratio:        1.850
+  Sortino Ratio:       2.100
+  Max Drawdown:        7.20%
+  Volatility (ann.):   22.50%
+
+TRADE STATISTICS
+  Total Trades:        182
+  Win Rate:            60.4%
+  Profit Factor:       2.18
+  Total Fees Paid:     $120.50
+
+RISK EVALUATION
+  Risk Grade:          A
+  Risk Score:          82/100
+  Evaluation Status:   PASSED
+```
+
+### Marketplace Integration
+
+The backtesting framework generates marketplace-ready metrics for the Strategy Marketplace:
+- **Strategy Rating** (1–5 stars) based on backtested performance
+- **Risk Category**: conservative / moderate / aggressive / speculative
+- **Minimum Capital** requirements
+- **Backtest Score** (0–100 composite)
+- **Consistency Score** (0–100 return consistency)
+
+**Full Backtesting Documentation**: [docs/backtesting.md](docs/backtesting.md)
 
 ---
 
