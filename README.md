@@ -4932,6 +4932,199 @@ await runtime.startAgent('agent-001');
 const result = await runtime.runPipeline('agent-001', 'trend');
 ```
 
+
+---
+
+## Market Data Layer
+
+The Market Data Layer is the **data backbone of the platform** — a unified system for fetching, normalizing, caching, and distributing real-time cryptocurrency price data to agents and strategies.
+
+### Architecture
+
+```
+External APIs (CoinGecko, Binance)
+         |
+Market Data Providers
+         |
+Data Normalizer (built into each provider)
+         |
+Cache Layer (30s TTL in-memory cache)
+         |
+Market Data Service
+         |
+Strategy Engine
+```
+
+### How Market Data is Fetched
+
+The  orchestrates provider selection with automatic fallback:
+
+1. **Cache check** — if a fresh price is cached (within TTL), return immediately
+2. **Primary provider** — fetch from CoinGecko (default) or Binance
+3. **Automatic fallback** — if the primary provider fails, transparently switch to the secondary provider
+4. **Cache store** — save the result to avoid redundant API calls
+
+```typescript
+import { createMarketDataService } from '@tonaiagent/core/market-data';
+
+const service = createMarketDataService();
+service.start();
+
+// Fetch a single asset price
+const result = await service.getPrice('BTC');
+console.log(result.price);
+// { asset: 'BTC', price: 65000, volume24h: 25000000000, source: 'coingecko', timestamp: 1710000000 }
+console.log(result.fromCache); // false (first call)
+console.log(result.usedFallback); // false
+
+// Second call within TTL returns from cache
+const cached = await service.getPrice('BTC');
+console.log(cached.fromCache); // true
+```
+
+### Supported Providers
+
+#### CoinGecko (default primary)
+
+Simple and free price data from the public CoinGecko API.
+
+- Endpoint: 
+- Docs: https://www.coingecko.com/en/api/documentation
+- Auth: None required (free-tier public API)
+
+```typescript
+import { createCoinGeckoProvider } from '@tonaiagent/core/market-data';
+
+const provider = createCoinGeckoProvider();
+const price = await provider.getPrice('TON');
+const ticker = await provider.getTicker('BTC'); // includes high/low/volume
+```
+
+#### Binance (default fallback)
+
+Exchange-level price data from the Binance public API.
+
+- Endpoint: 
+- Docs: https://binance-docs.github.io/apidocs/spot/en/
+- Auth: None required (public endpoints)
+
+```typescript
+import { createBinanceProvider } from '@tonaiagent/core/market-data';
+
+const provider = createBinanceProvider();
+const price = await provider.getPrice('BTC');
+```
+
+### Caching Mechanism
+
+The cache layer prevents excessive API calls using an in-memory store with configurable TTL:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+|  |  | How long a cached price is considered fresh |
+|  |  | Maximum cache entries (oldest evicted at capacity) |
+
+```typescript
+import { createMarketDataService } from '@tonaiagent/core/market-data';
+
+const service = createMarketDataService({
+  primaryProvider: 'coingecko',
+  fallbackProvider: 'binance',
+  cache: { ttlSeconds: 60, maxEntries: 200 },
+});
+```
+
+### Supported Assets (MVP)
+
+| Symbol | CoinGecko ID | Binance Pair |
+|--------|-------------|--------------|
+| BTC |  |  |
+| ETH |  |  |
+| TON |  |  |
+| SOL |  |  |
+| USDT |  |  |
+
+### Normalized Data Format
+
+All providers normalize their responses to the common  format:
+
+```typescript
+{
+  asset: 'BTC',              // asset symbol
+  price: 65000,              // current price in USD
+  volume24h: 25000000000,    // 24h trading volume in USD
+  priceChange24h: 1.5,       // 24h price change %
+  marketCap: 1200000000000,  // market cap in USD (if available)
+  timestamp: 1710000000,     // UNIX timestamp (seconds)
+  source: 'coingecko',       // data provider name
+}
+```
+
+### Integration with Strategy Engine
+
+The  method returns a  that is directly compatible with the Strategy Engine's  type:
+
+```typescript
+import { createMarketDataService } from '@tonaiagent/core/market-data';
+import {
+  createStrategyRegistry,
+  createStrategyLoader,
+  createStrategyExecutionEngine,
+} from '@tonaiagent/core/strategy-engine';
+
+// Set up market data
+const marketDataService = createMarketDataService();
+marketDataService.start();
+
+// Set up strategy engine
+const registry = createStrategyRegistry();
+const loader = createStrategyLoader(registry);
+loader.loadBuiltIns();
+
+const engine = createStrategyExecutionEngine(registry);
+engine.start();
+
+// Fetch live market data and feed it to the strategy engine
+const snapshot = await marketDataService.getSnapshot();
+
+const result = await engine.execute({
+  strategyId: 'trend',
+  agentId: 'agent-001',
+  marketData: snapshot, // ← MarketDataSnapshot is compatible with MarketData
+  params: { asset: 'TON', movingAveragePeriods: 14 },
+});
+
+console.log(result.signal);
+// { action: 'BUY', asset: 'TON', amount: '100000000', confidence: 0.72, ... }
+```
+
+### Custom Providers
+
+Implement  (or extend ) to add a new data source:
+
+```typescript
+import { BaseMarketDataProvider } from '@tonaiagent/core/market-data';
+import type { NormalizedPrice, Ticker } from '@tonaiagent/core/market-data';
+
+class MyProvider extends BaseMarketDataProvider {
+  getName() { return 'coingecko' as const; }
+
+  async getPrice(asset: string): Promise<NormalizedPrice> {
+    this.validateAsset(asset); // throws ASSET_NOT_SUPPORTED if invalid
+    // ... fetch and normalize
+    return { asset, price: ..., volume24h: ..., timestamp: this.nowSeconds(), source: 'my-provider' };
+  }
+
+  async getTicker(asset: string): Promise<Ticker> { ... }
+
+  getSupportedAssets(): string[] {
+    return ['BTC', 'ETH', 'TON', 'SOL', 'USDT'];
+  }
+}
+
+const service = createMarketDataService({}, { coingecko: new MyProvider() });
+```
+
 ---
 
 <p align="center">
