@@ -380,6 +380,13 @@
       el('avatar-initials').textContent = (first[0] + (last[0] || '')).toUpperCase();
     }
 
+    // Check for onboarding (after all components loaded)
+    setTimeout(() => {
+      if (window.Onboarding && window.Onboarding.isFirstTimeUser) {
+        window.Onboarding.init();
+      }
+    }, 100);
+
     // Load first page
     Portfolio.refresh();
   }
