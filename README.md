@@ -1221,6 +1221,183 @@ const agent = await superApp.agentDashboard.createAgent({
 
 ---
 
+## Telegram SuperApp
+
+The TONAIAgent Telegram SuperApp provides a complete mobile-first investment platform directly within Telegram. It combines a bot interface, Mini App UI, real-time notifications, and seamless wallet integration.
+
+### Architecture
+
+```
+Telegram Bot → Telegram Mini App → Platform API → Agent Runtime → Trading Infrastructure
+```
+
+### Bot Commands
+
+| Command | Description | Auth Required |
+|---------|-------------|--------------|
+| `/start` | Initialize account & welcome message | No |
+| `/portfolio` | View your investment portfolio | Yes |
+| `/strategies` | Browse strategy marketplace | Yes |
+| `/create_fund` | Create a new investment fund | Yes |
+| `/analytics` | View portfolio analytics & risk | Yes |
+
+### Quick Start
+
+```typescript
+import { createTelegramSuperAppManager } from '@tonaiagent/core/superapp';
+
+const superApp = createTelegramSuperAppManager({
+  botToken: process.env.TELEGRAM_BOT_TOKEN,
+  miniAppUrl: 'https://t.me/TONAIAgentBot/app',
+  maxFundsPerUser: 10,
+  minFundCapital: 10,
+  riskAlertThresholds: {
+    drawdown: 15,      // Alert when drawdown exceeds 15%
+    volatility: 30,    // Alert when volatility exceeds 30%
+    concentration: 50, // Alert when concentration exceeds 50%
+  },
+});
+
+// Handle /start command — onboards new users, welcomes returning users
+const result = await superApp.handleStart(telegramUserId, startParam);
+await bot.sendMessage(chatId, result.message, { reply_markup: result.keyboard });
+```
+
+### User Onboarding
+
+```typescript
+// Onboard or retrieve existing user
+const user = await superApp.onboardUser({
+  telegramId: 123456789,
+  username: 'alice_trader',
+  firstName: 'Alice',
+  isPremium: true,
+  languageCode: 'en',
+});
+
+// Link TON wallet
+const wallet = await superApp.linkWallet({
+  userId: user.userId,
+  telegramId: user.telegramId,
+  walletAddress: 'EQDtFpEwcFAEcRe5mLVh2N6C0x-_hJEM7W61_JLnSF74p4q2',
+  walletType: 'ton_connect',
+  tonBalance: 150.5,
+  usdtBalance: 1000,
+});
+```
+
+### Strategy Marketplace
+
+```typescript
+// Browse strategies (filtered by risk level)
+const strategies = await superApp.getStrategies({
+  riskLevel: 'moderate',
+  limit: 10,
+});
+
+// Get AI-powered personalized recommendations
+const recommended = await superApp.getRecommendedStrategies(user.userId);
+
+// Create an investment fund
+const fund = await superApp.createFund({
+  userId: user.userId,
+  name: 'My DeFi Fund',
+  strategyId: 'strategy_defi_yield',
+  capitalAllocated: 500,
+  currency: 'USDT',
+});
+```
+
+### Fund Management (Agent Interaction Commands)
+
+```typescript
+// Pause a running strategy
+await superApp.handlePauseStrategy(userId, fundId, 'Taking profits');
+
+// Resume a paused strategy
+await superApp.handleStartStrategy(userId, fundId);
+
+// Adjust capital allocation
+await superApp.handleAdjustAllocation(userId, fundId, 750);
+
+// Get performance summary
+const summary = await superApp.handlePerformanceSummary(userId, fundId);
+```
+
+### Portfolio Analytics
+
+```typescript
+// Full portfolio analytics
+const analytics = await superApp.getPortfolioAnalytics(userId);
+console.log(`Total Value: $${analytics.totalValue}`);
+console.log(`P&L: ${analytics.totalPnlPercent.toFixed(2)}%`);
+console.log(`Risk Score: ${analytics.riskScore}/100`);
+
+// Performance summary for specific period
+const summary = await superApp.getPerformanceSummary(userId, '30d');
+```
+
+### Real-Time Notifications & Risk Monitoring
+
+```typescript
+// Monitor portfolio risk
+const riskMonitor = await superApp.getRiskMonitor(userId);
+if (riskMonitor.overallRiskLevel === 'extreme') {
+  // Send critical alert
+  const alerts = await superApp.getRiskAlerts(userId);
+  for (const alert of alerts) {
+    await bot.sendMessage(chatId, `⚠️ ${alert.title}\n${alert.message}`);
+  }
+}
+
+// Trigger portfolio rebalancing
+const rebalanceEvent = await superApp.triggerRebalance(userId, fundId, 'drift');
+await bot.sendMessage(chatId,
+  `🔄 Rebalancing ${rebalanceEvent.fundName}...\nEst. cost: $${rebalanceEvent.estimatedCost.toFixed(2)}`
+);
+
+// Subscribe to all platform events
+superApp.onEvent((event) => {
+  if (event.type === 'superapp_fund_created') {
+    console.log(`New fund created: ${JSON.stringify(event.data)}`);
+  }
+  if (event.type === 'superapp_rebalance_triggered') {
+    console.log(`Rebalance triggered: ${JSON.stringify(event.data)}`);
+  }
+});
+```
+
+### Supported Strategy Categories
+
+| Category | Description | Risk |
+|----------|-------------|------|
+| `dca` | Dollar-Cost Averaging | Conservative |
+| `yield` | DeFi Yield Farming | Moderate |
+| `trading` | AI-Powered Momentum | Aggressive |
+| `arbitrage` | Cross-exchange Arb | Moderate |
+| `index` | Ecosystem Index | Moderate |
+
+### Wallet Integration
+
+TONAIAgent SuperApp supports three wallet types for maximum flexibility:
+
+| Wallet Type | Description | Security |
+|------------|-------------|----------|
+| `ton_connect` | External TON wallet via TON Connect | User-controlled |
+| `mpc` | Multi-Party Computation wallet | Highest security |
+| `smart_contract` | On-chain smart contract wallet | Programmable |
+
+### Mobile-First UX
+
+The Mini App is optimized for mobile with:
+- **Inline keyboards** for quick navigation and actions
+- **Deep linking** to specific views (`/portfolio`, `/fund/:id`, `/strategies`)
+- **Contextual menus** based on user state (no wallet, empty portfolio, active funds)
+- **Rich notifications** with action buttons (view agent, approve, dismiss)
+- **Dark/light theme** following Telegram's native color scheme
+
+---
+
 ## Admin Dashboard
 
 ### Features

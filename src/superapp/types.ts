@@ -1236,6 +1236,198 @@ export type SuperAppEventType =
   // Subscription events
   | 'subscription_started'
   | 'subscription_renewed'
-  | 'subscription_cancelled';
+  | 'subscription_cancelled'
+  // Telegram SuperApp events
+  | 'superapp_user_onboarded'
+  | 'superapp_fund_created'
+  | 'superapp_strategy_selected'
+  | 'superapp_rebalance_triggered'
+  | 'superapp_command_executed';
 
 export type SuperAppEventCallback = (event: SuperAppEvent) => void;
+
+// ============================================================================
+// Telegram SuperApp Types
+// ============================================================================
+
+export type FundStatus = 'active' | 'paused' | 'closed' | 'liquidating';
+
+export type StrategyRiskLevel = 'conservative' | 'moderate' | 'aggressive' | 'speculative';
+
+export interface TelegramSuperAppUser {
+  userId: string;
+  telegramId: number;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  walletAddress?: string;
+  walletType?: 'ton_connect' | 'mpc' | 'smart_contract';
+  onboardedAt: Date;
+  lastActiveAt: Date;
+  isPremium: boolean;
+  languageCode: string;
+}
+
+export interface SuperAppFund {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  strategyId: string;
+  strategyName: string;
+  riskLevel: StrategyRiskLevel;
+  capitalAllocated: number;
+  currency: string;
+  status: FundStatus;
+  performance: FundPerformance;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FundPerformance {
+  totalValue: number;
+  totalPnl: number;
+  totalPnlPercent: number;
+  dailyPnl: number;
+  dailyPnlPercent: number;
+  weeklyPnl: number;
+  monthlyPnl: number;
+  sharpeRatio?: number;
+  maxDrawdown?: number;
+  winRate?: number;
+}
+
+export interface SuperAppStrategy {
+  id: string;
+  name: string;
+  description: string;
+  category: 'yield' | 'trading' | 'arbitrage' | 'index' | 'dca' | 'custom';
+  riskLevel: StrategyRiskLevel;
+  minCapital: number;
+  expectedApr?: number;
+  verified: boolean;
+  creatorId?: string;
+  creatorName?: string;
+  totalAllocated: number;
+  usersCount: number;
+  performance30d?: number;
+  tags: string[];
+}
+
+export interface SuperAppPortfolioAnalytics {
+  userId: string;
+  totalValue: number;
+  totalPnl: number;
+  totalPnlPercent: number;
+  funds: SuperAppFundSummary[];
+  riskScore: number;
+  diversificationScore: number;
+  topPerformingFund?: { id: string; name: string; pnlPercent: number };
+  worstPerformingFund?: { id: string; name: string; pnlPercent: number };
+  recommendations: PortfolioRecommendation[];
+  updatedAt: Date;
+}
+
+export interface SuperAppFundSummary {
+  id: string;
+  name: string;
+  strategyName: string;
+  capitalAllocated: number;
+  currentValue: number;
+  pnl: number;
+  pnlPercent: number;
+  status: FundStatus;
+  riskLevel: StrategyRiskLevel;
+}
+
+export interface PortfolioRecommendation {
+  type: 'rebalance' | 'add_capital' | 'reduce_risk' | 'diversify' | 'stop_loss';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  title: string;
+  description: string;
+  fundId?: string;
+  suggestedAction?: string;
+}
+
+export interface SuperAppRiskMonitor {
+  userId: string;
+  overallRiskLevel: 'low' | 'medium' | 'high' | 'extreme';
+  riskScore: number;
+  alerts: SuperAppRiskAlert[];
+  drawdownWarnings: DrawdownWarning[];
+  concentrationWarnings: ConcentrationWarning[];
+  updatedAt: Date;
+}
+
+export interface SuperAppRiskAlert {
+  id: string;
+  fundId?: string;
+  fundName?: string;
+  type: 'drawdown' | 'volatility' | 'concentration' | 'liquidity' | 'performance';
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  currentValue: number;
+  threshold: number;
+  recommendation?: string;
+  createdAt: Date;
+}
+
+export interface DrawdownWarning {
+  fundId: string;
+  fundName: string;
+  currentDrawdown: number;
+  maxDrawdown: number;
+  threshold: number;
+  isBreached: boolean;
+}
+
+export interface ConcentrationWarning {
+  asset: string;
+  percentage: number;
+  threshold: number;
+  isBreached: boolean;
+  affectedFunds: string[];
+}
+
+export interface WalletIdentityInfo {
+  userId: string;
+  telegramId: number;
+  walletAddress: string;
+  walletType: 'ton_connect' | 'mpc' | 'smart_contract';
+  tonBalance: number;
+  usdtBalance: number;
+  verified: boolean;
+  linkedAt: Date;
+}
+
+export interface SuperAppCommandResult {
+  success: boolean;
+  message: string;
+  data?: Record<string, unknown>;
+  keyboard?: SuperAppKeyboard;
+}
+
+export interface SuperAppKeyboard {
+  buttons: SuperAppKeyboardButton[][];
+  type: 'inline' | 'reply';
+}
+
+export interface SuperAppKeyboardButton {
+  text: string;
+  callbackData?: string;
+  url?: string;
+  webApp?: { url: string };
+}
+
+export interface RebalanceEvent {
+  fundId: string;
+  fundName: string;
+  triggeredBy: 'drift' | 'performance' | 'risk' | 'schedule' | 'manual';
+  fromAllocation: Record<string, number>;
+  toAllocation: Record<string, number>;
+  estimatedCost: number;
+  scheduledAt: Date;
+  executedAt?: Date;
+  status: 'scheduled' | 'executing' | 'completed' | 'failed';
+}
