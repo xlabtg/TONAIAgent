@@ -108,8 +108,10 @@
       const stopBtn = el('ctrl-stop');
       const restartBtn = el('ctrl-restart');
 
-      startBtn.disabled = status === 'active';
-      stopBtn.disabled = status === 'stopped' || status === 'paused';
+      // 'running' is the canonical active state (Issue #185 Agent Control API)
+      const isRunning = status === 'running' || status === 'active';
+      startBtn.disabled = isRunning;
+      stopBtn.disabled = status === 'stopped';
       restartBtn.disabled = status === 'stopped';
 
       startBtn.style.opacity = startBtn.disabled ? '0.4' : '1';
@@ -133,7 +135,8 @@
       TG.haptic.impact();
 
       const labels = { start: 'Starting', pause: 'Pausing', restart: 'Restarting', stop: 'Stopping' };
-      const newStatus = { start: 'active', pause: 'paused', restart: 'active', stop: 'stopped' };
+      // Use canonical statuses from Agent Control API (Issue #185): running/stopped/paused/error
+      const newStatus = { start: 'running', pause: 'paused', restart: 'running', stop: 'stopped' };
 
       // Optimistic UI update
       const agent = State.agents.find(a => a.id === agentId);
@@ -165,7 +168,8 @@
     el('close-agent-modal')?.addEventListener('click', () => Agents.closeModal());
     el('modal-overlay')?.addEventListener('click', () => Agents.closeModal());
     el('ctrl-start')?.addEventListener('click', () => Agents._controlAction('start'));
-    el('ctrl-stop')?.addEventListener('click', () => Agents._controlAction('pause'));
+    // 'stop' maps to POST /api/agents/:id/stop (Agent Control API, Issue #185)
+    el('ctrl-stop')?.addEventListener('click', () => Agents._controlAction('stop'));
     el('ctrl-restart')?.addEventListener('click', () => Agents._controlAction('restart'));
     el('ctrl-stop-fully')?.addEventListener('click', () => {
       TG.confirm('Permanently stop this agent? All positions will remain unchanged.', (ok) => {
