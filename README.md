@@ -30,7 +30,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 11. [Configuration](#configuration)
 12. [Quick Start](#quick-start)
 13. [Telegram Integration](#telegram-integration)
-14. [Admin Dashboard](#admin-dashboard)
+14. [Portfolio Dashboard (Mini App)](#portfolio-dashboard-mini-app)
+15. [Admin Dashboard](#admin-dashboard)
 15. [Security Best Practices](#security-best-practices)
 16. [Contributing](#contributing)
 17. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
@@ -1250,6 +1251,55 @@ const agent = await superApp.agentDashboard.createAgent({
   capitalAllocated: 1000,
 });
 ```
+
+### Portfolio Dashboard (Mini App)
+
+The `/miniapp` directory provides a dedicated Telegram Mini App Portfolio Dashboard — the **primary user interface for the MVP**.
+
+#### Dashboard Pages
+
+| Page | Description |
+|------|-------------|
+| **Portfolio Overview** | Total value, Profit/Loss, ROI, asset allocation |
+| **Active Agents** | Agent list with status, strategy, profit, and Start/Stop/View controls |
+| **Strategy Performance** | ROI, Win Rate, Total Trades, Drawdown per strategy |
+| **Trade History** | BUY/SELL records with filters, pagination, sorting |
+
+#### File Structure
+
+```
+miniapp/
+├── index.html              # Single-page app entry point
+├── styles.css              # Mobile-first dark-mode styles (Telegram theme-aware)
+├── app.js                  # Bootstrap: Telegram WebApp, routing, shared state, API client
+└── components/
+    ├── portfolio.js        # Portfolio Overview page
+    ├── agents.js           # Active Agents page + agent control modal
+    ├── strategies.js       # Strategy Performance page
+    └── trades.js           # Trade History page with pagination
+```
+
+#### Quick Start
+
+**Static Demo Mode** — No backend required:
+1. Serve `miniapp/` from any static host (Nginx, GitHub Pages, Cloudflare Pages)
+2. Configure as Telegram Mini App URL in @BotFather
+
+**Connected to Portfolio API** — Full backend:
+1. Deploy the PHP backend from `php-app/`
+2. Set `API.baseUrl` in `app.js` to your backend URL
+3. The dashboard auto-connects to `/api/portfolio`, `/api/agents`, `/api/portfolio/metrics`, `/api/portfolio/trades`
+
+The app falls back to realistic demo data when the backend is not available.
+
+#### Agent Controls
+
+From the Agents page, click any agent to open the detail panel with full controls:
+
+- **Start** — Resume a paused agent
+- **Pause** — Temporarily halt agent activity
+- **Restart** — Full agent restart
+- **Stop Permanently** — Confirm-guarded hard stop
 
 ### UX Customization
 

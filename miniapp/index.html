@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>TON AI Agent - Dashboard</title>
+  <meta name="description" content="Portfolio dashboard for AI agent trading on TON blockchain">
+
+  <!-- Telegram Web App Script -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+      <div class="loader"></div>
+      <p class="loading-text">Loading Dashboard...</p>
+    </div>
+
+    <!-- Main App -->
+    <main id="main-content" class="hidden">
+
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav" id="bottom-nav">
+        <button class="nav-item active" data-page="portfolio">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span>Portfolio</span>
+        </button>
+        <button class="nav-item" data-page="agents">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="5"></circle>
+            <path d="M3 21v-2a7 7 0 0 1 14 0v2"></path>
+            <path d="M16 11a5 5 0 0 1 6 5v2"></path>
+          </svg>
+          <span>Agents</span>
+        </button>
+        <button class="nav-item" data-page="strategies">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span>Strategies</span>
+        </button>
+        <button class="nav-item" data-page="trades">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          <span>Trades</span>
+        </button>
+      </nav>
+
+      <!-- ============================== -->
+      <!-- PAGE: Portfolio Overview        -->
+      <!-- ============================== -->
+      <section id="page-portfolio" class="page active">
+        <header class="page-header">
+          <div class="header-user">
+            <div class="user-avatar" id="user-avatar">
+              <span id="avatar-initials">?</span>
+            </div>
+            <div>
+              <div class="user-name" id="user-name">Welcome</div>
+              <div class="user-sub">TON AI Agent</div>
+            </div>
+          </div>
+          <button class="icon-btn" id="refresh-btn" aria-label="Refresh">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+          </button>
+        </header>
+
+        <!-- Portfolio Value Card -->
+        <div class="portfolio-hero">
+          <div class="portfolio-label">Total Portfolio Value</div>
+          <div class="portfolio-value">
+            <span class="currency">$</span><span id="portfolio-total">0.00</span>
+          </div>
+          <div class="portfolio-meta">
+            <span class="pnl-badge" id="portfolio-pnl-badge">+$0.00</span>
+            <span class="roi-badge" id="portfolio-roi-badge">+0.00% ROI</span>
+          </div>
+          <div class="portfolio-day-change" id="portfolio-day-change">
+            Today: <span id="day-change-val">+$0.00</span> (<span id="day-change-pct">+0.00%</span>)
+          </div>
+        </div>
+
+        <!-- Key Stats Row -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Active Agents</div>
+            <div class="stat-value" id="stat-active-agents">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Open Positions</div>
+            <div class="stat-value" id="stat-open-positions">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Strategies</div>
+            <div class="stat-value" id="stat-strategies">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Capital Used</div>
+            <div class="stat-value" id="stat-capital">0%</div>
+          </div>
+        </div>
+
+        <!-- Asset Allocation -->
+        <div class="section-card">
+          <div class="section-title">Asset Allocation</div>
+          <div id="asset-allocation-list" class="allocation-list">
+            <div class="empty-hint">No assets yet</div>
+          </div>
+        </div>
+
+        <!-- PnL Summary -->
+        <div class="section-card">
+          <div class="section-title">P&amp;L Summary</div>
+          <div class="pnl-grid">
+            <div class="pnl-item">
+              <div class="pnl-item-label">Realized P&amp;L</div>
+              <div class="pnl-item-value" id="realized-pnl">$0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Unrealized P&amp;L</div>
+              <div class="pnl-item-value" id="unrealized-pnl">$0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Total P&amp;L</div>
+              <div class="pnl-item-value highlight" id="total-pnl">$0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Total Fees</div>
+              <div class="pnl-item-value" id="total-fees">$0.00</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== -->
+      <!-- PAGE: Active Agents            -->
+      <!-- ============================== -->
+      <section id="page-agents" class="page hidden">
+        <header class="page-header">
+          <div class="page-title">Active Agents</div>
+          <span class="count-badge" id="agents-count-badge">0</span>
+        </header>
+
+        <!-- Agent List -->
+        <div id="agents-list-container">
+          <div id="agents-empty" class="empty-state">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="8" r="5"></circle>
+              <path d="M3 21v-2a7 7 0 0 1 14 0v2"></path>
+            </svg>
+            <div class="empty-title">No agents yet</div>
+            <div class="empty-sub">Deploy an agent from the Telegram bot to see it here</div>
+          </div>
+          <div id="agents-list" class="agents-list hidden"></div>
+        </div>
+      </section>
+
+      <!-- ============================== -->
+      <!-- PAGE: Strategy Performance     -->
+      <!-- ============================== -->
+      <section id="page-strategies" class="page hidden">
+        <header class="page-header">
+          <div class="page-title">Strategy Performance</div>
+          <div class="period-tabs" id="strategy-period-tabs">
+            <button class="period-btn active" data-period="30d">30d</button>
+            <button class="period-btn" data-period="90d">90d</button>
+            <button class="period-btn" data-period="all_time">All</button>
+          </div>
+        </header>
+
+        <!-- Summary Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Best ROI</div>
+            <div class="stat-value positive" id="best-roi">0%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg Win Rate</div>
+            <div class="stat-value" id="avg-win-rate">0%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Trades</div>
+            <div class="stat-value" id="total-trades-stat">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Max Drawdown</div>
+            <div class="stat-value negative" id="max-drawdown-stat">0%</div>
+          </div>
+        </div>
+
+        <!-- Strategy Cards -->
+        <div id="strategies-empty" class="empty-state hidden">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <div class="empty-title">No strategies active</div>
+          <div class="empty-sub">Start an agent with a strategy to see performance here</div>
+        </div>
+        <div id="strategies-list" class="strategies-list"></div>
+      </section>
+
+      <!-- ============================== -->
+      <!-- PAGE: Trade History            -->
+      <!-- ============================== -->
+      <section id="page-trades" class="page hidden">
+        <header class="page-header">
+          <div class="page-title">Trade History</div>
+        </header>
+
+        <!-- Filters -->
+        <div class="trade-filters">
+          <select class="filter-select" id="trade-action-filter">
+            <option value="all">All Actions</option>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+          <select class="filter-select" id="trade-asset-filter">
+            <option value="all">All Assets</option>
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+            <option value="TON">TON</option>
+            <option value="SOL">SOL</option>
+          </select>
+          <select class="filter-select" id="trade-sort">
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
+        </div>
+
+        <!-- Trade Summary -->
+        <div class="trade-summary-bar" id="trade-summary-bar">
+          <span id="trade-count-label">0 trades</span>
+          <span class="trade-summary-pnl" id="trade-summary-pnl">P&L: $0.00</span>
+        </div>
+
+        <!-- Trade List -->
+        <div id="trades-empty" class="empty-state">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          <div class="empty-title">No trades yet</div>
+          <div class="empty-sub">Trade history will appear here once agents execute trades</div>
+        </div>
+        <div id="trades-list" class="trades-list hidden"></div>
+
+        <!-- Pagination -->
+        <div class="pagination hidden" id="pagination">
+          <button class="page-btn" id="prev-page" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Prev
+          </button>
+          <span class="page-info" id="page-info">1 / 1</span>
+          <button class="page-btn" id="next-page" disabled>
+            Next
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============================== -->
+      <!-- Agent Detail Modal             -->
+      <!-- ============================== -->
+      <div id="agent-modal" class="modal hidden">
+        <div class="modal-overlay" id="modal-overlay"></div>
+        <div class="modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-header">
+            <h2 class="modal-title" id="modal-agent-name">Agent</h2>
+            <span class="agent-status-badge" id="modal-agent-status">active</span>
+          </div>
+
+          <!-- Agent Stats -->
+          <div class="modal-stats-grid">
+            <div class="modal-stat">
+              <div class="modal-stat-label">Strategy</div>
+              <div class="modal-stat-value" id="modal-agent-strategy">—</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Portfolio Value</div>
+              <div class="modal-stat-value" id="modal-agent-value">$0.00</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Total P&amp;L</div>
+              <div class="modal-stat-value" id="modal-agent-pnl">$0.00</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">ROI</div>
+              <div class="modal-stat-value" id="modal-agent-roi">0%</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Win Rate</div>
+              <div class="modal-stat-value" id="modal-agent-winrate">0%</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Total Trades</div>
+              <div class="modal-stat-value" id="modal-agent-trades">0</div>
+            </div>
+          </div>
+
+          <!-- Agent Controls -->
+          <div class="modal-section-title">Agent Controls</div>
+          <div class="agent-controls">
+            <button class="control-btn start-btn" id="ctrl-start">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Start
+            </button>
+            <button class="control-btn stop-btn" id="ctrl-stop">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              Pause
+            </button>
+            <button class="control-btn restart-btn" id="ctrl-restart">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Restart
+            </button>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="modal-section-title danger-title">Danger Zone</div>
+          <button class="control-btn danger-btn full-width" id="ctrl-stop-fully">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            </svg>
+            Stop Agent Permanently
+          </button>
+
+          <button class="close-modal-btn" id="close-agent-modal">Close</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+  <script src="components/portfolio.js"></script>
+  <script src="components/agents.js"></script>
+  <script src="components/strategies.js"></script>
+  <script src="components/trades.js"></script>
+</body>
+</html>
