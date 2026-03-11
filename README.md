@@ -41,7 +41,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
 22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
 23. [Production Agent Runtime](#production-agent-runtime)
-24. [Agent Plugin System](#agent-plugin-system)
+24. [Agent Control API](#agent-control-api)
+25. [Agent Plugin System](#agent-plugin-system)
 25. [Strategy Marketplace](#strategy-marketplace)
 26. [Strategy Reputation System](#strategy-reputation-system)
 27. [Live Trading Infrastructure](#live-trading-infrastructure)
@@ -522,6 +523,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **GAEI** | ✅ Phase 3 | Global Autonomous Economic Infrastructure (6 domains) | [docs/gaei.md](docs/gaei.md) |
 | **Demo Agent** | ✅ MVP Core | Agent REST API, 4 strategies, risk manager | (src/demo-agent) |
 | **Agent Runtime** | ✅ MVP Core | 9-step pipeline, lifecycle state machine, simulation mode, risk controls | [Production Agent Runtime](#production-agent-runtime) |
+| **Agent Control API** | ✅ MVP Core | Start/stop/restart agents, status retrieval, Mini App integration, API key auth | [Agent Control API](#agent-control-api) |
 | **AI Layer** | ✅ MVP Core | Multi-provider AI orchestration with Groq-first routing | [docs/ai-layer.md](docs/ai-layer.md) |
 | **TON Factory** | ✅ MVP Core | Wallet creation, smart contracts, transactions | (src/ton-factory) |
 | **Admin Dashboard** | ✅ MVP Core | Agent monitoring, risk controls, RBAC | (src/mvp/admin-dashboard) |
@@ -2725,6 +2727,130 @@ runtime.registerAgent(savedConfig);
 ```
 
 **Full PAR Documentation**: [src/agent-runtime](src/agent-runtime)
+
+---
+
+## Agent Control API
+
+> **Secure lifecycle control of autonomous agents from any external interface.**
+
+The Agent Control API enables external clients — the Telegram Mini App, admin panels, and automation tools — to start, stop, restart, and inspect agents over a simple REST interface. It sits between the external UI layer and the Agent Runtime, providing a clean control plane.
+
+### Architecture
+
+```
+Telegram Mini App
+        ↓
+Agent Control API  (PHP: AgentController  |  TypeScript: AgentControlApi)
+        ↓
+Agent Manager      (PHP: AgentManager     |  TypeScript: AgentManager)
+        ↓
+Agent Registry     (PHP: AgentRegistry    |  TypeScript: AgentRegistry)
+        ↓
+Agent Runtime → Strategy Engine
+```
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/agents` | List all agents (id, name, status, strategy) |
+| `GET` | `/api/agents/{id}` | Full agent status (id, status, strategy, uptime, trades) |
+| `POST` | `/api/agents/{id}/start` | Start a stopped or paused agent |
+| `POST` | `/api/agents/{id}/stop` | Stop an active agent |
+| `POST` | `/api/agents/{id}/restart` | Restart an agent from any state |
+
+### Agent State Model
+
+```
+stopped ←──────────────────────────────────────────── running
+   │                                                     ↑
+   └── start ──→ running                    restart ─────┘
+                    │
+               stop/restart
+                    │
+                 stopped / running
+```
+
+Agents cycle through four states: `running`, `stopped`, `paused`, `error`.
+
+### Security
+
+- **API key authentication** (header `X-API-Key`) — set via `config['security']`
+- **Rate limiting** via `Security::checkRateLimit()` (PHP) / `AgentControlConfig.maxAgents` (TypeScript)
+- **Input validation** — agent IDs are sanitized before any registry lookup
+- **Error codes** — structured error responses with machine-readable codes:
+  - `AGENT_NOT_FOUND` → 404
+  - `AGENT_ALREADY_RUNNING` / `AGENT_ALREADY_STOPPED` → 409
+  - `INVALID_AGENT_ID` → 400
+
+### Quick Start (PHP)
+
+```php
+$registry   = new AgentRegistry($db);           // or null for demo mode
+$manager    = new AgentManager($registry);
+$controller = new AgentController($manager);
+
+// In your router:
+// POST /api/agents/agent_001/start
+$result = $controller->startAgent('agent_001');
+// → ['agent_id' => 'agent_001', 'status' => 'running', 'message' => '...']
+```
+
+### Quick Start (TypeScript)
+
+```typescript
+import { createAgentControlApi } from './src/agent-control';
+
+const api = createAgentControlApi();
+
+// Start an agent
+const res = await api.handle({ method: 'POST', path: '/api/agents/agent_001/start' });
+// → { statusCode: 200, body: { success: true, data: { agentId: 'agent_001', status: 'running', message: '...' } } }
+
+// List all agents
+const list = await api.handle({ method: 'GET', path: '/api/agents' });
+// → { statusCode: 200, body: { success: true, data: { agents: [...], total: 3 } } }
+```
+
+### Mini App Integration
+
+The Telegram Mini App (`miniapp/components/agents.js`) calls the Agent Control API directly:
+
+```javascript
+// Start agent
+await API.request(`/agents/${agentId}/start`, { method: 'POST' });
+
+// Stop agent
+await API.request(`/agents/${agentId}/stop`, { method: 'POST' });
+
+// Restart agent
+await API.request(`/agents/${agentId}/restart`, { method: 'POST' });
+```
+
+Agent status badges update in real-time with optimistic UI updates followed by server confirmation.
+
+### File Structure
+
+```
+PHP (php-app/):
+  app/agents/AgentRegistry.php    — agent state store (DB + demo mode)
+  app/agents/AgentManager.php     — lifecycle operations + validation
+  app/api/AgentController.php     — REST endpoint handlers
+  public/index.php                — route registration
+
+TypeScript (src/agent-control/):
+  types.ts      — all type definitions and AgentControlError
+  registry.ts   — AgentRegistry class + createDemoRegistry()
+  manager.ts    — AgentManager class + event system
+  api.ts        — AgentControlApi class + factory functions
+  index.ts      — public exports
+
+Tests:
+  tests/agent-control/agent-control.test.ts
+```
+
+**Full Implementation**: [src/agent-control](src/agent-control) | [php-app/app/agents](php-app/app/agents)
 
 ---
 

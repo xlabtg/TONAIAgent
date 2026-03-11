@@ -38,6 +38,9 @@ require APP_PATH . '/ai.php';
 require APP_PATH . '/analytics/PortfolioAnalytics.php';
 require APP_PATH . '/api/PortfolioController.php';
 require APP_PATH . '/api/TradeController.php';
+require APP_PATH . '/agents/AgentRegistry.php';
+require APP_PATH . '/agents/AgentManager.php';
+require APP_PATH . '/api/AgentController.php';
 
 // Initialize components
 Security::init($config['security']);
@@ -339,6 +342,61 @@ $router->group('/api', function($router) use ($config) {
             Response::error('Trade not found', 404);
         }
         Response::json($trade);
+    });
+
+    // ----------------------
+    // Agent Control API (Issue #185)
+    // ----------------------
+
+    $agentRegistry   = new AgentRegistry(
+        Database::isConnected() ? Database::getConnection() : null
+    );
+    $agentManager    = new AgentManager($agentRegistry);
+    $agentController = new AgentController($agentManager);
+
+    // GET /api/agents — list all agents
+    $router->get('/agents', function() use ($agentController) {
+        Response::success($agentController->listAgents());
+    });
+
+    // GET /api/agents/{id} — get agent status
+    $router->get('/agents/{id}', function($params) use ($agentController) {
+        try {
+            $data = $agentController->getAgent($params['id'] ?? '');
+            Response::json($data);
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 500);
+        }
+    });
+
+    // POST /api/agents/{id}/start — start a stopped agent
+    $router->post('/agents/{id}/start', function($params) use ($agentController) {
+        try {
+            $data = $agentController->startAgent($params['id'] ?? '');
+            Response::success($data);
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 500);
+        }
+    });
+
+    // POST /api/agents/{id}/stop — stop an active agent
+    $router->post('/agents/{id}/stop', function($params) use ($agentController) {
+        try {
+            $data = $agentController->stopAgent($params['id'] ?? '');
+            Response::success($data);
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 500);
+        }
+    });
+
+    // POST /api/agents/{id}/restart — restart an agent
+    $router->post('/agents/{id}/restart', function($params) use ($agentController) {
+        try {
+            $data = $agentController->restartAgent($params['id'] ?? '');
+            Response::success($data);
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 500);
+        }
     });
 
     // ----------------------
