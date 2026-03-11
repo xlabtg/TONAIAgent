@@ -4578,6 +4578,156 @@ engine.stop();
 
 ---
 
+## Cross-Chain Liquidity
+
+The Cross-Chain Liquidity Integration Layer enables AI agents and strategies to access, aggregate, and trade liquidity across multiple blockchain ecosystems — TON, Ethereum, BNB Chain, Solana, Polygon, Avalanche, Arbitrum, and Optimism.
+
+### Architecture
+
+```
+Multi-Chain DEXes ──┐
+Cross-Chain Bridges ─┤──► LiquidityAggregator ──► TradeExecutor ──► Portfolio
+DeFi Protocols ─────┘          ▲                      │               │
+                                │                      ▼               ▼
+                          ConnectorRegistry      RiskMonitor    PerformanceMetrics
+                                │
+                         TON / ETH / BNB / SOL
+```
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| `CrossChainConnectorRegistry` | Modular connector framework; each chain implements `connect()`, `getLiquidityPools()`, `getTokenPrices()`, `executeSwap()`, `checkTransactionStatus()` |
+| `LiquidityAggregationEngine` | Aggregates DEX pools, bridges, and DeFi protocols; routes orders by `best_price`, `lowest_gas`, `min_slippage`, `split_optimal`, or `max_liquidity` |
+| `CrossChainTradeExecutor` | Executes single-chain swaps, cross-chain swaps (bridge + swap), and arbitrage strategies; tracks all trades with full execution history |
+| `MultiChainPortfolioTracker` | Tracks token balances, LP positions, cross-chain transaction history, and per-chain strategy performance |
+| `CrossChainRiskMonitor` | Enforces risk limits (slippage, trade size, daily volume, bridge time); scans for bridge risks, liquidity fragmentation, and oracle deviation |
+| `CrossChainPluginLayer` | Agent plugin system integration; includes built-in arbitrage scanner, liquidity scanner, and analytics plugins |
+
+### Quick Start
+
+```typescript
+import { createCrossChainLiquidityManager } from '@tonaiagent/core/cross-chain-liquidity';
+
+// Create manager with 4 chains
+const manager = createCrossChainLiquidityManager({
+  connectors: [
+    { chainId: 'ton',      enabled: true },
+    { chainId: 'ethereum', enabled: true },
+    { chainId: 'bnb',      enabled: true },
+    { chainId: 'solana',   enabled: true },
+  ],
+  defaultAggregationMode: 'best_price',
+  riskMonitoringEnabled: true,
+  autoArbitrage: false,
+  minArbitrageProfitUsd: 50,
+});
+
+// Connect to all chains
+const statuses = await manager.connect();
+console.log('Connected chains:', statuses.filter(s => s.status === 'connected').map(s => s.chainId));
+
+// Get quote for a cross-chain swap
+const tonToken  = { address: 'native', chainId: 'ton',      symbol: 'TON',  name: 'Toncoin',   decimals: 9  };
+const ethToken  = { address: 'native', chainId: 'ethereum', symbol: 'ETH',  name: 'Ether',     decimals: 18 };
+
+const quote = await manager.getQuote(tonToken, ethToken, 1000 /* USD */);
+console.log('Best route:', quote.bestRoute.legs.map(l => `${l.fromChainId} → ${l.toChainId}`).join(', '));
+console.log('Amount out:', quote.bestRoute.totalAmountOut.toFixed(6), 'ETH');
+
+// Execute the trade
+const trade = await manager.executeTrade(
+  {
+    id: 'trade-1',
+    type: 'cross_chain_swap',
+    fromToken: tonToken,
+    toToken: ethToken,
+    amountIn: 1000,
+    minAmountOut: 0.25,
+    slippageTolerance: 0.01,
+    priority: 'high',
+  },
+  quote.bestRoute
+);
+console.log('Trade status:', trade.status, '— received', trade.amountOut.toFixed(6), 'ETH');
+
+// Sync portfolio across all chains
+const portfolio = await manager.syncPortfolio('my-agent-id');
+console.log('Total portfolio value:', portfolio.totalValueUsd.toFixed(2), 'USD');
+console.log('Chain allocations:', portfolio.chainAllocations.map(
+  a => `${a.chainId}: ${(a.percent * 100).toFixed(1)}%`
+).join(', '));
+
+// Scan for arbitrage opportunities
+const opportunities = await manager.scanArbitrage([tonToken, ethToken]);
+const profitable = opportunities.filter(o => o.netProfitUsd > 50);
+console.log(`Found ${profitable.length} profitable arbitrage opportunities`);
+
+// System health
+const health = manager.getHealth();
+console.log('Chains online:', health.connectedChains.length);
+console.log('Total liquidity:', health.totalLiquidityUsd.toLocaleString(), 'USD');
+console.log('Active risk alerts:', health.riskAlerts.length);
+```
+
+### Plugin Integration
+
+The plugin layer integrates with the AI agent system, exposing cross-chain capabilities as plugins:
+
+```typescript
+// Using built-in plugins
+const pluginLayer = manager.getPluginLayer();
+
+const context = {
+  agentId: 'my-agent',
+  chainIds: ['ton', 'ethereum', 'bnb', 'solana'],
+  tokens: [tonToken, ethToken],
+  executor: manager.getExecutor(),
+  aggregator: manager.getAggregator(),
+  portfolioTracker: manager.getPortfolioTracker(),
+  riskMonitor: manager.getRiskMonitor(),
+};
+
+// Run arbitrage scanner
+const arbResult = await pluginLayer.execute('cross-chain-arbitrage-scanner', context);
+console.log('Arbitrage opportunities:', arbResult.data.opportunitiesFound);
+
+// Run liquidity scanner
+const liqResult = await pluginLayer.execute('cross-chain-liquidity-scanner', context);
+console.log('Total liquidity found:', liqResult.data.totalLiquidityUsd, 'USD');
+
+// Run cross-chain analytics
+const analyticsResult = await pluginLayer.execute('cross-chain-analytics', context);
+console.log('Portfolio tracked:', analyticsResult.data.portfolioValueUsd, 'USD');
+```
+
+### Risk Controls
+
+The risk monitor validates every trade before execution and continuously scans for risks:
+
+| Risk Category | Description | Action |
+|---------------|-------------|--------|
+| Bridge Risk | Smart contract or liquidity risk on bridges | Alert + block trade |
+| Liquidity Fragmentation | Insufficient pool depth | Alert + reroute |
+| Transaction Delay | Slow cross-chain confirmations | Alert + warn |
+| Slippage Risk | Excessive price impact | Block trade |
+| Oracle Deviation | Price feed discrepancy | Alert |
+| Smart Contract Risk | DEX/bridge vulnerability | Alert |
+
+### Observability
+
+| Metric | Description |
+|--------|-------------|
+| Connected chains | Number of active chain connections |
+| Total liquidity | Aggregated USD liquidity across all sources |
+| Active trades | Currently in-progress trade executions |
+| Arbitrage found | Opportunities identified (lifetime) |
+| Success rate | Ratio of completed vs. total trades |
+| Average trade time | Mean execution time in milliseconds |
+
+---
+
 <p align="center">
   <strong>Built with ❤️ for the TON Ecosystem</strong>
 </p>

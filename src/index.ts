@@ -83,6 +83,9 @@
  * - Global expansion strategy and roadmap
  * - AI-powered institutional advantage (risk modeling, anomaly detection)
  * - Institutional governance (advisory boards, committees, policies)
+ * - Cross-Chain Liquidity Integration Layer (multi-chain connector framework, liquidity
+ *   aggregation, cross-chain trade execution, multi-chain portfolio tracking, risk controls,
+ *   agent plugin system integration for arbitrage, analytics, and liquidity scanning)
  */
 
 export * from './ai';
@@ -109,6 +112,10 @@ export * as MultiAgent from './multi-agent';
 // Autonomous Strategy Discovery Engine — available as separate import:
 // '@tonaiagent/core/autonomous-discovery'
 export * as AutonomousDiscovery from './autonomous-discovery';
+
+// Cross-Chain Liquidity Integration Layer — available as separate import:
+// '@tonaiagent/core/cross-chain-liquidity'
+export * as CrossChainLiquidity from './cross-chain-liquidity';
 
 // Marketplace exports (with explicit exports to avoid conflicts)
 export {
