@@ -35,6 +35,9 @@ require APP_PATH . '/security.php';
 require APP_PATH . '/router.php';
 require APP_PATH . '/telegram.php';
 require APP_PATH . '/ai.php';
+require APP_PATH . '/analytics/PortfolioAnalytics.php';
+require APP_PATH . '/api/PortfolioController.php';
+require APP_PATH . '/api/TradeController.php';
 
 // Initialize components
 Security::init($config['security']);
@@ -265,6 +268,77 @@ $router->group('/api', function($router) use ($config) {
             error_log('AI Error: ' . $e->getMessage());
             Response::error('AI service temporarily unavailable', 503);
         }
+    });
+
+    // ----------------------
+    // Portfolio API
+    // ----------------------
+
+    // Shared analytics instance (uses DB when connected, demo mode otherwise)
+    $portfolioAnalytics = new PortfolioAnalytics(
+        Database::isConnected() ? Database::getConnection() : null
+    );
+    $portfolioController = new PortfolioController($portfolioAnalytics);
+    $tradeController     = new TradeController($portfolioAnalytics);
+
+    // GET /api/portfolio — portfolio overview for authenticated agent
+    $router->get('/portfolio', function() use ($portfolioController) {
+        $agentId = Request::query('agent_id', 'demo_agent');
+        Response::json($portfolioController->getPortfolio($agentId));
+    });
+
+    // GET /api/portfolio/value — real-time portfolio value breakdown
+    $router->get('/portfolio/value', function() use ($portfolioController) {
+        $agentId = Request::query('agent_id', 'demo_agent');
+        $prices  = Request::queryAll(); // optional price overrides as ?BTC=65000&ETH=3500
+        // Remove non-price params
+        unset($prices['agent_id']);
+        $numericPrices = [];
+        foreach ($prices as $k => $v) {
+            if (is_numeric($v)) {
+                $numericPrices[strtoupper($k)] = (float)$v;
+            }
+        }
+        Response::json($portfolioController->getPortfolioValue($agentId, $numericPrices));
+    });
+
+    // GET /api/portfolio/trades — trade history for an agent (paginated)
+    $router->get('/portfolio/trades', function() use ($portfolioController) {
+        $agentId = Request::query('agent_id', 'demo_agent');
+        $params  = Request::queryAll();
+        Response::json($portfolioController->getTrades($agentId, $params));
+    });
+
+    // GET /api/portfolio/metrics — performance metrics for an agent
+    $router->get('/portfolio/metrics', function() use ($portfolioController) {
+        $agentId = Request::query('agent_id', 'demo_agent');
+        Response::json($portfolioController->getMetrics($agentId));
+    });
+
+    // ----------------------
+    // Trade History API
+    // ----------------------
+
+    // GET /api/trades — all trades (paginated, filterable, sortable)
+    $router->get('/trades', function() use ($tradeController) {
+        $params = Request::queryAll();
+        Response::json($tradeController->listTrades($params));
+    });
+
+    // GET /api/trades/summary — aggregated trade statistics
+    $router->get('/trades/summary', function() use ($tradeController) {
+        $params = Request::queryAll();
+        Response::json($tradeController->getTradeSummary($params));
+    });
+
+    // GET /api/trades/{id} — single trade by ID
+    $router->get('/trades/{id}', function($params) use ($tradeController) {
+        $tradeId = $params['id'] ?? '';
+        $trade   = $tradeController->getTrade($tradeId);
+        if ($trade === null) {
+            Response::error('Trade not found', 404);
+        }
+        Response::json($trade);
     });
 
     // ----------------------
