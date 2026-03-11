@@ -42,7 +42,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 23. [Production Agent Runtime](#production-agent-runtime)
 24. [Strategy Marketplace](#strategy-marketplace)
 25. [Live Trading Infrastructure](#live-trading-infrastructure)
-26. [Roadmap](#roadmap)
+26. [Risk Engine](#risk-engine)
+27. [Roadmap](#roadmap)
 27. [Community](#community)
 28. [License](#license)
 
@@ -2894,6 +2895,174 @@ console.log('24h ATR:', volatility.atr);
 - Open an [issue](https://github.com/xlabtg/TONAIAgent/issues) for bugs
 - Join our Telegram for community support
 - Check the documentation for guides
+
+---
+
+## Risk Engine
+
+> **Risk-Aware AI Investment Infrastructure**: The Risk Engine v1 introduces a critical safety layer for the TON AI Agent platform. It enables the platform to safely support AI hedge funds, automated portfolio management, institutional capital allocation, and large-scale strategy marketplaces — ensuring autonomous agents operate within **strict and transparent risk boundaries**.
+
+The engine continuously evaluates risk exposure and enforces safety limits before and during trade execution.
+
+### Architecture
+
+```
+AI Agents
+     ↓
+Live Trading Infrastructure
+     ↓
+Risk Engine
+     ↓
+Execution Approval / Rejection
+```
+
+Risk checks occur **before trade execution** and **during runtime monitoring**.
+
+### Core Components
+
+#### 1. Strategy Risk Evaluator (`src/risk-engine/strategy-risk-evaluator.ts`)
+
+Evaluates each strategy's risk profile before deployment using weighted composite scoring:
+
+| Metric | Weight | Description |
+|--------|--------|-------------|
+| **Volatility** | 25% | Annualized price volatility |
+| **Max Drawdown** | 30% | Maximum historical drawdown |
+| **Leverage Usage** | 20% | Current leverage multiplier |
+| **Asset Concentration** | 15% | Top asset concentration fraction |
+| **Historical Stability** | 10% | Inverted: lower stability = higher risk |
+
+#### 2. Real-Time Exposure Monitor (`src/risk-engine/exposure-monitor.ts`)
+
+Continuously tracks portfolio exposure per asset, strategy allocations within funds, capital concentration risks, and unrealized losses. Emits alerts when thresholds are exceeded.
+
+#### 3. Risk Limits Enforcer (`src/risk-engine/risk-limits.ts`)
+
+Enforces configurable limits:
+
+| Limit | Default | Action |
+|-------|---------|--------|
+| **Max position size** | 20% of portfolio | Reduce |
+| **Max leverage** | 5x | Block |
+| **Max portfolio drawdown** | 15% | Rebalance |
+| **Max strategy allocation** | 30% of fund | Reduce |
+
+#### 4. Automated Risk Response (`src/risk-engine/risk-response.ts`)
+
+When risk thresholds are breached, the engine triggers automated responses:
+
+- **Rebalancing** — restore asset allocation targets
+- **Position Reduction** — reduce oversized positions
+- **Strategy Pause** — halt strategy execution temporarily
+- **Emergency Shutdown** — full agent shutdown for critical risk
+
+Response thresholds:
+
+| Risk Score | Category | Triggered Response |
+|------------|----------|--------------------|
+| 0–30 | Low | No response |
+| 31–60 | Moderate | No response |
+| 61–80 | High | Pause strategy + reduce position |
+| 81–100 | Critical | Emergency shutdown + pause strategy |
+
+#### 5. Risk Scoring Model (`src/risk-engine/risk-scorer.ts`)
+
+Maintains dynamic risk scores for strategies, funds, and agent portfolios:
+
+```
+Risk Score:
+  0–30   → Low Risk
+  31–60  → Moderate Risk
+  61–80  → High Risk
+  81–100 → Critical Risk
+```
+
+Scores update continuously based on current market conditions and exposure.
+
+#### 6. Risk Dashboard Integration (`src/risk-engine/risk-dashboard.ts`)
+
+Exposes risk metrics for transparency:
+
+- Portfolio risk exposure per agent
+- Strategy risk ratings
+- Drawdown alerts
+- Leverage monitoring
+- Overall system risk score
+
+### Quick Example
+
+```typescript
+import { createRiskEngine } from '@tonaiagent/core/risk-engine';
+
+const riskEngine = createRiskEngine({
+  riskLimits: {
+    maxPositionSizePercent: 20,
+    maxLeverageRatio: 5,
+    maxPortfolioDrawdownPercent: 15,
+    maxStrategyAllocationPercent: 30,
+  },
+  autoResponse: {
+    enableAutoRebalance: true,
+    enableAutoPauseStrategy: true,
+    enableEmergencyShutdown: true,
+    criticalScoreThreshold: 81,
+  },
+});
+
+// Evaluate a strategy before deployment
+const profile = riskEngine.strategyEvaluator.evaluate({
+  strategyId: 'strategy_001',
+  volatility: 0.25,
+  maxDrawdown: 0.15,
+  leverageRatio: 2.0,
+  assetConcentration: 0.40,
+  historicalStability: 0.80,
+});
+console.log('Risk score:', profile.riskScore.value, '/', 100);
+// Risk score: 28 / 100 (low)
+
+// Monitor portfolio exposure in real-time
+riskEngine.exposureMonitor.update({
+  agentId: 'agent_001',
+  totalValue: 100000,
+  assetExposures: [
+    { assetId: 'TON', value: 40000 },
+    { assetId: 'USDT', value: 60000 },
+  ],
+  unrealizedLosses: 5000,
+});
+
+// Check risk limits before trade execution
+const limitCheck = riskEngine.riskLimits.check({
+  entityId: 'agent_001',
+  entityType: 'agent',
+  positionSizePercent: 25,  // exceeds 20% limit
+  leverageRatio: 3,
+});
+
+if (!limitCheck.passed) {
+  console.log('Trade blocked:', limitCheck.violations[0].message);
+  // Trade blocked: Position size 25.00% exceeds limit of 20%. Action: reduce.
+}
+
+// Subscribe to risk events
+riskEngine.onEvent(event => {
+  if (event.type === 'risk_response_triggered') {
+    console.log('Automated risk response:', event.payload);
+  }
+});
+```
+
+### Demo Flow
+
+The risk engine can be demonstrated by:
+
+1. Launching strategies with different risk levels (low / moderate / high / critical)
+2. Triggering simulated market volatility (increasing drawdown and leverage)
+3. Exceeding a risk threshold (e.g., leverage > 5x)
+4. Watching automatic risk responses (position reduction, strategy pause, or emergency shutdown)
+
+This proves the platform can **protect investor capital automatically**.
 
 ---
 
