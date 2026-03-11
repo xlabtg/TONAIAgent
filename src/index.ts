@@ -1330,3 +1330,76 @@ export {
   type RiskProfile,
   type RiskCheckResult as LiveTradingRiskCheckResult,
 } from './live-trading';
+
+// Agent Developer SDK (Issue #158)
+// Standardized framework for building, testing, and deploying autonomous agents.
+// Components:
+//   1. Agent Development Framework — standardized agent structure (strategy, risk_rules,
+//      execution_logic, configuration, event_handlers)
+//   2. Runtime Integration API — getMarketData, placeOrder, getPortfolio, allocateCapital,
+//      getRiskMetrics
+//   3. Strategy Development Toolkit — templates, example algorithms, risk helpers, utilities
+//   4. Backtesting Compatibility Layer — simulate, analyze, validate agents over historical data
+// Architecture: Developer → Agent SDK → Agent Runtime API → Production Agent Runtime → Trading Infrastructure
+// Note: Import separately from '@tonaiagent/core/sdk' for full access.
+export * as AgentDeveloperSDK from './sdk';
+export {
+  // Agent Framework
+  AgentDeveloperFramework,
+  createAgentFramework,
+  AgentFrameworkError,
+  // Runtime API
+  DefaultRuntimeAPI,
+  createRuntimeAPI,
+  RuntimeAPIError,
+  // Strategy Toolkit
+  StrategyDevelopmentToolkit,
+  createStrategyToolkit,
+  RiskConfigHelper,
+  ExampleAlgorithms,
+  // Backtesting
+  BacktestingCompatLayer,
+  createBacktestingCompat,
+  // Key agent framework types
+  type AgentDefinition,
+  type AgentStrategySpec,
+  type AgentStrategyType,
+  type AgentCondition,
+  type AgentRiskRules,
+  type AgentExecutionContext,
+  type AgentExecutionLogic,
+  type AgentExecutionSummary,
+  type AgentConfiguration,
+  type AgentEventHandlers,
+  type AgentMarketDataSnapshot,
+  type AgentOrderRequest,
+  type AgentOrderResult,
+  type AgentPortfolioSnapshot,
+  type AgentPosition,
+  type AgentCapitalAllocation,
+  type AgentAllocationResult,
+  type AgentRiskMetrics,
+  type AgentValidationResult,
+  type AgentDeploymentOptions,
+  type AgentDeploymentResult,
+  // Key runtime API types
+  type RuntimeAPI,
+  type RuntimeAPIConfig,
+  type RuntimeMarketData,
+  type OHLCVBar,
+  type RuntimePortfolio,
+  type RuntimeRiskMetrics,
+  type RuntimeSimulationState,
+  // Key strategy toolkit types
+  type StrategyTemplate,
+  type PositionSizeParams,
+  type BollingerBands,
+  type MACDResult,
+  // Key backtesting types
+  type BacktestConfig,
+  type BacktestResult,
+  type BacktestPerformance,
+  type BacktestTrade,
+  type BacktestValidationRequirements,
+  type BacktestValidationResult,
+} from './sdk';
