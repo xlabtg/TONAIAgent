@@ -1330,3 +1330,56 @@ export {
   type RiskProfile,
   type RiskCheckResult as LiveTradingRiskCheckResult,
 } from './live-trading';
+
+// AI Fund Manager (Issue #152)
+// Enables creation and management of AI-driven investment funds that allocate
+// capital across multiple strategies from the Strategy Marketplace, rebalance
+// portfolios automatically, manage risk exposure, track performance metrics,
+// and distribute fees to fund creators, strategy developers, and the platform.
+// Architecture: Investors → AI Fund Manager → Allocation Engine → Strategy Agents → Live Trading
+// Note: Import separately from '@tonaiagent/core/fund-manager' for full access.
+export * as FundManager from './fund-manager';
+export {
+  // Main fund manager factory
+  createAIFundManager,
+  AIFundManager,
+  DEFAULT_FUND_MANAGER_CONFIG,
+  // Component factories (aliased to avoid conflicts with investment module)
+  createFundCreationManager,
+  createAllocationEngine as createFundAllocationEngine,
+  createRebalancingEngine,
+  createRiskManagementService as createFundRiskManagementService,
+  createInvestorParticipationManager,
+  createPerformanceTrackingService as createFundPerformanceTrackingService,
+  createFeeDistributionEngine,
+  // Error
+  FundManagerError,
+  // Key types (aliased to avoid conflicts)
+  type AIFundManagerConfig,
+  type FundConfig,
+  type FundLifecycleState,
+  type FundType,
+  type FundBaseAsset,
+  type FundRiskProfile,
+  type FundPortfolio,
+  type StrategyAllocation as FundStrategyAllocation,
+  type FundRiskLimits,
+  type FundRiskStatus,
+  type FundPerformanceMetrics,
+  type AumSnapshot,
+  type InvestorPosition,
+  type DepositResult as FundDepositResult,
+  type WithdrawResult,
+  type AllocationResult as FundAllocationResult,
+  type RebalancingPlan,
+  type RebalancingResult,
+  type RebalanceTrigger,
+  type FeeCollectionEvent,
+  type FeeEarnings,
+  type FundManagerMetrics,
+  type FundManagerHealth,
+  type FundManagerEvent,
+  type FundManagerEventHandler,
+  type FundManagerUnsubscribe,
+  type FundManagerErrorCode,
+} from './fund-manager';
