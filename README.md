@@ -1583,7 +1583,9 @@ The `/miniapp` directory provides a dedicated Telegram Mini App Portfolio Dashbo
 | **Portfolio Overview** | Total value, Profit/Loss, ROI, asset allocation |
 | **Active Agents** | Agent list with status, strategy, profit, and Start/Stop/View controls |
 | **Strategy Performance** | ROI, Win Rate, Total Trades, Drawdown per strategy |
-| **Trade History** | BUY/SELL records with filters, pagination, sorting |
+| **Trades** | BUY/SELL records with filters, pagination, sorting |
+| **Marketplace** | Browse, filter, and deploy strategies from the Strategy Marketplace |
+| **Growth** | Referral links, leaderboards, challenges, and shareable performance cards |
 
 #### File Structure
 
@@ -1596,7 +1598,9 @@ miniapp/
     ├── portfolio.js        # Portfolio Overview page
     ├── agents.js           # Active Agents page + agent control modal
     ├── strategies.js       # Strategy Performance page
-    └── trades.js           # Trade History page with pagination
+    ├── trades.js           # Trade History page with pagination
+    ├── marketplace.js      # Strategy Marketplace browser with deploy flow
+    └── growth.js           # Viral growth dashboard (referrals, challenges)
 ```
 
 #### Quick Start
@@ -3882,6 +3886,56 @@ The marketplace tracks the following flywheel indicators:
 
 **Full Marketplace Documentation**: [src/marketplace](src/marketplace)
 
+### Strategy Marketplace MVP (Mini App Integration)
+
+The Strategy Marketplace MVP provides a ready-to-use integration layer that connects the Telegram Mini App with the marketplace backend. It includes:
+
+- **Built-in Strategies** — 6 pre-configured trading strategies (Momentum Trader, Mean Reversion Pro, DEX Arbitrage Hunter, Grid Trading Bot, Yield Optimizer, Trend Following Alpha)
+- **Mini App UI** — Marketplace tab with strategy discovery, filtering, and one-click deployment
+- **TypeScript SDK** — `createStrategyMarketplace()` for backend integration
+
+```typescript
+import { createStrategyMarketplace } from '@tonaiagent/core/strategy-marketplace';
+
+const marketplace = createStrategyMarketplace();
+
+// List all available strategies
+const strategies = await marketplace.listStrategies();
+
+// Filter by category and risk level
+const filtered = await marketplace.listStrategies({
+  category: 'yield_farming',
+  riskLevel: 'low',
+  sortBy: 'roi',
+});
+
+// Get top performing strategies
+const top = await marketplace.getTopStrategies('roi', 5);
+
+// Deploy a strategy (creates an AI agent)
+const agent = await marketplace.deployStrategy({
+  strategyId: 'momentum-trader',
+  userId: 'user_123',
+  capitalTON: 100,
+  simulationMode: true, // Safe testing before live trading
+});
+
+// Check user's deployed agents
+const agents = await marketplace.getUserAgents('user_123');
+```
+
+**Built-in Strategies:**
+
+| Strategy | Category | Risk | ROI (30d) | Description |
+|----------|----------|------|-----------|-------------|
+| Momentum Trader | momentum | medium | +8.2% | Moving average crossovers with volume confirmation |
+| Mean Reversion Pro | mean_reversion | low | +5.4% | Bollinger Bands-based mean reversion |
+| DEX Arbitrage Hunter | arbitrage | high | +12.7% | Cross-DEX arbitrage on TON |
+| Grid Trading Bot | grid_trading | medium | +6.8% | Automated grid trading for ranging markets |
+| Yield Optimizer | yield_farming | low | +4.2% | DeFi yield optimization across protocols |
+| Trend Following Alpha | trend_following | medium | +9.5% | Multi-timeframe trend following |
+
+**Module Path**: [src/strategy-marketplace](src/strategy-marketplace) | **Tests**: [tests/strategy-marketplace](tests/strategy-marketplace)
 
 ---
 
