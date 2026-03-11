@@ -438,7 +438,7 @@ export class MVPPlatform {
   /**
    * Handle an agent control API request (for Telegram Mini App → API Layer integration).
    */
-  async handleControlRequest(method: string, path: string, body?: unknown) {
+  async handleControlRequest(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown) {
     return this.controlApi.handle({
       method,
       path,
