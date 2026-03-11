@@ -543,13 +543,21 @@
             </div>
           </div>
 
-          <!-- Deploy Button -->
-          <button class="primary-btn full-width" id="deploy-strategy-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            Deploy Strategy
-          </button>
+          <!-- Action Buttons -->
+          <div class="strategy-modal-actions">
+            <button class="secondary-btn" id="backtest-strategy-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              Backtest
+            </button>
+            <button class="primary-btn" id="deploy-strategy-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Deploy
+            </button>
+          </div>
 
           <button class="close-modal-btn" id="close-strategy-modal">Close</button>
         </div>
@@ -599,6 +607,155 @@
         </div>
       </div>
 
+      <!-- ============================== -->
+      <!-- Backtest Modal (Issue #202)    -->
+      <!-- ============================== -->
+      <div id="backtest-modal" class="modal hidden">
+        <div class="modal-overlay" id="backtest-modal-overlay"></div>
+        <div class="modal-sheet backtest-modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-header">
+            <h2 class="modal-title">Run Backtest</h2>
+          </div>
+
+          <!-- Strategy Info -->
+          <div class="backtest-strategy-info">
+            <div class="bt-strategy-name" id="bt-strategy-name">Strategy Name</div>
+            <div class="bt-strategy-meta" id="bt-strategy-meta">by Author | Category</div>
+          </div>
+
+          <!-- Configuration Section -->
+          <div id="bt-config-section" class="backtest-config">
+            <div class="modal-section-title">Backtest Configuration</div>
+
+            <!-- Asset & Timeframe -->
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="bt-asset-select">Asset</label>
+                <select class="form-select" id="bt-asset-select">
+                  <option value="TON">TON</option>
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="bt-timeframe-select">Timeframe</label>
+                <select class="form-select" id="bt-timeframe-select">
+                  <option value="1h">1 Hour</option>
+                  <option value="4h">4 Hours</option>
+                  <option value="1d">1 Day</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Date Range -->
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="bt-start-date">Start Date</label>
+                <input type="date" class="form-input" id="bt-start-date" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="bt-end-date">End Date</label>
+                <input type="date" class="form-input" id="bt-end-date" />
+              </div>
+            </div>
+
+            <!-- Capital -->
+            <div class="form-group">
+              <label class="form-label" for="bt-capital">Initial Capital (USD)</label>
+              <input type="number" class="form-input" id="bt-capital" value="10000" min="100" step="100" />
+              <div class="form-hint">Minimum: $100</div>
+            </div>
+
+            <!-- Run Button -->
+            <button class="primary-btn full-width" id="bt-run-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              Run Backtest
+            </button>
+          </div>
+
+          <!-- Results Section -->
+          <div id="bt-result-section" class="backtest-results hidden">
+            <div class="modal-section-title">Backtest Results</div>
+
+            <!-- Result Summary -->
+            <div class="bt-result-summary">
+              <div class="bt-result-header">
+                <span class="bt-result-asset" id="bt-result-asset">TON</span>
+                <span class="bt-result-period" id="bt-result-period">Jan 2024 - Jun 2024</span>
+              </div>
+
+              <!-- Main Result -->
+              <div class="bt-result-main">
+                <div class="bt-result-roi-container">
+                  <div class="bt-result-label">Total Return</div>
+                  <div class="result-value positive" id="bt-result-roi">+0.00%</div>
+                </div>
+                <div class="bt-result-value-container">
+                  <div class="bt-result-label">Final Value</div>
+                  <div class="result-value" id="bt-result-final-value">$10,000.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Equity Curve Chart -->
+            <div class="bt-equity-chart-container">
+              <div class="bt-chart-title">Equity Curve</div>
+              <div class="bt-equity-chart" id="bt-equity-chart"></div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="modal-stats-grid bt-metrics-grid">
+              <div class="modal-stat">
+                <div class="modal-stat-label">Max Drawdown</div>
+                <div class="modal-stat-value negative" id="bt-result-drawdown">0%</div>
+              </div>
+              <div class="modal-stat">
+                <div class="modal-stat-label">Total Trades</div>
+                <div class="modal-stat-value" id="bt-result-trades">0</div>
+              </div>
+              <div class="modal-stat">
+                <div class="modal-stat-label">Win Rate</div>
+                <div class="modal-stat-value" id="bt-result-winrate">0%</div>
+              </div>
+              <div class="modal-stat">
+                <div class="modal-stat-label">Sharpe Ratio</div>
+                <div class="modal-stat-value" id="bt-result-sharpe">0.00</div>
+              </div>
+              <div class="modal-stat">
+                <div class="modal-stat-label">Profit Factor</div>
+                <div class="modal-stat-value" id="bt-result-profit-factor">0.00</div>
+              </div>
+              <div class="modal-stat">
+                <div class="modal-stat-label">Risk Grade</div>
+                <div class="risk-grade grade-c" id="bt-result-grade">C</div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bt-result-actions">
+              <button class="secondary-btn" id="bt-run-another-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                Run Another
+              </button>
+              <button class="primary-btn" id="bt-deploy-btn" onclick="Backtesting.closeBacktestModal(); Marketplace.openDeployModal(Backtesting.BacktestState?.selectedStrategy?.id);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Deploy Strategy
+              </button>
+            </div>
+          </div>
+
+          <button class="close-modal-btn" id="close-backtest-modal">Close</button>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -611,5 +768,6 @@
   <script src="components/onboarding.js"></script>
   <script src="components/growth.js"></script>
   <script src="components/marketplace.js"></script>
+  <script src="components/backtesting.js"></script>
 </body>
 </html>

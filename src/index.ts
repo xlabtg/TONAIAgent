@@ -1481,6 +1481,12 @@ export {
   createStrategyMarketplace,
   // Built-in strategies
   BUILTIN_STRATEGIES,
+  // Backtesting Integration (Issue #202)
+  DefaultMarketplaceBacktester,
+  createMarketplaceBacktester,
+  parseCLIBacktestArgs,
+  runCLIBacktest,
+  formatCLIBacktestResult,
   // Types
   type MarketplaceStrategyCategory,
   type MarketplaceRiskLevel,
@@ -1489,4 +1495,12 @@ export {
   type MarketplaceDeployedAgent,
   type MarketplaceStrategyFilter,
   type StrategyMarketplace,
+  // Backtesting Types (Issue #202)
+  type BacktestTimeframe,
+  type MarketplaceBacktestConfig,
+  type BacktestResultSummary,
+  type MarketplaceBacktestResult,
+  type BacktestComparisonResult,
+  type MarketplaceBacktester,
+  type CLIBacktestConfig,
 } from './strategy-marketplace';

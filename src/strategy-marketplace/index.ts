@@ -537,4 +537,26 @@ export function createStrategyMarketplace(): DefaultStrategyMarketplace {
 
 export { BUILTIN_STRATEGIES };
 
+// ============================================================================
+// Backtesting Integration (Issue #202)
+// ============================================================================
+
+export {
+  // Main backtester
+  DefaultMarketplaceBacktester,
+  createMarketplaceBacktester,
+  // Types
+  type BacktestTimeframe,
+  type MarketplaceBacktestConfig,
+  type BacktestResultSummary,
+  type MarketplaceBacktestResult,
+  type BacktestComparisonResult,
+  type MarketplaceBacktester,
+  type CLIBacktestConfig,
+  // CLI utilities
+  parseCLIBacktestArgs,
+  runCLIBacktest,
+  formatCLIBacktestResult,
+} from './backtesting-integration';
+
 export default DefaultStrategyMarketplace;

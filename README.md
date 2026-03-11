@@ -4777,6 +4777,110 @@ The backtesting framework generates marketplace-ready metrics for the Strategy M
 - **Backtest Score** (0–100 composite)
 - **Consistency Score** (0–100 return consistency)
 
+### Backtesting Marketplace Strategies (Issue #202)
+
+The Strategy Marketplace includes a built-in backtesting integration that allows users to evaluate strategies before deployment.
+
+#### Using the Marketplace Backtester
+
+```typescript
+import {
+  createMarketplaceBacktester,
+  type MarketplaceBacktestConfig,
+} from '@tonaiagent/core/strategy-marketplace';
+
+const backtester = createMarketplaceBacktester();
+
+// Run backtest on a marketplace strategy
+const result = await backtester.runBacktest({
+  strategyId: 'momentum-trader',
+  asset: 'TON',
+  timeframe: '1h',
+  startDate: new Date('2024-01-01'),
+  endDate: new Date('2024-06-30'),
+  initialCapital: 10000,
+});
+
+console.log(`ROI: ${result.summary.totalReturn.toFixed(2)}%`);
+console.log(`Max Drawdown: ${result.summary.maxDrawdown.toFixed(2)}%`);
+console.log(`Sharpe Ratio: ${result.summary.sharpeRatio.toFixed(2)}`);
+console.log(`Risk Grade: ${result.summary.riskGrade}`);
+```
+
+#### Compare Multiple Strategies
+
+```typescript
+const comparison = await backtester.compareStrategies(
+  ['momentum-trader', 'mean-reversion-pro', 'grid-trading-bot'],
+  {
+    asset: 'TON',
+    timeframe: '1h',
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-06-30'),
+    initialCapital: 10000,
+  }
+);
+
+console.log(`Best by ROI: ${comparison.bestByRoi}`);
+console.log(`Best Risk-Adjusted: ${comparison.bestByRiskAdjusted}`);
+```
+
+#### CLI Backtest Command
+
+Run backtests directly from the command line:
+
+```bash
+# Basic usage
+npm run backtest momentum TON 2024-01-01 2024-06-30
+
+# With options
+npm run backtest "mean reversion" BTCUSDT 2023-01-01 2024-01-01 --capital 50000 --timeframe 4h
+
+# Show help
+npm run backtest --help
+```
+
+**CLI Output Example:**
+
+```
+═══════════════════════════════════════════════════════════
+  BACKTEST RESULTS: Momentum Trader
+═══════════════════════════════════════════════════════════
+
+  Asset:           TON
+  Period:          Jan 2024 - Jun 2024
+  Initial Capital: $10,000
+
+  PERFORMANCE
+  ─────────────────────────────────────────────────────────
+  Final Value:     $12,340.50
+  Total Return:    +23.41%
+  Max Drawdown:    -8.20%
+
+  TRADING STATISTICS
+  ─────────────────────────────────────────────────────────
+  Total Trades:    156
+  Win Rate:        62.8%
+  Profit Factor:   1.85
+
+  RISK METRICS
+  ─────────────────────────────────────────────────────────
+  Sharpe Ratio:    1.72
+  Risk Grade:      B
+═══════════════════════════════════════════════════════════
+```
+
+#### Telegram Mini App Backtesting
+
+The Mini App includes a backtesting UI accessible from each strategy in the marketplace:
+
+1. Open a strategy from the Marketplace tab
+2. Click **Backtest** to open the backtest configuration modal
+3. Configure: asset, timeframe, date range, initial capital
+4. Click **Run Backtest** to execute
+5. View results with equity curve visualization and metrics
+6. Optionally **Deploy** the strategy if results are satisfactory
+
 **Full Backtesting Documentation**: [docs/backtesting.md](docs/backtesting.md)
 
 ---

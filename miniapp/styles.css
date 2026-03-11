@@ -2583,3 +2583,233 @@ body {
 .secondary-btn:active {
   background: var(--card-hover);
 }
+
+/* ============================================================
+   Strategy Backtesting Modal (Issue #202)
+   ============================================================ */
+.backtest-modal-sheet {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.backtest-strategy-info {
+  text-align: center;
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--card-border);
+  margin-bottom: var(--s4);
+}
+
+.bt-strategy-name {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--s1);
+}
+
+.bt-strategy-meta {
+  font-size: var(--text-sm);
+  color: var(--hint);
+}
+
+.backtest-config {
+  padding: var(--s3) 0;
+}
+
+.form-row {
+  display: flex;
+  gap: var(--s3);
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-select {
+  width: 100%;
+  padding: var(--s3);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: var(--text-md);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a99' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--ton-blue);
+}
+
+/* Backtest Results */
+.backtest-results {
+  padding: var(--s3) 0;
+}
+
+.bt-result-summary {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-md);
+  padding: var(--s4);
+  margin-bottom: var(--s4);
+}
+
+.bt-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--s3);
+  font-size: var(--text-sm);
+  color: var(--hint);
+}
+
+.bt-result-asset {
+  font-weight: 600;
+  color: var(--link);
+}
+
+.bt-result-main {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+}
+
+.bt-result-roi-container,
+.bt-result-value-container {
+  flex: 1;
+  text-align: center;
+}
+
+.bt-result-label {
+  font-size: var(--text-sm);
+  color: var(--hint);
+  margin-bottom: var(--s1);
+}
+
+.result-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.result-value.positive {
+  color: var(--positive);
+}
+
+.result-value.negative {
+  color: var(--negative);
+}
+
+/* Equity Chart */
+.bt-equity-chart-container {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-md);
+  padding: var(--s3);
+  margin-bottom: var(--s4);
+}
+
+.bt-chart-title {
+  font-size: var(--text-sm);
+  color: var(--hint);
+  margin-bottom: var(--s2);
+}
+
+.bt-equity-chart {
+  height: 120px;
+  position: relative;
+}
+
+.equity-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--hint);
+  margin-top: var(--s1);
+}
+
+/* Metrics Grid */
+.bt-metrics-grid {
+  margin-bottom: var(--s4);
+}
+
+.bt-metrics-grid .modal-stat {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--r-sm);
+}
+
+/* Risk Grade Badge */
+.risk-grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: var(--text-md);
+  font-weight: 700;
+  border-radius: var(--r-sm);
+  color: white;
+}
+
+.grade-a { background: #22c55e; }
+.grade-b { background: #84cc16; }
+.grade-c { background: #eab308; }
+.grade-d { background: #f97316; }
+.grade-f { background: #ef4444; }
+
+/* Result Actions */
+.bt-result-actions {
+  display: flex;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+.bt-result-actions .secondary-btn,
+.bt-result-actions .primary-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+}
+
+/* Strategy Modal Actions */
+.strategy-modal-actions {
+  display: flex;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.strategy-modal-actions .secondary-btn,
+.strategy-modal-actions .primary-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+}
+
+/* Loading Spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: var(--s2);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
