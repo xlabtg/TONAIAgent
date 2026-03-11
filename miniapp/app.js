@@ -312,6 +312,7 @@
       case 'agents':    Agents.refresh(); break;
       case 'strategies': Strategies.refresh(); break;
       case 'trades':    Trades.refresh(); break;
+      case 'growth':    if (window.Growth) { Growth.init(); Growth.render(); } break;
     }
   }
 

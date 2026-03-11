@@ -1251,3 +1251,598 @@ describe('GrowthEngine', () => {
     });
   });
 });
+
+// ============================================================================
+// Telegram Viral Engine Tests
+// @see Issue #200 - Viral Growth Mechanics for Telegram
+// ============================================================================
+
+import {
+  createTelegramViralEngine,
+  generatePerformanceCardText,
+  generateGroupPerformanceMessage,
+  generateGroupLeaderboardMessage,
+  generateChallengeAnnouncementMessage,
+  DefaultTelegramViralEngine,
+  type TelegramReferralLink,
+  type AgentPerformanceCard,
+  type LeaderboardShareCard,
+  type GroupIntegration,
+  type AgentChallenge,
+  type ChallengeParticipant,
+} from '../../src/growth';
+
+describe('TelegramViralEngine', () => {
+  let telegramViral: DefaultTelegramViralEngine;
+
+  beforeEach(() => {
+    telegramViral = createTelegramViralEngine();
+  });
+
+  // ============================================================================
+  // Referral Links Tests
+  // ============================================================================
+
+  describe('referralLinks', () => {
+    it('should generate a referral link for a user', async () => {
+      const link = await telegramViral.generateReferralLink('user_123');
+
+      expect(link.userId).toBe('user_123');
+      expect(link.code).toBeDefined();
+      expect(link.code.length).toBe(8);
+      expect(link.deepLink).toContain('t.me/TONAIAgentBot');
+      expect(link.deepLink).toContain('start=ref_');
+      expect(link.shortLink).toContain('tonai.link');
+    });
+
+    it('should return same link for existing user', async () => {
+      const link1 = await telegramViral.generateReferralLink('user_123');
+      const link2 = await telegramViral.generateReferralLink('user_123');
+
+      expect(link1.code).toBe(link2.code);
+      expect(link1.deepLink).toBe(link2.deepLink);
+    });
+
+    it('should track referral clicks', async () => {
+      const link = await telegramViral.generateReferralLink('user_123');
+
+      await telegramViral.trackReferralClick(link.code);
+      await telegramViral.trackReferralClick(link.code);
+
+      const stats = await telegramViral.getReferralStats('user_123');
+      expect(stats.clicks).toBe(2);
+    });
+
+    it('should track referral joins', async () => {
+      const link = await telegramViral.generateReferralLink('user_123');
+
+      await telegramViral.trackReferralClick(link.code);
+      await telegramViral.trackReferralJoin(link.code, 'new_user_456');
+
+      const stats = await telegramViral.getReferralStats('user_123');
+      expect(stats.joins).toBe(1);
+      expect(stats.conversionRate).toBe(100);
+    });
+
+    it('should calculate conversion rate correctly', async () => {
+      const link = await telegramViral.generateReferralLink('user_123');
+
+      // 10 clicks, 2 joins = 20% conversion
+      for (let i = 0; i < 10; i++) {
+        await telegramViral.trackReferralClick(link.code);
+      }
+      await telegramViral.trackReferralJoin(link.code, 'new_user_1');
+      await telegramViral.trackReferralJoin(link.code, 'new_user_2');
+
+      const stats = await telegramViral.getReferralStats('user_123');
+      expect(stats.conversionRate).toBe(20);
+    });
+  });
+
+  // ============================================================================
+  // Performance Cards Tests
+  // ============================================================================
+
+  describe('performanceCards', () => {
+    it('should create a performance card', async () => {
+      const card = await telegramViral.createPerformanceCard('agent_001', 'user_123', '7d');
+
+      expect(card.id).toBeDefined();
+      expect(card.agentId).toBe('agent_001');
+      expect(card.userId).toBe('user_123');
+      expect(card.period).toBe('7d');
+      expect(card.strategyName).toBeDefined();
+      expect(card.roi).toBeDefined();
+      expect(card.shareLinks).toBeDefined();
+      expect(card.shareLinks.telegram).toContain('t.me/share');
+      expect(card.shareLinks.twitter).toContain('twitter.com');
+    });
+
+    it('should get an existing performance card', async () => {
+      const created = await telegramViral.createPerformanceCard('agent_001', 'user_123');
+      const retrieved = await telegramViral.getPerformanceCard(created.id);
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe(created.id);
+    });
+
+    it('should share performance card on different platforms', async () => {
+      const card = await telegramViral.createPerformanceCard('agent_001', 'user_123');
+
+      const telegramLink = await telegramViral.sharePerformanceCard(card.id, 'telegram');
+      const twitterLink = await telegramViral.sharePerformanceCard(card.id, 'twitter');
+      const copyLink = await telegramViral.sharePerformanceCard(card.id, 'copy');
+
+      expect(telegramLink).toContain('t.me/share');
+      expect(twitterLink).toContain('twitter.com');
+      expect(copyLink).toContain('share/performance');
+    });
+
+    it('should throw when sharing non-existent card', async () => {
+      await expect(
+        telegramViral.sharePerformanceCard('non_existent', 'telegram')
+      ).rejects.toThrow('Performance card not found');
+    });
+  });
+
+  // ============================================================================
+  // Leaderboard Sharing Tests
+  // ============================================================================
+
+  describe('leaderboardSharing', () => {
+    it('should create a leaderboard share card', async () => {
+      const card = await telegramViral.createLeaderboardShareCard(
+        'user_123',
+        'global',
+        'weekly'
+      );
+
+      expect(card.id).toBeDefined();
+      expect(card.userId).toBe('user_123');
+      expect(card.period).toBe('weekly');
+      expect(card.rank).toBeGreaterThan(0);
+      expect(card.totalParticipants).toBeGreaterThan(0);
+      expect(card.shareLinks).toBeDefined();
+    });
+
+    it('should get an existing leaderboard card', async () => {
+      const created = await telegramViral.createLeaderboardShareCard(
+        'user_123',
+        'global',
+        'weekly'
+      );
+      const retrieved = await telegramViral.getLeaderboardShareCard(created.id);
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe(created.id);
+    });
+
+    it('should share leaderboard card', async () => {
+      const card = await telegramViral.createLeaderboardShareCard(
+        'user_123',
+        'global',
+        'weekly'
+      );
+
+      const link = await telegramViral.shareLeaderboardCard(card.id, 'telegram');
+      expect(link).toContain('t.me/share');
+    });
+  });
+
+  // ============================================================================
+  // Group Integration Tests
+  // ============================================================================
+
+  describe('groupIntegration', () => {
+    it('should register a new group', async () => {
+      const group = await telegramViral.registerGroup('group_123', 'TON Traders');
+
+      expect(group.groupId).toBe('group_123');
+      expect(group.groupName).toBe('TON Traders');
+      expect(group.botEnabled).toBe(true);
+      expect(group.settings.postPerformanceUpdates).toBe(true);
+      expect(group.settings.postLeaderboards).toBe(true);
+    });
+
+    it('should register group with custom settings', async () => {
+      const group = await telegramViral.registerGroup('group_123', 'TON Traders', {
+        postTradingSignals: true,
+        updateFrequency: 'hourly',
+      });
+
+      expect(group.settings.postTradingSignals).toBe(true);
+      expect(group.settings.updateFrequency).toBe('hourly');
+    });
+
+    it('should get an existing group', async () => {
+      await telegramViral.registerGroup('group_123', 'TON Traders');
+      const group = await telegramViral.getGroupIntegration('group_123');
+
+      expect(group).toBeDefined();
+      expect(group?.groupName).toBe('TON Traders');
+    });
+
+    it('should update group settings', async () => {
+      await telegramViral.registerGroup('group_123', 'TON Traders');
+      const updated = await telegramViral.updateGroupSettings('group_123', {
+        postTradingSignals: true,
+        updateFrequency: 'realtime',
+      });
+
+      expect(updated.settings.postTradingSignals).toBe(true);
+      expect(updated.settings.updateFrequency).toBe('realtime');
+    });
+
+    it('should post to group', async () => {
+      await telegramViral.registerGroup('group_123', 'TON Traders');
+
+      // Should not throw
+      await telegramViral.postToGroup('group_123', {
+        type: 'performance_update',
+        content: 'Agent Alpha executed a trade',
+      });
+
+      const stats = await telegramViral.getGroupStats('group_123');
+      expect(stats.messagesPosted).toBe(1);
+    });
+
+    it('should respect group settings when posting', async () => {
+      await telegramViral.registerGroup('group_123', 'TON Traders', {
+        postTradingSignals: false,
+      });
+
+      // Should not increment message count when setting is disabled
+      await telegramViral.postToGroup('group_123', {
+        type: 'trading_signal',
+        content: 'Buy signal',
+      });
+
+      const stats = await telegramViral.getGroupStats('group_123');
+      expect(stats.messagesPosted).toBe(0);
+    });
+
+    it('should throw when posting to non-existent group', async () => {
+      await expect(
+        telegramViral.postToGroup('non_existent', {
+          type: 'announcement',
+          content: 'Test',
+        })
+      ).rejects.toThrow('Group not found');
+    });
+  });
+
+  // ============================================================================
+  // Agent Challenges Tests
+  // ============================================================================
+
+  describe('agentChallenges', () => {
+    it('should create a challenge', async () => {
+      const challenge = await telegramViral.createChallenge({
+        name: 'Weekly ROI Champion',
+        description: 'Achieve the highest ROI this week',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [
+          { rank: 1, badge: 'champion', title: 'Champion', xpBonus: 5000 },
+        ],
+        rules: ['Must have active agent'],
+      });
+
+      expect(challenge.id).toBeDefined();
+      expect(challenge.name).toBe('Weekly ROI Champion');
+      expect(challenge.type).toBe('weekly_roi');
+      expect(challenge.status).toBe('active');
+      expect(challenge.participants).toHaveLength(0);
+    });
+
+    it('should get an existing challenge', async () => {
+      const created = await telegramViral.createChallenge({
+        name: 'Test Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      const retrieved = await telegramViral.getChallenge(created.id);
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe(created.id);
+    });
+
+    it('should allow user to join challenge', async () => {
+      const challenge = await telegramViral.createChallenge({
+        name: 'Test Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      const participant = await telegramViral.joinChallenge(
+        challenge.id,
+        'user_123',
+        'agent_001'
+      );
+
+      expect(participant.userId).toBe('user_123');
+      expect(participant.agentId).toBe('agent_001');
+      expect(participant.score).toBe(0);
+      expect(participant.rank).toBe(1);
+    });
+
+    it('should prevent duplicate participation', async () => {
+      const challenge = await telegramViral.createChallenge({
+        name: 'Test Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      await telegramViral.joinChallenge(challenge.id, 'user_123', 'agent_001');
+
+      await expect(
+        telegramViral.joinChallenge(challenge.id, 'user_123', 'agent_002')
+      ).rejects.toThrow('Already participating');
+    });
+
+    it('should update challenge scores and ranks', async () => {
+      const challenge = await telegramViral.createChallenge({
+        name: 'Test Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      await telegramViral.joinChallenge(challenge.id, 'user_1', 'agent_1');
+      await telegramViral.joinChallenge(challenge.id, 'user_2', 'agent_2');
+      await telegramViral.joinChallenge(challenge.id, 'user_3', 'agent_3');
+
+      const updated = await telegramViral.updateChallengeScores(challenge.id);
+
+      expect(updated.participants).toHaveLength(3);
+      // Ranks should be updated (1, 2, 3)
+      const ranks = updated.participants.map(p => p.rank).sort();
+      expect(ranks).toEqual([1, 2, 3]);
+    });
+
+    it('should list active challenges', async () => {
+      await telegramViral.createChallenge({
+        name: 'Active Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      const activeChallenges = await telegramViral.listActiveChallenges();
+      expect(activeChallenges.length).toBeGreaterThan(0);
+    });
+
+    it('should get challenge leaderboard', async () => {
+      const challenge = await telegramViral.createChallenge({
+        name: 'Test Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      await telegramViral.joinChallenge(challenge.id, 'user_1', 'agent_1');
+      await telegramViral.joinChallenge(challenge.id, 'user_2', 'agent_2');
+      await telegramViral.updateChallengeScores(challenge.id);
+
+      const leaderboard = await telegramViral.getChallengeLeaderboard(challenge.id);
+      expect(leaderboard).toHaveLength(2);
+      expect(leaderboard[0].rank).toBe(1);
+    });
+
+    it('should share challenge result', async () => {
+      const challenge = await telegramViral.createChallenge({
+        name: 'Test Challenge',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      await telegramViral.joinChallenge(challenge.id, 'user_123', 'agent_001');
+
+      const shareLinks = await telegramViral.shareChallengeResult(
+        challenge.id,
+        'user_123'
+      );
+
+      expect(shareLinks.telegram).toContain('t.me/share');
+      expect(shareLinks.twitter).toContain('twitter.com');
+    });
+  });
+
+  // ============================================================================
+  // Mini App Buttons Tests
+  // ============================================================================
+
+  describe('miniAppButtons', () => {
+    it('should generate button text for different actions', () => {
+      expect(telegramViral.generateMiniAppButton('create_agent')).toBe('Create AI Agent');
+      expect(telegramViral.generateMiniAppButton('view_dashboard')).toBe('Open Dashboard');
+      expect(telegramViral.generateMiniAppButton('invite_friends')).toBe('Invite Friends');
+      expect(telegramViral.generateMiniAppButton('view_leaderboard')).toBe('View Leaderboard');
+      expect(telegramViral.generateMiniAppButton('join_challenge')).toBe('Join Challenge');
+    });
+
+    it('should generate inline keyboard', () => {
+      const keyboard = telegramViral.generateInlineKeyboard([
+        [{ text: 'Button 1', url: 'https://example.com' }],
+        [
+          { text: 'Button 2', callbackData: 'action_2' },
+          { text: 'Button 3', callbackData: 'action_3' },
+        ],
+      ]);
+
+      expect(keyboard.inline_keyboard).toHaveLength(2);
+      expect(keyboard.inline_keyboard[0]).toHaveLength(1);
+      expect(keyboard.inline_keyboard[1]).toHaveLength(2);
+    });
+  });
+
+  // ============================================================================
+  // Message Generators Tests
+  // ============================================================================
+
+  describe('messageGenerators', () => {
+    it('should generate performance card text', () => {
+      const card: AgentPerformanceCard = {
+        id: 'card_123',
+        agentId: 'agent_001',
+        userId: 'user_123',
+        agentName: 'Alpha Bot',
+        strategyName: 'Momentum',
+        roi: 12.5,
+        profitPercent: 8.3,
+        trades: 42,
+        winRate: 68.5,
+        period: '7d',
+        shareLinks: {
+          telegram: '',
+          twitter: '',
+          copyLink: '',
+          embedCode: '',
+        },
+        createdAt: new Date(),
+        expiresAt: new Date(),
+      };
+
+      const text = generatePerformanceCardText(card);
+
+      expect(text).toContain('My AI Agent Performance');
+      expect(text).toContain('Momentum');
+      expect(text).toContain('+12.5%');
+      expect(text).toContain('42');
+      expect(text).toContain('68.5%');
+      expect(text).toContain('t.me/TONAIAgentBot');
+    });
+
+    it('should generate group performance message', () => {
+      const message = generateGroupPerformanceMessage(
+        'Alpha Bot',
+        'BUY',
+        'BTC',
+        'Long'
+      );
+
+      expect(message).toContain('Alpha Bot');
+      expect(message).toContain('BTC');
+      expect(message).toContain('BUY');
+      expect(message).toContain('Long');
+      expect(message).toContain('t.me/TONAIAgentBot');
+    });
+
+    it('should generate group leaderboard message', () => {
+      const entries = [
+        { rank: 1, userId: 'user_1', displayName: 'Alpha', score: 5000, change: 0 },
+        { rank: 2, userId: 'user_2', displayName: 'Beta', score: 4500, change: 0 },
+        { rank: 3, userId: 'user_3', displayName: 'Gamma', score: 4000, change: 0 },
+      ];
+
+      const message = generateGroupLeaderboardMessage(entries, 'Weekly');
+
+      expect(message).toContain('Weekly Leaderboard');
+      expect(message).toContain('Alpha');
+      expect(message).toContain('5000');
+      expect(message).toContain('t.me/TONAIAgentBot');
+    });
+
+    it('should generate challenge announcement message', () => {
+      const challenge: AgentChallenge = {
+        id: 'challenge_123',
+        name: 'Weekly ROI Champion',
+        description: 'Achieve the highest ROI this week',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(),
+        status: 'active',
+        participants: [],
+        rewards: [
+          { rank: 1, badge: 'champion', title: 'Champion', xpBonus: 5000 },
+          { rank: 2, badge: 'silver', title: 'Runner Up', xpBonus: 3000 },
+        ],
+        rules: [],
+      };
+
+      const message = generateChallengeAnnouncementMessage(challenge);
+
+      expect(message).toContain('New Challenge');
+      expect(message).toContain('Weekly ROI Champion');
+      expect(message).toContain('Achieve the highest ROI');
+      expect(message).toContain('Champion');
+      expect(message).toContain('t.me/TONAIAgentBot');
+    });
+  });
+
+  // ============================================================================
+  // Events Tests
+  // ============================================================================
+
+  describe('events', () => {
+    it('should emit events on referral link creation', async () => {
+      const events: GrowthEvent[] = [];
+      telegramViral.onEvent((event) => events.push(event));
+
+      await telegramViral.generateReferralLink('user_123');
+
+      expect(events.length).toBe(1);
+      expect(events[0].type).toBe('referral_created');
+      expect(events[0].userId).toBe('user_123');
+    });
+
+    it('should emit events on referral join', async () => {
+      const events: GrowthEvent[] = [];
+      telegramViral.onEvent((event) => events.push(event));
+
+      const link = await telegramViral.generateReferralLink('user_123');
+      await telegramViral.trackReferralJoin(link.code, 'new_user_456');
+
+      const joinEvent = events.find(e => e.type === 'referral_activated');
+      expect(joinEvent).toBeDefined();
+      expect(joinEvent?.userId).toBe('user_123');
+    });
+
+    it('should emit events on challenge score update', async () => {
+      const events: GrowthEvent[] = [];
+      telegramViral.onEvent((event) => events.push(event));
+
+      const challenge = await telegramViral.createChallenge({
+        name: 'Test',
+        description: 'Test',
+        type: 'weekly_roi',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: [],
+        rules: [],
+      });
+
+      await telegramViral.joinChallenge(challenge.id, 'user_123', 'agent_001');
+      await telegramViral.updateChallengeScores(challenge.id);
+
+      const updateEvent = events.find(e => e.type === 'leaderboard_updated');
+      expect(updateEvent).toBeDefined();
+    });
+  });
+});
