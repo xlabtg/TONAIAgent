@@ -11,7 +11,7 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 
 > **🏛️ AGFI Status**: The platform has been formalized as global AI-native financial infrastructure. The AGFI module implements all six architectural pillars: Global Capital Layer, Global Liquidity Fabric, AI Systemic Coordination, Autonomous Monetary Infrastructure, Governance & Institutional Alignment, and Interoperability & Global Integration. See [docs/agfi.md](docs/agfi.md) for the complete AGFI specification.
 
-> **🚀 MVP Status**: The current development focus is the MVP — delivering the core demo flow end-to-end. See the [MVP Architecture](docs/mvp-architecture.md) and [MVP Feature Checklist](docs/mvp-checklist.md) for scope and priorities.
+> **🚀 MVP Architecture Freeze**: The MVP architecture has been defined and frozen as of Issue #178. The MVP delivers a Telegram-native AI Agent platform deployable on standard PHP + MySQL hosting. See the [MVP Architecture](docs/mvp-architecture.md) and [MVP Feature Checklist](docs/mvp-checklist.md) for full scope and priorities.
 
 ---
 
@@ -19,7 +19,7 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 
 1. [AGFI: AI-native Global Financial Infrastructure](#agfi-ai-native-global-financial-infrastructure)
 2. [GAEI: Global Autonomous Economic Infrastructure](#gaei-global-autonomous-economic-infrastructure)
-3. [MVP Overview](#mvp-overview)
+3. [MVP Architecture](#mvp-architecture)
 4. [Overview](#overview)
 5. [Key Features](#key-features)
 6. [System Architecture](#system-architecture)
@@ -240,58 +240,95 @@ console.log('Active Nodes:', status.activeNodes);
 
 ---
 
-## MVP Overview
+## MVP Architecture
 
-> **MVP Vision**: "Create and deploy your own AI crypto agent in under 3 minutes."
+> **MVP Vision**: "Launch your own AI crypto agent in Telegram in under 3 minutes."
 
-The TON AI Agent MVP is a focused, end-to-end demo of the core agent creation and execution flow. It is designed to be demo-ready, investor-ready, and deployable without any Phase 2+ features.
+The TON AI Agent MVP delivers a **Telegram-native AI Agent platform** where users can create an AI agent, select a trading strategy, launch it, and monitor portfolio analytics — all inside Telegram. The system is designed to be simple, stable, and deployable on standard PHP hosting.
 
-### MVP Demo Flow
+### Architecture Diagram
 
 ```
-User
-  │
-  ▼ POST /agent/create (name, strategy, budget, risk)
-Agent Created (simulation mode)
-  │
-  ▼ POST /agent/start
-Agent Running — 9-step execution pipeline:
-  fetch_data → call_ai (Groq) → validate_risk → execute_strategy
-  │
-  ▼ Telegram notification sent
-  ▼ Trade logged to history
-  ▼ Metrics updated (PnL, drawdown)
-  │
-  ▼ GET /agent/status | GET /agent/metrics
-Agent Dashboard (Admin panel, status, trade history)
+Telegram Bot
+      │
+      ▼
+Telegram Mini App (Primary UI)
+      │
+      ▼
+Backend API (PHP 8+ / MySQL)
+      │
+      ▼
+Agent Manager
+      │
+      ▼
+Strategy Engine v1
+      │
+      ▼
+Trading Simulator
+      │
+      ▼
+Portfolio Analytics
 ```
+
+### Core System Components
+
+| Component | Description |
+|---|---|
+| **Telegram Bot** | Primary entry point — `/start`, `/agents`, `/create_agent`, `/analytics` commands and notifications |
+| **Telegram Mini App** | Main UI — Dashboard, Create Agent, Strategy Marketplace, Agent Analytics screens |
+| **Backend API** | PHP backend — `POST /agents/create`, `POST /agents/start`, `POST /agents/stop`, `GET /agents`, `GET /agents/{id}/stats` |
+| **Agent Manager** | Agent lifecycle — creates, schedules, and tracks agents through states: CREATED → RUNNING ↔ PAUSED → STOPPED / ERROR |
+| **Strategy Engine v1** | Three strategies: Trend Following, Basic Arbitrage, AI Signal Strategy |
+| **Trading Simulator** | Simulated trades using CoinGecko and Binance public APIs — no real funds required for MVP |
+| **Portfolio Analytics** | Portfolio Value, PnL, Strategy Allocation, Agent Performance metrics and charts |
+| **Installer System** | One-click installer for PHP 8+ / MySQL hosting — sets up database, Telegram webhook, and application |
+
+### Deployment Requirements
+
+- PHP 8.0 or higher
+- MySQL 8.0+ or MariaDB 10.3+
+- HTTPS (required for Telegram Mini Apps)
+- Apache with mod_rewrite or Nginx
+- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
+
+### User Workflow
+
+1. Open Telegram and send `/start` to the bot
+2. Click "Open App" to launch the Telegram Mini App
+3. Navigate to **Create Agent**
+4. Select a strategy and configure capital allocation
+5. Click **Launch** — agent begins simulated trading
+6. Monitor performance on the **Analytics** screen
 
 ### MVP Architecture Documents
 
 | Document | Description |
 |---|---|
-| [MVP Feature Checklist](docs/mvp-checklist.md) | Finalized list of in-scope and out-of-scope features |
-| [MVP Architecture Diagram](docs/mvp-architecture.md) | System diagram, data flow, deployment topology |
+| [MVP Architecture](docs/mvp-architecture.md) | Full system diagram, components, deployment topology |
+| [MVP Feature Checklist](docs/mvp-checklist.md) | In-scope and out-of-scope features |
 | [MVP Module List](docs/mvp-modules.md) | Module-by-module inclusion/exclusion table |
 | [MVP Refactoring Plan](docs/mvp-refactoring.md) | Required refactoring before production |
+| [Development Guidelines](docs/development-guidelines.md) | Contribution and development guidelines |
 
 ### MVP Scope Summary
 
 **In scope (MVP)**:
-- Single-command agent creation via REST API
-- 4 strategy templates: DCA, Yield, Grid, Arbitrage
-- Agent runtime with 9-step execution pipeline
-- Simulation mode (no real funds required)
-- TON wallet creation and basic payments
-- Telegram bot: commands + notifications
-- Admin dashboard: monitoring + risk controls + RBAC
+- Telegram Bot as primary user entry point
+- Telegram Mini App as primary UI (Dashboard, Create Agent, Analytics)
+- Backend API deployed on PHP + MySQL standard hosting
+- Agent Manager with full lifecycle state machine
+- Strategy Engine v1: Trend Following, Basic Arbitrage, AI Signal Strategy
+- Trading Simulator using public market data APIs
+- Portfolio Analytics: PnL, portfolio value, performance charts
+- One-click Installer for standard PHP hosting
 
-**Out of scope (Phase 2+)**:
-- Strategy Marketplace, Copy Trading, Multi-Agent Swarms
-- Institutional Suite, Hedge Fund, Ecosystem Fund
-- TONAI Tokenomics and Governance
-- Omnichain / Multi-chain support
-- AI Credit, Regulatory Compliance, Super App
+**Out of scope (MVP — deferred to future milestones)**:
+- DAO governance
+- Hedge fund infrastructure
+- Global liquidity networks
+- Cross-chain liquidity
+- Clearing house systems
+- Institutional compliance layers
 
 ---
 

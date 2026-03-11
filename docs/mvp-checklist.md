@@ -1,91 +1,121 @@
-# TON AI Agent MVP Feature Checklist
+# TON AI Agent — MVP Feature Checklist
 
-> **MVP Vision**: "Create and deploy your own AI crypto agent in under 3 minutes."
+> **MVP Vision**: "Launch your own AI crypto agent in Telegram in under 3 minutes."
 
-This document defines the finalized MVP feature checklist, distinguishing what is **in scope** for the MVP from what is deferred to future phases.
-
----
-
-## ✅ MVP Feature Checklist
-
-### 1. Agent Creation (Single Entrypoint API)
-
-- [x] `POST /agent/create` — Create agent with name, strategy, budget, risk level
-- [x] `POST /agent/start` — Start agent execution loop
-- [x] `POST /agent/pause` — Pause agent execution
-- [x] `GET /agent/status` — Query agent lifecycle state
-- [x] `GET /agent/metrics` — Query agent performance metrics
-- [x] `GET /agent/history` — Query agent trade history
-- [x] Strategy templates: DCA, Yield, Grid, Arbitrage
-- [x] Risk level selection: Low / Medium / High
-- [x] Budget configuration (TON amount)
-- [x] Telegram bot integration per agent
-
-### 2. Agent Runtime
-
-- [x] 9-step execution pipeline:
-  1. Fetch market data
-  2. Load memory context
-  3. Call AI provider (Groq-first)
-  4. Validate risk constraints
-  5. Generate action plan
-  6. Simulate transaction
-  7. Execute on-chain (or simulation)
-  8. Record outcome
-  9. Update analytics
-- [x] Agent lifecycle state machine: `created → funded → active ↔ paused → suspended | migrated | terminated`
-- [x] Simulation mode (no real funds at risk)
-- [x] Risk controls: max budget cap, max drawdown, kill switch, auto-pause on failure, stop-loss
-- [x] Concurrent agent management (up to 50 agents)
-- [x] Event-driven observability (lifecycle events, pipeline events)
-
-### 3. On-Chain Integration (TON)
-
-- [x] TON wallet creation and management
-- [x] TON transaction execution (in simulation + live mode)
-- [x] Basic payment logic for agent funding
-- [x] Smart contract factory for agent contracts
-- [x] Real-time balance tracking
-
-### 4. Demo Flow
-
-- [x] User creates agent via API or Telegram
-- [x] Agent connects to Telegram bot (notifications + commands)
-- [x] Agent allocates TON wallet budget
-- [x] Agent executes a strategy action (simulated or live)
-- [x] Trade is logged and visible in metrics/history
-- [x] Full end-to-end runnable in simulation mode
-
-### 5. Security (Minimum Viable)
-
-- [x] API key / authentication for agent endpoints
-- [x] Secure key handling (no raw private keys in memory longer than needed)
-- [x] Kill switch (immediate emergency stop per agent or globally)
-- [x] Input validation on all agent creation parameters
-
-### 6. Observability & Admin
-
-- [x] Admin dashboard: agent monitoring, risk control, emergency controls
-- [x] Role-based access control: viewer / operator / admin / superadmin
-- [x] Basic fraud detection flags
-- [x] Strategy performance metrics (PnL, drawdown, trade count)
+This document defines the finalized MVP feature checklist as established in Issue #178. It distinguishes what is **in scope** for the MVP from what is deferred to future phases.
 
 ---
 
-## ❌ Out of MVP Scope (Deferred to Phase 2+)
+## MVP Deliverables
+
+- [ ] Finalized MVP architecture documentation
+- [ ] Updated repository structure aligned with MVP
+- [ ] Confirmation of core system components
+- [ ] Documentation updates in README.md
+- [ ] Development guidelines for upcoming issues
+
+---
+
+## MVP Feature Checklist
+
+### 1. Telegram Bot Interface
+
+- [ ] `/start` command — opens Mini App onboarding flow
+- [ ] `/agents` command — lists user's active agents
+- [ ] `/create_agent` command — guides user to create a new agent
+- [ ] `/analytics` command — shows portfolio analytics summary
+- [ ] Telegram notifications — trade events, agent state changes, performance alerts
+- [ ] Bot webhook configured and operational
+
+### 2. Telegram Mini App (Primary UI)
+
+- [ ] **Dashboard screen** — portfolio value, active agent count, performance summary
+- [ ] **Create Agent screen** — strategy selection, capital allocation, launch button
+- [ ] **Strategy Marketplace screen** — browse and select available strategies
+- [ ] **Agent Analytics screen** — performance charts, trade history, portfolio growth
+- [ ] Telegram Mini App authentication (WebApp init data verification)
+- [ ] Mobile-first design optimized for Telegram interface
+
+### 3. Backend API (PHP + MySQL)
+
+- [ ] `POST /agents/create` — create a new AI agent (name, strategy, capital, risk level)
+- [ ] `POST /agents/start` — start agent execution
+- [ ] `POST /agents/stop` — stop agent execution
+- [ ] `GET /agents` — list all agents for authenticated user
+- [ ] `GET /agents/{id}/stats` — get agent performance stats
+- [ ] `POST /api/webhook/telegram` — handle Telegram bot webhook
+- [ ] Authentication via Telegram WebApp init data
+- [ ] Input validation and sanitization on all endpoints
+- [ ] Prepared statements for all database queries
+
+### 4. Agent Manager
+
+- [ ] Agent creation with configuration (strategy, capital allocation, risk level)
+- [ ] Agent lifecycle state machine:
+  - `CREATED` → `RUNNING` (on start)
+  - `RUNNING` ↔ `PAUSED` (on pause/resume)
+  - `RUNNING` → `STOPPED` (on stop)
+  - `RUNNING` → `ERROR` (on critical failure)
+- [ ] Agent state persisted to MySQL database
+- [ ] Periodic strategy execution scheduling
+- [ ] Agent state queries return current status
+
+### 5. Strategy Engine v1
+
+- [ ] **Trend Following strategy** — configurable, modular implementation
+- [ ] **Basic Arbitrage strategy** — simulates price difference across pairs
+- [ ] **AI Signal Strategy** — calls AI provider (Groq primary) for buy/sell signals
+- [ ] Strategies are configurable (risk level, frequency, capital allocation)
+- [ ] All strategies compatible with Agent Manager interface
+- [ ] Strategy selection stored per agent in database
+
+### 6. Trading Simulator
+
+- [ ] Fetch real-time prices from CoinGecko API
+- [ ] Fetch real-time prices from Binance public market data
+- [ ] Execute simulated trades (no real funds moved)
+- [ ] Record trade history in database (pair, price, amount, timestamp, PnL)
+- [ ] Simulate realistic slippage and fees
+- [ ] Simulation mode prevents any real on-chain transactions
+
+### 7. Portfolio Analytics
+
+- [ ] **Portfolio Value** — total simulated value of all holdings
+- [ ] **PnL (Profit and Loss)** — accumulated over time per agent and overall
+- [ ] **Strategy Allocation** — capital distribution across active strategies
+- [ ] **Agent Performance** — per-agent return rate, trade count, win rate
+- [ ] Portfolio value over time chart data
+- [ ] Strategy contribution to total return chart data
+
+### 8. Installer System
+
+- [ ] One-click installer accessible via web browser (`install.php`)
+- [ ] Database configuration — creates tables and schema
+- [ ] Telegram bot token configuration
+- [ ] Telegram webhook registration via Telegram Bot API
+- [ ] Application file configuration
+- [ ] Admin account creation
+- [ ] Installer self-deletes or warns to delete after setup
+- [ ] Deployment checklist in documentation
+
+---
+
+## Out of MVP Scope (Deferred to Future Phases)
 
 | Feature | Deferred To |
 |---|---|
-| Institutional Suite | Phase 2 |
-| Hedge Fund module | Phase 2 |
-| Ecosystem Fund | Phase 2 |
-| Strategy Marketplace (public) | Phase 2 |
+| DAO governance | Phase 2+ |
+| Hedge fund infrastructure | Phase 2+ |
+| Global liquidity networks | Phase 2+ |
+| Cross-chain liquidity | Phase 2+ |
+| Clearing house systems | Phase 2+ |
+| Institutional compliance layers | Phase 2+ |
+| Strategy Marketplace (public user submissions) | Phase 2 |
 | Copy Trading | Phase 2 |
 | AI Credit Scoring / Lending | Phase 2 |
-| Advanced Tokenomics (TONAI staking, governance) | Phase 2 |
-| Multi-chain / Omnichain Orchestration | Phase 3 |
+| Advanced Tokenomics (staking, governance) | Phase 2 |
+| Multi-chain / Omnichain support | Phase 3 |
 | Super App Layer | Phase 3 |
-| Launchpad (VC fund management) | Phase 3 |
 | AI Safety advanced modules | Phase 3 |
 | Regulatory Compliance Engine | Phase 3 |
 | Data Platform | Phase 3 |
@@ -95,23 +125,37 @@ This document defines the finalized MVP feature checklist, distinguishing what i
 
 ---
 
-## 📋 MVP Acceptance Criteria
+## MVP Acceptance Criteria
 
-- [ ] A new user can create and start an agent in **under 3 minutes** via the API
-- [ ] Agent runs the full 9-step execution pipeline at least once (simulation mode)
-- [ ] Agent sends at least one Telegram notification during its lifecycle
-- [ ] Agent performs at least one TON wallet operation
-- [ ] Admin can view agent status and apply emergency stop
-- [ ] All MVP endpoints return correct HTTP status codes and typed responses
+The MVP is considered complete when:
+
+- [ ] The system can be deployed via the installer on standard PHP + MySQL hosting
+- [ ] A user can open the Telegram bot and launch the Mini App
+- [ ] A user can create an AI agent through the Mini App
+- [ ] An agent can execute a strategy in simulation mode
+- [ ] Simulated trades are recorded and reflected in Portfolio Analytics
+- [ ] The Telegram bot sends at least one notification during the agent lifecycle
+- [ ] Portfolio analytics render correctly in the Mini App
+- [ ] All core API endpoints return correct HTTP status codes and typed responses
 - [ ] Simulation mode prevents any real on-chain transactions until explicitly enabled
-- [ ] All MVP modules pass unit test suite (`npm test`)
 
 ---
 
-## 🔗 Related Issues
+## MVP Demo Requirements
 
-- **#89** — This issue (MVP Architecture Definition)
-- **#90** — Demo Scenario
-- **#91** — One-Click Agent Creation API
-- **#92** — Agent Lifecycle Cloud Orchestrator
-- **#93** — Production Deployment Framework
+A working MVP must demonstrate the following in under 5 minutes:
+
+1. Launching the Telegram bot (`/start`)
+2. Opening the Mini App
+3. Creating an AI agent (select strategy + configure)
+4. Running a strategy (agent transitions to RUNNING, simulated trades execute)
+5. Displaying portfolio analytics (PnL, trade history, portfolio value)
+
+---
+
+## Related Documents
+
+- [MVP Architecture](./mvp-architecture.md)
+- [MVP Module List](./mvp-modules.md)
+- [MVP Refactoring Plan](./mvp-refactoring.md)
+- [Development Guidelines](./development-guidelines.md)
