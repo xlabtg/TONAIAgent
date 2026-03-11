@@ -4765,6 +4765,175 @@ The risk monitor validates every trade before execution and continuously scans f
 
 ---
 
+## Strategy Engine
+
+The Strategy Engine v1 is the decision-making layer that sits between the Agent Runtime Core and the Trading Engine. It enables agents to load configurable trading strategies, process market data, and generate trade signals that trigger simulated (or real) trades.
+
+### Architecture
+
+```
+Agent Runtime
+      |
+Strategy Engine
+      |
+ TrendStrategy   ArbitrageStrategy   AISignalStrategy
+      |
+Trading Engine
+```
+
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **StrategyInterface** | Common contract all strategies must implement — `getMetadata()` and `execute(marketData, params)` returning a `TradeSignal` |
+| **StrategyRegistry** | Maintains a registry of available strategy classes, powering agent creation and future marketplace integration |
+| **StrategyLoader** | Discovers and loads strategy classes, auto-registering the three built-in core strategies |
+| **StrategyExecutionEngine** | Pipeline: Receive Market Data → Load Strategy → Run Strategy Logic → Generate Signal → Send to Trading Engine |
+| **Strategy Parameter System** | Each strategy declares typed, validated parameters with defaults — `asset`, `movingAveragePeriods`, `rsiPeriod`, etc. |
+
+### Three Built-in Strategies
+
+#### TrendStrategy (`id: "trend"`)
+Buy if the current price is above the simple moving average; sell if below.
+
+```typescript
+import { createStrategyRegistry, createStrategyLoader, createStrategyExecutionEngine } from '@tonaiagent/core/strategy-engine';
+
+const registry = createStrategyRegistry();
+const loader = createStrategyLoader(registry);
+loader.loadBuiltIns(); // registers: trend, arbitrage, ai-signal
+
+const engine = createStrategyExecutionEngine(registry);
+engine.start();
+
+const result = await engine.execute({
+  strategyId: 'trend',
+  agentId: 'agent-001',
+  marketData: {
+    prices: { TON: { asset: 'TON', price: 2.85, volume24h: 1_000_000, timestamp: new Date() } },
+    source: 'live',
+    fetchedAt: new Date(),
+  },
+  params: { movingAveragePeriods: 14, asset: 'TON' },
+});
+
+console.log(result.signal);
+// { action: 'BUY', asset: 'TON', amount: '100000000', confidence: 0.72, reason: '...' }
+```
+
+Parameters:
+- `asset` (string, default: `"TON"`) — asset to trade
+- `movingAveragePeriods` (number, default: `14`) — SMA window size
+- `tradeAmount` (string, default: `"100000000"`) — trade size in nanoTON
+
+#### ArbitrageStrategy (`id: "arbitrage"`)
+Detects price differences between simulated exchanges and generates a BUY signal when a profitable spread exceeds the threshold.
+
+Parameters:
+- `asset` (string, default: `"TON"`) — asset to scan
+- `minSpreadPct` (number, default: `0.1`) — minimum spread % to trigger BUY
+- `tradeAmount` (string, default: `"100000000"`) — trade size in nanoTON
+
+#### AISignalStrategy (`id: "ai-signal"`)
+Uses RSI and MACD technical indicators: BUY if RSI < 30 (oversold), SELL if RSI > 70 (overbought). MACD crossover confirmation adjusts confidence.
+
+Parameters:
+- `asset` (string, default: `"TON"`) — asset to analyze
+- `rsiPeriod` (number, default: `14`) — RSI window size
+- `oversoldThreshold` (number, default: `30`) — RSI BUY trigger
+- `overboughtThreshold` (number, default: `70`) — RSI SELL trigger
+- `tradeAmount` (string, default: `"100000000"`) — trade size in nanoTON
+
+### Trade Signal Format
+
+All strategies return a `TradeSignal`:
+
+```typescript
+{
+  action: 'BUY' | 'SELL' | 'HOLD';
+  asset: string;           // e.g. "TON"
+  amount: string;          // in nanoTON, as string for precision
+  confidence: number;      // 0–1
+  reason: string;          // human-readable explanation
+  strategyId: string;      // e.g. "trend"
+  generatedAt: Date;
+  metadata?: Record<string, unknown>; // indicators, prices, etc.
+}
+```
+
+### Custom Strategies
+
+Implement `StrategyInterface` (or extend `BaseStrategy`) and register with the loader:
+
+```typescript
+import { BaseStrategy, createStrategyLoader } from '@tonaiagent/core/strategy-engine';
+
+class MyStrategy extends BaseStrategy {
+  getMetadata() {
+    return {
+      id: 'my-strategy',
+      name: 'My Custom Strategy',
+      description: 'A custom trading strategy',
+      version: '1.0.0',
+      params: [{ name: 'threshold', type: 'number', defaultValue: 0.5, description: 'Signal threshold' }],
+      supportedAssets: ['TON'],
+    };
+  }
+
+  async execute(marketData, params) {
+    const resolved = this.mergeParams(params);
+    const price = this.getPrice(marketData, 'TON');
+    return {
+      action: price > resolved.threshold ? 'BUY' : 'HOLD',
+      asset: 'TON',
+      amount: '100000000',
+      confidence: 0.75,
+      reason: `Price ${price} vs threshold ${resolved.threshold}`,
+      strategyId: this.getMetadata().id,
+      generatedAt: new Date(),
+    };
+  }
+}
+
+const loader = createStrategyLoader(registry);
+loader.registerCustom(MyStrategy);
+```
+
+### Integration with Agent Runtime
+
+```typescript
+import { createAgentRuntimeOrchestrator } from '@tonaiagent/core/agent-runtime';
+import { createStrategyRegistry, createStrategyLoader, createStrategyExecutionEngine } from '@tonaiagent/core/strategy-engine';
+
+const registry = createStrategyRegistry();
+const loader = createStrategyLoader(registry);
+loader.loadBuiltIns();
+
+const strategyEngine = createStrategyExecutionEngine(registry);
+strategyEngine.start();
+
+const runtime = createAgentRuntimeOrchestrator();
+runtime.start();
+
+runtime.registerAgent({
+  agentId: 'agent-001',
+  name: 'Trend Bot',
+  ownerId: 'tg_user_123',
+  ownerAddress: 'EQD...',
+  strategyIds: ['trend'],
+  simulation: { enabled: true, fakeBalance: BigInt(10_000_000_000) },
+  riskLimits: { /* ... */ },
+  maxConcurrentExecutions: 2,
+  enableObservability: true,
+});
+
+runtime.fundAgent('agent-001', BigInt(5_000_000_000));
+await runtime.startAgent('agent-001');
+const result = await runtime.runPipeline('agent-001', 'trend');
+```
+
+---
+
 <p align="center">
   <strong>Built with ❤️ for the TON Ecosystem</strong>
 </p>
