@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.28.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.29.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -41,13 +41,14 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
 23. [Production Agent Runtime](#production-agent-runtime)
 24. [Strategy Marketplace](#strategy-marketplace)
-25. [Live Trading Infrastructure](#live-trading-infrastructure)
-26. [AI Fund Manager](#ai-fund-manager)
-27. [Investor Demo](#investor-demo)
-28. [Strategy Backtesting](#strategy-backtesting)
-29. [Community](#community)
-30. [Risk Engine](#risk-engine)
-31. [License](#license)
+25. [Strategy Reputation System](#strategy-reputation-system)
+26. [Live Trading Infrastructure](#live-trading-infrastructure)
+27. [AI Fund Manager](#ai-fund-manager)
+28. [Investor Demo](#investor-demo)
+29. [Strategy Backtesting](#strategy-backtesting)
+30. [Community](#community)
+31. [Risk Engine](#risk-engine)
+32. [License](#license)
 
 ---
 
@@ -2893,6 +2894,226 @@ The marketplace tracks the following flywheel indicators:
 | Strategy performance transparency | Historical return data points stored per strategy |
 
 **Full Marketplace Documentation**: [src/marketplace](src/marketplace)
+
+
+---
+
+## Strategy Reputation System
+
+> **Trust and quality assurance for the Strategy Marketplace.**
+
+The Strategy Reputation & Ranking System evaluates strategies based on performance, risk, reliability, and user feedback. It helps users identify high-quality strategies, avoid risky or unreliable ones, and compare performance across the marketplace.
+
+### Why a Reputation System?
+
+As the marketplace grows, users need a reliable way to evaluate strategies beyond raw performance numbers. The reputation system provides:
+
+- **Objective scoring** — composite model weighing performance, risk, stability, and community trust
+- **Badge recognition** — visual signals for Top Performer, Low Risk, Verified, Trending, Most Trusted
+- **Sortable leaderboards** — four ranking categories with real-time updates
+- **User feedback** — verified investor reviews with voting and moderation
+- **Performance history** — monthly returns, volatility, and drawdown tracking for trust building
+
+### Scoring Model
+
+The overall reputation score is a weighted composite:
+
+```
+Overall Score = Performance Score × 35%
+              + Risk Adjustment Score × 25%
+              + Stability Score × 20%
+              + Reputation Score × 20%
+```
+
+#### Performance Score (35%)
+
+Evaluates ROI, Sharpe ratio, win rate, and profit factor:
+
+| Metric | Weight | Notes |
+|--------|--------|-------|
+| 30-day ROI | 40% | Normalized: -50% → 0, +50% → 100 |
+| Sharpe ratio | 30% | <0 → 0, 1.0 → 70, 2.0 → 100 |
+| Win rate | 20% | Percentage of profitable executions |
+| Profit factor | 10% | Total profit / total loss |
+
+#### Risk Adjustment Score (25%)
+
+Starts at 100 and subtracts penalties for risk factors sourced from Risk Engine v1:
+
+| Risk Factor | Penalty |
+|-------------|---------|
+| Max drawdown 25% | -35 pts |
+| Annualized volatility >20% | Up to -30 pts |
+| Leverage >2× | Up to -20 pts |
+
+#### Stability Score (20%)
+
+Rewards longer, more consistent histories:
+
+| Factor | Weight |
+|--------|--------|
+| History length (saturates at 24 months) | 50% |
+| Positive months % | 30% |
+| Sortino ratio | 20% |
+
+#### Reputation Score (20%)
+
+Aggregates user trust signals:
+
+```
+Reputation Score = User Rating (weighted by verified reviews)
+                 + Active Investors (log-scaled)
+                 + Strategy Age (months of operation)
+```
+
+### Ranking Tiers
+
+| Tier | Requirements |
+|------|-------------|
+| **Emerging** | Score < 50 — New or unproven strategy |
+| **Established** | Score ≥ 50 — Proven but limited history |
+| **Trusted** | Score ≥ 70, ≥ 3 months history |
+| **Elite** | Score ≥ 85, ≥ 3 months history, ≥ 50 active investors |
+
+### Strategy Badges
+
+| Badge | Criteria |
+|-------|----------|
+| **Top Performer** | Performance score ≥ 80 |
+| **Low Risk** | Max drawdown ≤ 10% and annualized volatility ≤ 15% |
+| **Verified** | ≥ 6 months history and ≥ 5 user reviews |
+| **Trending** | ≥ 20 active investors |
+| **Most Trusted** | Average rating ≥ 4.5 with ≥ 10 reviews |
+| **Most Consistent** | Stability score ≥ 80 |
+| **High AUM** | Total AUM ≥ 100,000 TON |
+
+### Ranking Leaderboards
+
+Four sortable leaderboard categories are always available:
+
+| Category | Sort Field | Description |
+|----------|-----------|-------------|
+| **Top Performing** | Performance score | Highest ROI with good Sharpe ratios |
+| **Lowest Risk** | Risk adjustment score | Best drawdown and volatility control |
+| **Trending** | Active investors | Strategies gaining adoption quickly |
+| **Most Trusted** | Reputation score | Highest-rated by verified investors |
+
+### Quick Start
+
+```typescript
+import { createMarketplaceService } from '@tonaiagent/core/marketplace';
+
+const marketplace = createMarketplaceService();
+
+// Register a strategy for ranking
+const score = marketplace.ranking.registerStrategy({
+  strategyId: 'strategy_defi_001',
+  strategyName: 'DeFi Yield Optimizer',
+  creatorId: 'creator_alice',
+  publishedAt: new Date('2025-09-01'),
+  roi30d: 8.5,
+  sharpeRatio: 1.8,
+  maxDrawdown: 12.0,
+  winRate: 68.0,
+  volatility: 18.0,
+  avgUserRating: 4.3,
+  ratingCount: 15,
+  activeInvestors: 42,
+  totalAUM: 50_000,
+  monthsOfHistory: 6,
+  positiveMonthsPercent: 75,
+});
+
+console.log(`Overall score: ${score.overallScore}`);  // e.g. 72.4
+console.log(`Tier: ${score.tier}`);                   // e.g. 'trusted'
+console.log(`Badges: ${score.badges.join(', ')}`);    // e.g. 'verified, trending'
+
+// Get leaderboards
+const topPerforming = marketplace.ranking.getLeaderboard('top_performing');
+const lowestRisk    = marketplace.ranking.getLeaderboard('lowest_risk');
+const trending      = marketplace.ranking.getLeaderboard('trending');
+const mostTrusted   = marketplace.ranking.getLeaderboard('most_trusted');
+
+console.log('Top Performing Strategies:');
+for (const entry of topPerforming.entries.slice(0, 5)) {
+  console.log(`  #${entry.rank} ${entry.strategyName} — Score: ${entry.score.overallScore.toFixed(1)}`);
+}
+```
+
+### Recording Performance History
+
+```typescript
+// Record monthly returns (feeds into stability and trust scoring)
+await marketplace.performanceHistory.recordMonthlyReturn({
+  strategyId: 'strategy_defi_001',
+  year: 2026,
+  month: 3,
+  returnPercent: 7.2,
+  benchmarkReturn: 3.1,    // optional: vs TON index
+  volatility: 12.5,
+  tradingDays: 22,
+});
+
+// Record drawdown events
+await marketplace.performanceHistory.recordDrawdown({
+  strategyId: 'strategy_defi_001',
+  startDate: new Date('2026-02-10'),
+  peakValue: 105_000,
+  troughValue: 93_500,
+  drawdownPercent: 10.95,
+});
+
+// Compute consistency metrics
+const metrics = await marketplace.performanceHistory.computeConsistencyMetrics('strategy_defi_001');
+console.log(`Positive months: ${metrics.positiveMonthsPercent.toFixed(0)}%`);
+console.log(`Calmar ratio:    ${metrics.calmarRatio.toFixed(2)}`);
+console.log(`Trust score:     ${metrics.trustScore.toFixed(1)}/100`);
+```
+
+### User Feedback & Reviews
+
+```typescript
+// Investors submit verified reviews
+const feedback = await marketplace.userFeedback.submitFeedback({
+  strategyId: 'strategy_defi_001',
+  userId: 'investor_bob',
+  rating: 5,
+  title: 'Consistent yields with low drawdowns',
+  content: 'Running this for 4 months with 5000 TON. Monthly returns have been steady and the drawdown never worried me. Highly recommended for conservative DeFi exposure.',
+  capitalAllocated: 5000,
+  holdingDays: 120,
+  verified: true,    // Platform confirms this user deployed the strategy
+});
+
+// Vote on reviews
+await marketplace.userFeedback.voteFeedback(feedback.id, 'investor_carol', true); // helpful
+
+// Get feedback summary for a strategy
+const summary = await marketplace.userFeedback.getFeedbackSummary('strategy_defi_001');
+console.log(`Average rating: ${summary.averageRating.toFixed(1)}/5`);
+console.log(`Verified reviews: ${summary.verifiedReviewCount}`);
+console.log(`Trend: ${summary.recentTrend}`);  // 'improving' | 'stable' | 'declining'
+```
+
+### Architecture
+
+```
+Strategy Marketplace
+        ↓
+Performance Data (ROI, Sharpe, Drawdown, Win Rate)
+        ↓
+Risk Engine → Risk Adjustment Factor
+        ↓
+Reputation & Ranking Engine
+  ├── Performance Score
+  ├── Risk Adjustment Score
+  ├── Stability Score (Performance History)
+  └── Reputation Score (User Feedback + Investors + Age)
+        ↓
+Marketplace Leaderboards (Top Performing / Lowest Risk / Trending / Most Trusted)
+```
+
+**Full Reputation System Documentation**: [src/marketplace/ranking.ts](src/marketplace/ranking.ts), [src/marketplace/user-feedback.ts](src/marketplace/user-feedback.ts), [src/marketplace/performance-history.ts](src/marketplace/performance-history.ts)
 
 
 ---
