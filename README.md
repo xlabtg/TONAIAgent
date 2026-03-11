@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.31.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.35.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -11,7 +11,7 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 
 > **🏛️ AGFI Status**: The platform has been formalized as global AI-native financial infrastructure. The AGFI module implements all six architectural pillars: Global Capital Layer, Global Liquidity Fabric, AI Systemic Coordination, Autonomous Monetary Infrastructure, Governance & Institutional Alignment, and Interoperability & Global Integration. See [docs/agfi.md](docs/agfi.md) for the complete AGFI specification.
 
-> **🚀 MVP Architecture Freeze**: The MVP architecture has been defined and frozen as of Issue #178. The MVP delivers a Telegram-native AI Agent platform deployable on standard PHP + MySQL hosting. See the [MVP Architecture](docs/mvp-architecture.md) and [MVP Feature Checklist](docs/mvp-checklist.md) for full scope and priorities.
+> **🚀 MVP Complete**: The MVP has been implemented and is demo-ready as of Issue #195. All nine core components are operational: Agent Runtime, Strategy Engine, Market Data Layer, Trading Simulation, Portfolio API, Agent Control API, Telegram Mini App, Installer, and Demo Agent. Use `createMVPPlatform()` from `@tonaiagent/core/mvp-platform` to start the full integrated platform in minutes. See the [MVP Architecture](docs/mvp-architecture.md), [MVP Feature Checklist](docs/mvp-checklist.md), and [Quick Start](#mvp-quick-start) below.
 
 ---
 
@@ -251,39 +251,47 @@ The TON AI Agent MVP delivers a **Telegram-native AI Agent platform** where user
 ### Architecture Diagram
 
 ```
-Telegram Bot
+User (via Telegram)
       │
       ▼
-Telegram Mini App (Primary UI)
+Telegram Bot + Mini App          ← Primary user interface
       │
       ▼
-Backend API (PHP 8+ / MySQL)
+Agent Control API                ← start / stop / restart / status
       │
       ▼
-Agent Manager
+Agent Runtime                    ← 9-step execution pipeline
       │
       ▼
-Strategy Engine v1
+Strategy Engine                  ← Trend / Arbitrage / AI Signal
       │
       ▼
-Trading Simulator
+Market Data Layer                ← CoinGecko / Binance price feeds
       │
       ▼
-Portfolio Analytics
+Trading Engine (Simulation)      ← simulate buy/sell, track PnL
+      │
+      ▼
+Portfolio Analytics              ← metrics, charts, reports
+      │
+      ▼
+Portfolio Database
 ```
 
 ### Core System Components
 
-| Component | Description |
-|---|---|
-| **Telegram Bot** | Primary entry point — `/start`, `/agents`, `/create_agent`, `/analytics` commands and notifications |
-| **Telegram Mini App** | Main UI — Dashboard, Create Agent, Strategy Marketplace, Agent Analytics screens |
-| **Backend API** | PHP backend — `POST /agents/create`, `POST /agents/start`, `POST /agents/stop`, `GET /agents`, `GET /agents/{id}/stats` |
-| **Agent Manager** | Agent lifecycle — creates, schedules, and tracks agents through states: CREATED → RUNNING ↔ PAUSED → STOPPED / ERROR |
-| **Strategy Engine v1** | Three strategies: Trend Following, Basic Arbitrage, AI Signal Strategy |
-| **Trading Simulator** | Simulated trades using CoinGecko and Binance public APIs — no real funds required for MVP |
-| **Portfolio Analytics** | Portfolio Value, PnL, Strategy Allocation, Agent Performance metrics and charts |
-| **Installer System** | One-click installer for PHP 8+ / MySQL hosting — sets up database, Telegram webhook, and application |
+| Component | Path | Description |
+|---|---|---|
+| **Agent Runtime** | `src/agent-runtime/` | 9-step pipeline: fetch_data → load_memory → call_ai → validate_risk → generate_plan → simulate_tx → execute_onchain → record_outcome → update_analytics |
+| **Strategy Engine** | `src/strategy-engine/` | Three strategies: Trend (SMA), Arbitrage (spread detection), AI Signal (RSI/MACD) |
+| **Market Data Layer** | `src/market-data/` | CoinGecko and Binance providers with in-memory cache (30s TTL) and automatic fallback |
+| **Trading Engine** | `src/trading-engine/` | Simulated buy/sell execution, portfolio balance tracking, PnL calculation — no real funds |
+| **Portfolio Analytics** | `src/portfolio-analytics/` | Portfolio value, PnL, ROI, equity curve, trade history, risk monitoring |
+| **Agent Control API** | `src/agent-control/` | REST API: `GET /api/agents`, `POST /api/agents/:id/start`, `POST /api/agents/:id/stop`, `POST /api/agents/:id/restart` |
+| **Demo Agent** | `src/demo-agent/` | Preconfigured DCA/Yield/Grid/Arbitrage strategies, risk controls, full lifecycle management |
+| **Telegram Mini App** | `miniapp/` | HTML/CSS/JS dashboard — portfolio view, agent management, strategy selection |
+| **Installer** | `installer/` | Step-by-step PHP installer — database setup, Telegram webhook, environment config |
+| **MVP Platform** | `src/mvp-platform/` | Unified integration layer wiring all components together via `createMVPPlatform()` |
 
 ### Deployment Requirements
 
@@ -295,12 +303,161 @@ Portfolio Analytics
 
 ### User Workflow
 
-1. Open Telegram and send `/start` to the bot
-2. Click "Open App" to launch the Telegram Mini App
-3. Navigate to **Create Agent**
-4. Select a strategy and configure capital allocation
-5. Click **Launch** — agent begins simulated trading
-6. Monitor performance on the **Analytics** screen
+```
+User opens Telegram
+      ↓
+Send /start — bot opens Mini App
+      ↓
+Create AI agent (name + strategy + budget)
+      ↓
+Choose strategy: Trend / Arbitrage / AI Signal
+      ↓
+Start agent — simulation trading begins
+      ↓
+Agent executes trades (paper trading, no real funds)
+      ↓
+User monitors performance (PnL, trade history, charts)
+```
+
+---
+
+## MVP Quick Start
+
+Get the full MVP platform running locally in minutes.
+
+### Prerequisites
+
+```bash
+node >= 18.0.0
+npm >= 8.0.0
+```
+
+### Installation
+
+```bash
+git clone https://github.com/xlabtg/TONAIAgent.git
+cd TONAIAgent
+npm install
+npm test  # verify all 5755 tests pass
+```
+
+### TypeScript Quick Start
+
+```typescript
+import { createMVPPlatform } from '@tonaiagent/core/mvp-platform';
+
+// 1. Initialize the platform (all components start automatically)
+const platform = createMVPPlatform({ environment: 'simulation' });
+platform.start();
+
+// 2. Create an AI agent
+const agent = await platform.createAgent({
+  userId: 'telegram_user_123',
+  name: 'My Trend Agent',
+  strategy: 'trend',        // 'trend' | 'arbitrage' | 'ai-signal'
+  budgetTon: 1000,
+  riskLevel: 'medium',      // 'low' | 'medium' | 'high'
+});
+
+console.log('Agent created:', agent.agentId, '— state:', agent.state);
+
+// 3. Start the agent
+await platform.startAgent(agent.agentId);
+
+// 4. Execute a strategy cycle (fetches market data, runs strategy, executes trade)
+const cycle = await platform.executeAgentCycle(agent.agentId);
+console.log('Signal:', cycle.signal, '— trade executed:', cycle.tradeExecuted);
+
+// 5. Monitor portfolio performance
+const metrics = await platform.getPortfolioMetrics(agent.agentId);
+console.log('Portfolio value:', metrics.portfolioValue, 'TON');
+console.log('PnL:', metrics.pnl, 'TON (', metrics.roi.toFixed(2), '% ROI)');
+console.log('Trades:', metrics.tradeCount, '| Win rate:', metrics.winRate.toFixed(1), '%');
+
+// 6. Stop the agent
+await platform.stopAgent(agent.agentId);
+
+platform.stop();
+```
+
+### Run the Investor Demo (5-step demo flow)
+
+```typescript
+import { createMVPPlatform } from '@tonaiagent/core/mvp-platform';
+
+const platform = createMVPPlatform();
+platform.start();
+
+// Runs the full demo: creates a Momentum Agent, executes 5 strategy cycles,
+// and returns complete performance metrics
+const demo = await platform.runDemoFlow({
+  agentName: 'Momentum Agent',
+  strategy: 'trend',
+  budgetTon: 1000,
+  riskLevel: 'medium',
+  simulationCycles: 5,
+  cycleDelayMs: 500,
+});
+
+console.log('Demo result:');
+console.log('  Cycles completed:', demo.cyclesCompleted);
+console.log('  Portfolio value:', demo.finalPortfolioValueTon.toFixed(2), 'TON');
+console.log('  Total PnL:', demo.totalPnlTon.toFixed(4), 'TON');
+console.log('  Trades executed:', demo.tradesExecuted);
+console.log('  Win rate:', demo.winRate.toFixed(1), '%');
+console.log('  Duration:', demo.durationMs, 'ms');
+console.log('  Success:', demo.success);
+
+platform.stop();
+```
+
+### Agent Control API
+
+Use the REST-compatible control API to manage agents from any interface (Telegram Mini App, web, CLI):
+
+```typescript
+const platform = createMVPPlatform();
+platform.start();
+
+// GET /api/agents — list all agents
+const list = await platform.handleControlRequest('GET', '/api/agents');
+
+// POST /api/agents/:id/start — start an agent
+await platform.handleControlRequest('POST', `/api/agents/${agentId}/start`);
+
+// POST /api/agents/:id/stop — stop an agent
+await platform.handleControlRequest('POST', `/api/agents/${agentId}/stop`);
+
+// POST /api/agents/:id/restart — restart an agent
+await platform.handleControlRequest('POST', `/api/agents/${agentId}/restart`);
+
+// GET /api/agents/:id — get agent status
+const status = await platform.handleControlRequest('GET', `/api/agents/${agentId}`);
+```
+
+### Health Check
+
+```typescript
+const health = platform.getHealth();
+console.log('Platform status:', health.status);
+// {
+//   status: 'healthy',
+//   components: {
+//     agentRuntime: true,
+//     strategyEngine: true,
+//     marketData: true,
+//     tradingEngine: true,
+//     portfolioAnalytics: true,
+//     agentControl: true,
+//     demoAgent: true,
+//   },
+//   activeAgents: 3,
+//   totalTradesExecuted: 42,
+//   uptime: 300,
+// }
+```
+
+---
 
 ### MVP Architecture Documents
 
