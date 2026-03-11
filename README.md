@@ -3712,6 +3712,258 @@ This proves the platform can **protect investor capital automatically**.
 
 ---
 
+## Developer SDK
+
+The Agent Developer SDK (Issue #158) provides a complete, standardized framework for building, testing, and deploying autonomous trading agents on the TON AI Agent platform.
+
+### Architecture
+
+```
+Developer → Agent SDK → Agent Runtime API → Production Agent Runtime → Trading Infrastructure
+```
+
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **Agent Development Framework** | Standardized agent structure: strategy, risk_rules, execution_logic, configuration, event_handlers |
+| **Runtime Integration API** | `getMarketData()`, `placeOrder()`, `getPortfolio()`, `allocateCapital()`, `getRiskMetrics()` |
+| **Strategy Development Toolkit** | Templates, example algorithms, risk configuration helpers, execution utilities |
+| **Backtesting Compatibility Layer** | `simulate()`, `analyze()`, `validate()` agents against historical data |
+
+### Creating an Agent
+
+Every agent follows a standardized five-pillar structure:
+
+```typescript
+import {
+  createAgentFramework,
+  createStrategyToolkit,
+  ExampleAlgorithms,
+  type AgentDefinition,
+} from '@tonaiagent/core/sdk';
+
+const framework = createAgentFramework();
+const toolkit = createStrategyToolkit();
+
+const agent: AgentDefinition = framework.defineAgent({
+  id: 'my-dca-agent',
+  name: 'Daily DCA Bot',
+  version: '1.0.0',
+  author: { name: 'Your Name' },
+
+  // 1. Strategy — what the agent does
+  strategy: {
+    type: 'dca',
+    parameters: { asset: 'TON', amountPerExecution: 100 },
+    intervalMs: 24 * 60 * 60 * 1000, // daily
+  },
+
+  // 2. Risk rules — safety guardrails
+  risk_rules: toolkit.buildRiskRules()
+    .conservative()
+    .withStopLoss(5)
+    .withMaxDailyLoss(200)
+    .build(),
+
+  // 3. Execution logic — the actual trading function
+  execution_logic: ExampleAlgorithms.dca('TON', 100),
+
+  // 4. Configuration — environment and runtime settings
+  configuration: {
+    environment: 'sandbox',
+    simulationMode: true,
+    initialCapital: 10000,
+  },
+
+  // 5. Event handlers — lifecycle and monitoring
+  event_handlers: {
+    onStart: () => console.log('Agent started'),
+    onStop: () => console.log('Agent stopped'),
+    onError: (err) => console.error('Error:', err),
+  },
+});
+```
+
+### Strategy Integration
+
+The Runtime Integration API gives your execution logic access to live market data and trading operations:
+
+```typescript
+import { createRuntimeAPI } from '@tonaiagent/core/sdk';
+
+// Simulation mode (safe for development)
+const api = createRuntimeAPI({ simulationMode: true, initialSimulationBalance: 10000 });
+
+// In your execution_logic:
+const agent = framework.defineAgent({
+  // ...
+  execution_logic: async (context) => {
+    // Get real-time market data
+    const ton = await context.getMarketData('TON');
+    console.log('TON price:', ton.current, 'RSI:', ton.rsi14);
+
+    // Get current portfolio
+    const portfolio = await context.getPortfolio();
+    console.log('Available balance:', portfolio.availableBalance);
+
+    // Place orders based on strategy signals
+    if (ton.rsi14 && ton.rsi14 < 30) {
+      await context.placeOrder({
+        asset: 'TON',
+        side: 'buy',
+        amount: 100,
+        type: 'market',
+      });
+    }
+
+    // Check risk metrics
+    const risk = await context.getRiskMetrics();
+    if (risk.circuitBreakerActive) {
+      console.warn('Circuit breaker active — halting execution');
+    }
+  },
+  // ...
+});
+```
+
+### Runtime API Reference
+
+| Function | Description |
+|----------|-------------|
+| `getMarketData(asset)` | Current price, RSI, moving averages, volume, bid/ask |
+| `placeOrder(order)` | Execute buy/sell orders with slippage control |
+| `getPortfolio()` | Balances, positions, realized/unrealized PnL |
+| `allocateCapital(allocation)` | Smart capital distribution (fixed or percent mode) |
+| `getRiskMetrics()` | Drawdown, VaR, Sharpe ratio, circuit breaker status |
+
+### Strategy Templates
+
+Pre-built templates accelerate development:
+
+```typescript
+import { createStrategyToolkit, ExampleAlgorithms } from '@tonaiagent/core/sdk';
+
+const toolkit = createStrategyToolkit();
+
+// List available templates
+const templates = toolkit.listTemplates();
+// [dca-basic, momentum-rsi, ma-crossover, yield-optimizer]
+
+// Create agent from template
+const agent = toolkit.fromTemplate('momentum-rsi', {
+  id: 'my-momentum',
+  name: 'RSI Momentum Bot',
+  version: '1.0.0',
+  execution_logic: ExampleAlgorithms.momentum('TON', 30, 70, 10),
+  event_handlers: {},
+});
+```
+
+**Available Templates:**
+
+| Template ID | Strategy | Complexity |
+|-------------|----------|------------|
+| `dca-basic` | Dollar-Cost Averaging | Beginner |
+| `momentum-rsi` | RSI Momentum (buy oversold, sell overbought) | Intermediate |
+| `ma-crossover` | Moving Average Crossover (trend following) | Intermediate |
+| `yield-optimizer` | Yield farming with weekly rebalancing | Advanced |
+
+### Execution Utilities
+
+Technical analysis functions for strategy logic:
+
+```typescript
+const toolkit = createStrategyToolkit();
+
+// Technical indicators
+const prices = [2.5, 2.6, 2.4, 2.7, 2.8, 2.65];
+const sma20 = toolkit.utils.simpleMovingAverage(prices, 20);
+const ema12 = toolkit.utils.exponentialMovingAverage(prices, 12);
+const rsi = toolkit.utils.rsi(prices, 14);
+const bands = toolkit.utils.bollingerBands(prices, 20, 2);
+const macd = toolkit.utils.macd(prices, 12, 26, 9);
+
+// Position sizing (risk-based)
+const units = toolkit.utils.positionSize({
+  portfolioValue: 10000,
+  riskPercent: 2,     // risk 2% of portfolio
+  entryPrice: 2.50,
+  stopLossPrice: 2.25,
+});
+// units = 80 (risk $200 / $0.25 per unit)
+
+// Signal detection
+const isBullish = toolkit.utils.isCrossover(fastMAs, slowMAs);
+const isBearish = toolkit.utils.isCrossunder(fastMAs, slowMAs);
+```
+
+### Backtesting
+
+Test your agent against historical data before deploying:
+
+```typescript
+import { createBacktestingCompat } from '@tonaiagent/core/sdk';
+
+const backtester = createBacktestingCompat();
+
+// Run backtest
+const result = await backtester.simulate(agent, {
+  startDate: new Date('2024-01-01'),
+  endDate: new Date('2024-03-31'),
+  initialBalance: 10000,
+  assets: ['TON'],
+  stepMs: 24 * 60 * 60 * 1000,   // daily steps
+  tradingFeePercent: 0.1,          // 0.1% fee
+});
+
+// Analyze results
+console.log(backtester.analyze(result));
+// Backtest Analysis: my-dca-agent
+// ────────────────────────────────────────
+// Period: Mon Jan 01 2024 → Sun Mar 31 2024
+// Final Value: 10850.00 (+8.50%)
+// Sharpe Ratio: 1.42
+// Max Drawdown: 6.30%
+// Win Rate: 62.5%
+
+// Validate before deploying to production
+const validation = backtester.validate(result, {
+  minSharpeRatio: 1.0,
+  maxDrawdownPercent: 15,
+  minWinRate: 0.45,
+});
+
+if (validation.passed) {
+  console.log('Ready for production deployment!');
+  const deployment = await framework.deploy(agent, { mode: 'production' });
+}
+```
+
+### Marketplace Publishing
+
+Deploy your agent to the Strategy Marketplace:
+
+```typescript
+// 1. Define and validate your agent
+const validation = framework.validate(agent);
+if (!validation.valid) throw new Error(validation.errors.map(e => e.message).join(', '));
+
+// 2. Run and pass backtesting validation
+const result = await backtester.simulate(agent, { ... });
+const btValidation = backtester.validate(result, { minSharpeRatio: 1.0, maxDrawdownPercent: 20 });
+
+// 3. Deploy to sandbox for live testing
+const sandboxDeploy = await framework.deploy(agent, { mode: 'sandbox' });
+
+// 4. Promote to production and publish to marketplace
+const prodDeploy = await framework.deploy(agent, { mode: 'production' });
+// Now visible in Strategy Marketplace for copy trading
+```
+
+---
+
+
 ## License
 
 TON AI Agent is open source software licensed under the [MIT License](LICENSE).
