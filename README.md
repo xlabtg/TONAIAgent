@@ -40,15 +40,16 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
 22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
 23. [Production Agent Runtime](#production-agent-runtime)
-24. [Strategy Marketplace](#strategy-marketplace)
-25. [Strategy Reputation System](#strategy-reputation-system)
-26. [Live Trading Infrastructure](#live-trading-infrastructure)
-27. [AI Fund Manager](#ai-fund-manager)
-28. [Investor Demo](#investor-demo)
-29. [Strategy Backtesting](#strategy-backtesting)
-30. [Community](#community)
-31. [Risk Engine](#risk-engine)
-32. [License](#license)
+24. [Agent Plugin System](#agent-plugin-system)
+25. [Strategy Marketplace](#strategy-marketplace)
+26. [Strategy Reputation System](#strategy-reputation-system)
+27. [Live Trading Infrastructure](#live-trading-infrastructure)
+28. [AI Fund Manager](#ai-fund-manager)
+29. [Investor Demo](#investor-demo)
+30. [Strategy Backtesting](#strategy-backtesting)
+31. [Community](#community)
+32. [Risk Engine](#risk-engine)
+33. [License](#license)
 
 ---
 
@@ -502,7 +503,7 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 | **Mobile UX** | ❌ Phase 2 | Telegram-native mobile-first experience | [docs/mobile-ux.md](docs/mobile-ux.md) |
 | **Omnichain** | ❌ Phase 3 | Cross-chain operations via ChangeNOW integration | [docs/omnichain.md](docs/omnichain.md) |
 | **Protocol** | ❌ Phase 3 | Open Agent Protocol (OAP) specification | [docs/protocol.md](docs/protocol.md) |
-| **Plugins** | ❌ Phase 3 | Extensible tool and integration system | [docs/plugins.md](docs/plugins.md) |
+| **Plugins** | ✅ Phase 3 | Extensible tool and integration system, sandboxed execution, permission model, marketplace framework | [Agent Plugin System](#agent-plugin-system) |
 | **Data Platform** | ❌ Phase 3 | Market data, signals, oracles, analytics | [docs/data-platform.md](docs/data-platform.md) |
 | **Launchpad** | ❌ Phase 3 | Agent creation, funding, treasury management | [docs/launchpad.md](docs/launchpad.md) |
 | **AI Safety** | ❌ Phase 3 | Alignment, guardrails, anomaly detection | [docs/ai-safety.md](docs/ai-safety.md) |
@@ -1993,7 +1994,7 @@ See [docs/mvp-checklist.md](docs/mvp-checklist.md) for the full checklist and ac
 - [ ] Omnichain / Multi-chain support
 - [ ] Protocol layer (Open Agent Protocol)
 - [x] GAAMP v1 — Global Autonomous Asset Management Protocol (6-layer stack)
-- [ ] Plugin marketplace
+- [x] Agent Plugin System (Issue #161) — Plugin Architecture, Runtime Integration, Manifest Standard, Sandbox Execution, Permission Model, Marketplace Framework
 - [ ] Launchpad
 - [ ] Super App layer
 - [ ] Regulatory compliance engine
@@ -2637,6 +2638,243 @@ runtime.registerAgent(savedConfig);
 ```
 
 **Full PAR Documentation**: [src/agent-runtime](src/agent-runtime)
+
+---
+
+## Agent Plugin System
+
+> **Extend any AI agent with modular, sandboxed capabilities — without touching the core platform.**
+
+The Agent Plugin System is the extensibility layer of the TONAIAgent platform. It allows developers to add new tools, data sources, DeFi integrations, and analytics capabilities to any AI agent by installing plugins — all with fine-grained permission control, sandboxed execution, and full observability.
+
+### Why a Plugin System?
+
+As the platform grows, the number of possible integrations, strategies, and tools expands combinatorially. Rather than hardcoding every capability, the plugin system:
+
+- **Decouples** capabilities from the core platform — plugins can be installed, updated, and removed independently
+- **Enables community extensions** — any developer can build a plugin following the standard manifest format
+- **Enforces safety** — sandboxed execution, permission model, and rate limiting prevent malicious or runaway plugins
+- **Powers the AI** — plugins expose tools in a standard function-calling format, so AI agents discover and use them automatically
+
+### Plugin Architecture
+
+```
+AI Agent (PluginManager)
+        ↓
+Plugin Registry (install/activate/discover)
+        ↓
+Plugin Runtime (sandboxed execution, permissions, rate limiting)
+        ↓
+Plugin Tool Executor (AI function-calling bridge)
+        ↓
+Core Plugins: TON Wallet | Jettons | NFTs
+```
+
+### Plugin Manifest Standard
+
+Every plugin is described by a `PluginManifest`:
+
+```typescript
+import { PluginManifest } from '@tonaiagent/core/plugins';
+
+const myPlugin: PluginManifest = {
+  id: 'my-analytics-plugin',
+  name: 'My Analytics Plugin',
+  version: '1.0.0',
+  description: 'Provides on-chain analytics tools for AI agents',
+  author: { name: 'Developer', email: 'dev@example.com' },
+  category: 'analytics',
+  trustLevel: 'community',
+  keywords: ['analytics', 'on-chain', 'metrics'],
+  license: 'MIT',
+  permissions: [
+    {
+      scope: 'ton:read',
+      reason: 'Read on-chain data for analytics',
+      required: true,
+    },
+  ],
+  capabilities: {
+    tools: [
+      {
+        name: 'get_wallet_analytics',
+        description: 'Returns analytics summary for a TON wallet address',
+        category: 'analytics',
+        parameters: {
+          type: 'object',
+          properties: {
+            address: { type: 'string', description: 'TON wallet address' },
+            days: { type: 'number', description: 'Analysis window in days', default: 30 },
+          },
+          required: ['address'],
+        },
+        requiredPermissions: ['ton:read'],
+      },
+    ],
+  },
+};
+```
+
+### Plugin Runtime Integration
+
+The `PluginRuntime` provides sandboxed execution with:
+
+| Feature | Description |
+|---------|-------------|
+| **Permission enforcement** | Each tool declares required permissions; denied scopes throw `PERMISSION_DENIED` |
+| **Rate limiting** | Per-plugin sliding-window rate limiting (default: 100 req/min) |
+| **Resource limits** | Max memory (128MB), CPU time (5s), execution time (30s), network requests (10) |
+| **Audit trail** | Every execution records `execution_started`, `execution_completed`, or `execution_failed` entries |
+| **Sandboxed context** | Plugins receive isolated `logger`, `storage`, `http`, and `ton` interfaces — no access to global state |
+| **Dry run mode** | Execute any tool in simulation mode without side effects |
+
+### Permission Model
+
+22 fine-grained permission scopes across 6 categories:
+
+| Category | Scopes |
+|----------|--------|
+| **TON Blockchain** | `ton:read`, `ton:write`, `ton:sign` |
+| **Wallet** | `wallet:read`, `wallet:transfer` |
+| **Jettons/DeFi** | `jettons:read`, `jettons:transfer`, `jettons:swap`, `defi:stake`, `defi:farm`, `defi:liquidity` |
+| **NFTs** | `nft:read`, `nft:transfer`, `nft:mint` |
+| **Platform** | `network:outbound`, `storage:read`, `storage:write`, `secrets:read`, `memory:read`, `memory:write`, `agent:communicate` |
+| **Admin** | `admin:manage` |
+
+Permission constraints allow fine-grained control:
+
+```typescript
+{
+  scope: 'wallet:transfer',
+  reason: 'Execute DCA orders',
+  required: true,
+  constraints: {
+    maxTransactionValue: 10,  // Max 10 TON per transaction
+    dailyLimit: 100,          // Max 100 TON per day
+    allowedTokens: ['EQ...'], // Only specific tokens
+  },
+}
+```
+
+### Core Built-in Plugins
+
+Three production-ready plugins are pre-installed with `trustLevel: 'core'`:
+
+#### TON Wallet Plugin (`ton-wallet`)
+7 tools: `ton_get_balance`, `ton_transfer`, `ton_batch_transfer`, `ton_get_account_info`, `ton_get_transactions`, `ton_simulate_transaction`, `ton_validate_address`
+
+#### TON Jettons Plugin (`ton-jettons`)
+9 tools: `jetton_get_info`, `jetton_get_balance`, `jetton_transfer`, `jetton_swap`, `jetton_get_swap_quote`, `jetton_stake`, `jetton_unstake`, `jetton_get_staking_info`, `jetton_get_portfolio`
+
+#### TON NFT Plugin (`ton-nft`)
+8 tools: `nft_get_info`, `nft_get_collection`, `nft_get_owned`, `nft_transfer`, `nft_list_for_sale`, `nft_cancel_listing`, `nft_buy`, `nft_search_listings`
+
+### Quick Start
+
+```typescript
+import { createPluginManager } from '@tonaiagent/core/plugins';
+
+// 1. Create manager (auto-installs core TON plugins)
+const manager = createPluginManager();
+await manager.initialize();
+
+// 2. Get AI tool definitions (for function calling)
+const tools = manager.getAIToolDefinitions();
+// → array of { type: 'function', function: { name, description, parameters } }
+
+// 3. Execute a tool
+const result = await manager.executeTool(
+  'ton_get_balance',
+  { address: 'EQBvW8Z5huBkMJYdnfAEM5JqTNkuWX3diqYENkWsIL0XggGG' },
+  { userId: 'u1', agentId: 'a1', sessionId: 's1', requestId: 'r1' }
+);
+// → { success: true, result: { balance: '1.5', formatted: '1.5 TON', ... } }
+
+// 4. Health and metrics
+const health = manager.getHealthSummary();
+// → { total: 3, active: 3, healthy: 3, degraded: 0, unhealthy: 0, ... }
+```
+
+### Installing a Custom Plugin
+
+```typescript
+import { createPluginManager, type ToolHandler } from '@tonaiagent/core/plugins';
+
+const manager = createPluginManager({ autoInstallCore: false });
+await manager.initialize();
+
+// Install custom plugin with handlers
+const handler: ToolHandler = async (params, context) => {
+  context.logger.info('Executing analytics', { address: params.address });
+  // ... fetch and return data
+  return { score: 95, transactions: 142, volume: '50000 TON' };
+};
+
+await manager.installPlugin(
+  myPlugin,  // PluginManifest from above
+  { get_wallet_analytics: handler },
+  { activateImmediately: true }
+);
+
+// Tool is now available to AI
+console.log(manager.isToolAvailable('get_wallet_analytics')); // true
+```
+
+### Plugin Marketplace Framework
+
+The plugin system includes a `PluginRegistry` with built-in marketplace primitives:
+
+| Feature | API |
+|---------|-----|
+| **Discovery** | `registry.search({ category, keyword, trustLevel, hasTool })` |
+| **Lifecycle** | `install()`, `activate()`, `deactivate()`, `uninstall()`, `update()` |
+| **Versioning** | Semver validation, auto-rollback on failed updates |
+| **Trust levels** | `core`, `verified`, `community`, `experimental` |
+| **Categories** | `ton-native`, `defi`, `trading`, `analytics`, `external`, `utility`, `security`, `communication`, `storage`, `custom` |
+| **Events** | `plugin:installed`, `plugin:activated`, `plugin:deactivated`, `plugin:updated`, `plugin:uninstalled`, `plugin:error` |
+| **Metrics** | Per-plugin execution counts, success rates, avg latency, per-tool breakdowns |
+| **Health monitoring** | Automatic periodic health checks with `healthy`/`degraded`/`unhealthy` status |
+
+### AI Integration
+
+The `PluginToolExecutor` bridges the plugin system with the AI layer:
+
+```typescript
+// Get all tools formatted for AI function calling (OpenAI/Anthropic compatible)
+const tools = manager.getAIToolDefinitions();
+
+// Execute tool calls returned by the AI
+const results = await manager.executeToolCallsParallel([
+  { toolCallId: 'call_1', toolName: 'ton_get_balance', args: { address: 'EQ...' } },
+  { toolCallId: 'call_2', toolName: 'jetton_get_portfolio', args: { walletAddress: 'EQ...' } },
+], context);
+
+// Format results as AI messages (role: 'tool')
+const messages = executor.formatToolResultsAsMessages(results);
+
+// Build system message listing available tools
+const systemMsg = manager.buildToolsSystemMessage();
+```
+
+### Tests
+
+All **59 plugin system tests** pass across 6 test suites:
+
+| Suite | Tests | Coverage |
+|-------|-------|----------|
+| `PluginRegistry` | 22 | Installation, activation, discovery, tool management, config, metrics, events |
+| `PluginRuntime` | 9 | Handler registration, execution, permission enforcement, audit trail |
+| `PluginToolExecutor` | 12 | AI tool conversion, execution, parallel calls, confirmation flow |
+| `Core Plugins` | 6 | Manifest validation, handler coverage, tool enumeration |
+| `PluginManager` | 7 | Initialization, tool execution, health/metrics, graceful shutdown |
+| `Integration` | 3 | End-to-end execution, concurrent calls, event emission |
+
+```bash
+npx vitest run tests/plugins/
+# → 59 tests passed
+```
+
+**Full Plugin Documentation**: [src/plugins](src/plugins) | **Demo**: [examples/plugins-demo.ts](examples/plugins-demo.ts)
 
 ---
 
