@@ -113,7 +113,7 @@ export class DefaultCrossChainTradeExecutor implements CrossChainTradeExecutor {
       let totalGas = 0;
 
       for (const leg of route.legs) {
-        if (execution.status === 'cancelled') break;
+        if ((execution.status as TradeStatus) === 'cancelled') break;
 
         const isBridgeLeg = leg.fromChainId !== leg.toChainId;
         execution.status = isBridgeLeg ? 'bridging' : 'executing';
