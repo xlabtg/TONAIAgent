@@ -790,6 +790,17 @@ export interface MarketplaceConfig {
   monetization: MonetizationConfig;
   riskTransparency: RiskTransparencyConfig;
   social: SocialConfig;
+  ranking?: RankingConfig;
+}
+
+export interface RankingConfig {
+  updateFrequencyMinutes: number;
+  performanceWeight: number; // 0-1, weight for performance score
+  riskWeight: number; // 0-1, weight for risk adjustment
+  stabilityWeight: number; // 0-1, weight for stability
+  reputationWeight: number; // 0-1, weight for reputation
+  minHistoryDaysForTrusted: number;
+  minInvestorsForElite: number;
 }
 
 export interface DiscoveryConfig {
@@ -873,6 +884,177 @@ export type MarketplaceEventType =
   | 'score_updated'
   | 'fraud_detected'
   | 'payout_processed'
-  | 'leaderboard_updated';
+  | 'leaderboard_updated'
+  | 'ranking_updated'
+  | 'feedback_submitted'
+  | 'performance_snapshot_recorded';
 
 export type MarketplaceEventCallback = (event: MarketplaceEvent) => void;
+
+// ============================================================================
+// Strategy Ranking Types
+// ============================================================================
+
+export interface StrategyRankingScore {
+  strategyId: string;
+  overallScore: number; // 0-100 composite
+  performanceScore: number; // ROI, Sharpe, win rate
+  riskAdjustmentScore: number; // Penalized for high drawdown, volatility
+  stabilityScore: number; // Consistency and longevity
+  reputationScore: number; // User ratings, active investors, strategy age
+  badges: StrategyBadge[];
+  tier: StrategyRankingTier;
+  rank?: number; // Position in the ranked list
+  previousRank?: number;
+  calculatedAt: Date;
+}
+
+export type StrategyRankingTier =
+  | 'emerging'
+  | 'established'
+  | 'trusted'
+  | 'elite';
+
+export type StrategyBadge =
+  | 'top_performer'
+  | 'low_risk'
+  | 'verified'
+  | 'trending'
+  | 'most_trusted'
+  | 'most_consistent'
+  | 'high_aum';
+
+export interface StrategyRankingCategory {
+  id: string;
+  name: string;
+  description: string;
+  sortField: StrategyRankingSortField;
+  entries: StrategyRankingEntry[];
+  generatedAt: Date;
+}
+
+export type StrategyRankingSortField =
+  | 'overall_score'
+  | 'performance_score'
+  | 'risk_adjusted'
+  | 'reputation_score'
+  | 'stability_score'
+  | 'trending';
+
+export interface StrategyRankingEntry {
+  rank: number;
+  previousRank?: number;
+  strategyId: string;
+  strategyName: string;
+  creatorId: string;
+  score: StrategyRankingScore;
+  highlights: StrategyRankingHighlights;
+}
+
+export interface StrategyRankingHighlights {
+  roi30d: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
+  winRate: number;
+  activeInvestors: number;
+  totalAUM: number;
+  avgRating: number;
+  strategyAgeDays: number;
+}
+
+export interface RankingLeaderboard {
+  id: string;
+  category: 'top_performing' | 'lowest_risk' | 'trending' | 'most_trusted';
+  entries: StrategyRankingEntry[];
+  period: AnalyticsPeriod;
+  generatedAt: Date;
+  nextUpdate: Date;
+}
+
+// ============================================================================
+// User Feedback Types
+// ============================================================================
+
+export interface UserFeedback {
+  id: string;
+  strategyId: string;
+  userId: string;
+  rating: number; // 1-5 stars
+  title: string;
+  content: string;
+  capitalAllocated?: number; // User's allocation when reviewing
+  holdingDays?: number; // How long they used the strategy
+  verified: boolean; // User actually deployed/used the strategy
+  helpfulVotes: number;
+  unhelpfulVotes: number;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface FeedbackSummary {
+  strategyId: string;
+  totalReviews: number;
+  averageRating: number;
+  ratingDistribution: Record<1 | 2 | 3 | 4 | 5, number>;
+  verifiedReviewCount: number;
+  recentTrend: 'improving' | 'stable' | 'declining';
+  updatedAt: Date;
+}
+
+export interface FeedbackVote {
+  feedbackId: string;
+  userId: string;
+  helpful: boolean;
+  createdAt: Date;
+}
+
+// ============================================================================
+// Performance History Types
+// ============================================================================
+
+export interface StrategyPerformanceHistory {
+  strategyId: string;
+  monthlyReturns: MonthlyReturnRecord[];
+  volatilityHistory: VolatilityRecord[];
+  drawdownHistory: DrawdownRecord[];
+  consistencyMetrics: PerformanceConsistencyMetrics;
+  updatedAt: Date;
+}
+
+export interface MonthlyReturnRecord {
+  year: number;
+  month: number; // 1-12
+  returnPercent: number;
+  benchmarkReturn?: number;
+  volatility: number;
+  tradingDays: number;
+}
+
+export interface VolatilityRecord {
+  timestamp: Date;
+  daily: number;
+  weekly: number;
+  monthly: number;
+  annualized: number;
+}
+
+export interface DrawdownRecord {
+  startDate: Date;
+  endDate?: Date;
+  peakValue: number;
+  troughValue: number;
+  drawdownPercent: number;
+  recoveredAt?: Date;
+  durationDays?: number;
+}
+
+export interface PerformanceConsistencyMetrics {
+  positiveMonthsPercent: number; // % of months with positive returns
+  avgMonthlyReturn: number;
+  returnStdDev: number; // Standard deviation of monthly returns
+  longestWinStreak: number; // In months
+  longestLossStreak: number;
+  calmarRatio: number; // Annualized return / max drawdown
+  informationRatio?: number;
+  trustScore: number; // 0-100 based on history length and stability
+}
