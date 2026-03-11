@@ -703,14 +703,18 @@ export class DefaultTelegramViralEngine implements TelegramViralEngine {
   async listActiveChallenges(): Promise<AgentChallenge[]> {
     const now = new Date();
     return Array.from(this.challenges.values()).filter(c => {
-      if (c.status === 'active') return true;
+      // Check if an active challenge has expired
+      if (c.status === 'active') {
+        if (c.endDate < now) {
+          c.status = 'completed';
+          return false;
+        }
+        return true;
+      }
+      // Check if an upcoming challenge should now be active
       if (c.status === 'upcoming' && c.startDate <= now) {
         c.status = 'active';
         return true;
-      }
-      if (c.status === 'active' && c.endDate < now) {
-        c.status = 'completed';
-        return false;
       }
       return false;
     });

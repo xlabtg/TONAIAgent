@@ -946,6 +946,21 @@ export interface GrowthConfig {
   analytics: GrowthAnalyticsConfig;
   antiAbuse: AntiAbuseConfig;
   telegram: TelegramConfig;
+  telegramViral?: TelegramViralConfig;
+}
+
+/**
+ * TelegramViralConfig - Configuration for Telegram viral features.
+ * Re-exported here for consistency with other config types.
+ */
+export interface TelegramViralConfig {
+  botUsername: string;
+  baseDeepLink: string;
+  shortLinkDomain: string;
+  cardExpirationHours: number;
+  groupUpdateFrequency: 'realtime' | 'hourly' | 'daily';
+  challengesEnabled: boolean;
+  maxGroupsPerUser: number;
 }
 
 export interface ReferralConfig {

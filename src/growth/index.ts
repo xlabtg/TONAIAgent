@@ -263,7 +263,7 @@ export class DefaultGrowthEngine implements GrowthEngine {
     this.antiAbuse = createAntiAbuseSystem(config.antiAbuse);
 
     // Initialize Telegram viral engine
-    this.telegramViral = createTelegramViralEngine(config.telegram);
+    this.telegramViral = createTelegramViralEngine(config.telegramViral);
 
     // Wire up event forwarding
     this.setupEventForwarding();
