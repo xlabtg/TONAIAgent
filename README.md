@@ -5076,6 +5076,167 @@ The risk engine can be demonstrated by:
 
 This proves the platform can **protect investor capital automatically**.
 
+### Risk Management Engine v2 (Issue #203)
+
+Building on the Risk Engine v1 foundation, the Risk Management Engine introduces a **centralized risk control system** that acts as a protective layer between strategies and the trading system.
+
+#### Architecture
+
+```
+Market Data
+     ↓
+Strategy Engine
+     ↓
+Risk Engine (Trade Validator, Stop-Loss, Portfolio Protection)
+     ↓
+Trading Engine
+     ↓
+Portfolio Update
+```
+
+Before any trade is executed, the **Risk Engine must approve it**.
+
+#### Additional Components (v2)
+
+| Component | Description |
+|-----------|-------------|
+| **Trade Validator** | Validates trades before execution with position size, exposure, and drawdown checks |
+| **Stop-Loss Manager** | Automatic stop-loss protection with fixed and trailing modes |
+| **Portfolio Protection** | Coordinated protection system with agent pause/suspend controls |
+| **Risk Metrics API** | Real-time metrics for dashboards and Telegram Mini App |
+
+#### Risk Controls
+
+| Control | Default | Description |
+|---------|---------|-------------|
+| **Position Size Limit** | 5% | Maximum position per trade as % of portfolio |
+| **Asset Exposure Limit** | 20% | Maximum exposure to single asset |
+| **Stop-Loss Protection** | 5% | Automatic stop-loss at configurable level |
+| **Max Drawdown** | 15% | Pause agent when exceeded |
+| **Daily Loss Limit** | 3% | Disable trading until next day |
+
+#### Trade Validation Example
+
+```typescript
+import { createRiskEngine } from '@tonaiagent/core/risk-engine';
+
+const engine = createRiskEngine({
+  tradeValidator: {
+    maxPositionSizePercent: 5,
+    maxAssetExposurePercent: 20,
+    stopLossPercent: 5,
+    maxDrawdownPercent: 15,
+    dailyLossLimitPercent: 3,
+  },
+});
+
+// Validate a trade before execution
+const result = engine.tradeValidator.validate({
+  requestId: 'trade_001',
+  agentId: 'agent_001',
+  asset: 'TON',
+  action: 'BUY',
+  amount: 100,
+  valueUsd: 500,
+  currentPrice: 5.0,
+  portfolioValueUsd: 10000,
+  currentPosition: 0,
+  currentDrawdownPercent: 0.05,
+});
+
+if (result.approved) {
+  console.log('Trade approved');
+} else {
+  console.log('Trade blocked:', result.rejectionReason);
+  console.log('Suggestion:', result.suggestedModifications);
+}
+```
+
+#### Stop-Loss Protection Example
+
+```typescript
+// Register a position for stop-loss monitoring
+const position = engine.stopLossManager.registerPosition({
+  positionId: 'pos_001',
+  agentId: 'agent_001',
+  asset: 'TON',
+  entryPrice: 5.0,
+  amount: 100,
+  side: 'long',
+  stopLossConfig: {
+    type: 'trailing', // or 'fixed'
+    percentageFromEntry: 5,
+    trailingActivationPercent: 2,
+  },
+  openedAt: new Date(),
+});
+
+console.log('Stop-loss price:', position.stopLossPrice);
+// Stop-loss price: 4.75
+
+// Check position against current price
+const check = engine.stopLossManager.checkPosition('pos_001', 4.70);
+
+if (check.triggered) {
+  console.log('Stop-loss triggered!');
+  console.log('Exit signal:', check.exitSignal);
+}
+```
+
+#### Portfolio Protection Example
+
+```typescript
+// Register agent for protection
+engine.portfolioProtection.registerAgent('agent_001', 10000, ['strategy_001']);
+
+// Update portfolio value (checks drawdown and daily loss limits)
+const agent = engine.portfolioProtection.updateAgent('agent_001', 9500);
+
+console.log('Status:', agent.status);
+console.log('Drawdown:', agent.currentDrawdownPercent + '%');
+console.log('Risk score:', agent.riskScore);
+
+// Get protection metrics
+const metrics = engine.portfolioProtection.getMetrics();
+console.log('Active agents:', metrics.activeAgents);
+console.log('Paused agents:', metrics.pausedAgents);
+```
+
+#### Risk Scoring for Marketplace
+
+Strategies displayed in the marketplace include a risk score:
+
+```typescript
+// Calculate marketplace risk rating
+const rating = engine.metricsAPI.calculateMarketplaceRating('strategy_001', profile);
+
+console.log('Risk label:', rating.label);
+// Risk label: Medium Risk
+
+console.log('Risk factors:', rating.factors.map(f => `${f.name}: ${f.value}`));
+// Risk factors: ['Volatility: 25', 'Max Drawdown: 15', 'Leverage: 22', 'Concentration: 40']
+```
+
+#### Telegram Mini App Integration
+
+The Risk Dashboard component provides users with a mobile-friendly risk overview:
+
+- **Portfolio Risk Level**: Low / Medium / High / Critical
+- **Current Drawdown**: Percentage from peak
+- **Open Exposure**: Total portfolio allocation
+- **Active Risk Controls**: Stop-loss, limits, auto-pause status
+- **Quick Actions**: Configure limits, pause trading, view positions
+
+#### Simulation Integration
+
+Risk rules work consistently across all environments:
+
+| Environment | Description |
+|-------------|-------------|
+| **Backtesting** | Historical simulation with risk constraints |
+| **Simulation Trading** | Real-time simulation with risk enforcement |
+| **Live Trading** | Production execution with full protection |
+
 ---
 
 ## Developer SDK
