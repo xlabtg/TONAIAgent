@@ -178,6 +178,22 @@ export {
   type RefundResult,
 } from './monetization';
 
+// Export Telegram SuperApp Manager
+export {
+  DefaultTelegramSuperAppManager,
+  createTelegramSuperAppManager,
+  type TelegramSuperAppManager,
+  type TelegramSuperAppConfig,
+  type OnboardUserInput,
+  type CreateFundInput,
+  type UpdateFundInput,
+  type LinkWalletInput,
+  type StartFundInput,
+  type PauseFundInput,
+  type AdjustAllocationInput,
+  type GetStrategiesInput,
+} from './telegram-superapp';
+
 // ============================================================================
 // Super App Service - Unified Entry Point
 // ============================================================================
