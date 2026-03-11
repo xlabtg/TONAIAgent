@@ -34,25 +34,26 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 15. [Portfolio Dashboard (Mini App)](#portfolio-dashboard-mini-app)
 16. [Admin Dashboard](#admin-dashboard)
 17. [Security Best Practices](#security-best-practices)
-18. [Contributing](#contributing)
-19. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-20. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
-21. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
-22. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
-23. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
-24. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
-25. [Production Agent Runtime](#production-agent-runtime)
-26. [Agent Control API](#agent-control-api)
-27. [Agent Plugin System](#agent-plugin-system)
-28. [Strategy Marketplace](#strategy-marketplace)
-29. [Strategy Reputation System](#strategy-reputation-system)
-30. [Live Trading Infrastructure](#live-trading-infrastructure)
-31. [AI Fund Manager](#ai-fund-manager)
-32. [Investor Demo](#investor-demo)
-33. [Strategy Backtesting](#strategy-backtesting)
-34. [Community](#community)
-35. [Risk Engine](#risk-engine)
-36. [License](#license)
+18. [Developer Contributions](#developer-contributions)
+19. [Contributing](#contributing)
+20. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
+21. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
+22. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
+23. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
+24. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
+25. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
+26. [Production Agent Runtime](#production-agent-runtime)
+27. [Agent Control API](#agent-control-api)
+28. [Agent Plugin System](#agent-plugin-system)
+29. [Strategy Marketplace](#strategy-marketplace)
+30. [Strategy Reputation System](#strategy-reputation-system)
+31. [Live Trading Infrastructure](#live-trading-infrastructure)
+32. [AI Fund Manager](#ai-fund-manager)
+33. [Investor Demo](#investor-demo)
+34. [Strategy Backtesting](#strategy-backtesting)
+35. [Community](#community)
+36. [Risk Engine](#risk-engine)
+37. [License](#license)
 
 ---
 
@@ -1928,9 +1929,101 @@ Emergency overrides (emission pause, treasury freeze, yield cap) are available f
 
 ---
 
+## Developer Contributions
+
+> **Building an Open Developer Ecosystem**: The TON AI Agent platform is evolving from a single-developer project into an open ecosystem. We provide comprehensive documentation and guidelines for contributors of all skill levels.
+
+### Developer Documentation
+
+| Document | Description |
+|----------|-------------|
+| [**CONTRIBUTING.md**](CONTRIBUTING.md) | Project philosophy, contribution process, branching strategy, PR guidelines |
+| [**Developer Setup**](docs/developer-setup.md) | Local development environment setup, running tests, project structure |
+| [**Strategy Development**](docs/strategy-development.md) | How to create custom trading strategies with the Strategy Engine |
+| [**Plugin Development**](docs/plugin-development.md) | Building plugins for data sources, tools, and integrations |
+| [**Development Guidelines**](docs/development-guidelines.md) | MVP alignment, coding standards, security requirements |
+| [**SDK Documentation**](docs/developer.md) | Enterprise SDK and API reference |
+
+### Quick Start for Developers
+
+```bash
+# Clone and setup
+git clone https://github.com/xlabtg/TONAIAgent.git
+cd TONAIAgent
+npm install
+npm test  # Verify all tests pass
+
+# Start development
+npm run dev
+```
+
+### Contribution Types
+
+| Role | Focus Area | Getting Started |
+|------|------------|-----------------|
+| **Core Developer** | Agent runtime, strategy engine, infrastructure | [Development Guidelines](docs/development-guidelines.md) |
+| **Strategy Developer** | Custom trading strategies | [Strategy Development Guide](docs/strategy-development.md) |
+| **Plugin Developer** | Data sources, tools, integrations | [Plugin Development Guide](docs/plugin-development.md) |
+| **UI Contributor** | Telegram Mini App, dashboards | [Developer Setup](docs/developer-setup.md) |
+| **Documentation Writer** | Docs, examples, tutorials | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+### Module Overview
+
+```
+src/
+├── agent-runtime/       # 9-step agent execution pipeline
+├── strategy-engine/     # Strategy framework and built-in strategies
+├── market-data/         # CoinGecko/Binance price feeds
+├── trading-engine/      # Simulated trade execution
+├── portfolio-analytics/ # PnL, ROI, equity tracking
+├── agent-control/       # REST API for agent management
+├── plugins/             # Plugin system and core plugins
+└── mvp-platform/        # Unified MVP integration layer
+```
+
+### Example: Creating a Strategy
+
+```typescript
+import { BaseStrategy } from '@tonaiagent/core/strategy-engine';
+import type { MarketData, StrategyMetadata, StrategyParams, TradeSignal } from '@tonaiagent/core/strategy-engine';
+
+export class MyStrategy extends BaseStrategy {
+  getMetadata(): StrategyMetadata {
+    return {
+      id: 'my-strategy',
+      name: 'My Custom Strategy',
+      description: 'Description of what this strategy does',
+      version: '1.0.0',
+      params: [
+        { name: 'threshold', type: 'number', defaultValue: 0.05, description: 'Signal threshold' },
+      ],
+      supportedAssets: ['TON'],
+    };
+  }
+
+  async execute(marketData: MarketData, params: StrategyParams): Promise<TradeSignal> {
+    const price = this.getPrice(marketData, 'TON');
+    // Implement your strategy logic
+    return {
+      action: 'BUY',
+      asset: 'TON',
+      amount: '100000000',
+      confidence: 0.8,
+      reason: 'Signal triggered',
+      strategyId: this.getMetadata().id,
+      generatedAt: new Date(),
+    };
+  }
+}
+```
+
+See the [Strategy Development Guide](docs/strategy-development.md) for complete documentation.
+
+---
+
 ## Contributing
 
-We welcome contributions from the community! Please read our contributing guidelines before submitting a pull request.
+We welcome contributions from the community! Please read our [**CONTRIBUTING.md**](CONTRIBUTING.md) before submitting a pull request.
 
 ### Development Workflow
 
