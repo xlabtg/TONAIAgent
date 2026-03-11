@@ -20,38 +20,39 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 1. [AGFI: AI-native Global Financial Infrastructure](#agfi-ai-native-global-financial-infrastructure)
 2. [GAEI: Global Autonomous Economic Infrastructure](#gaei-global-autonomous-economic-infrastructure)
 3. [MVP Architecture](#mvp-architecture)
-4. [Overview](#overview)
-5. [Key Features](#key-features)
-6. [System Architecture](#system-architecture)
-7. [Core Modules](#core-modules)
-8. [Technology Stack](#technology-stack)
-9. [Prerequisites](#prerequisites)
-10. [Installation](#installation)
-11. [Configuration](#configuration)
-12. [Quick Start](#quick-start)
-13. [Telegram Integration](#telegram-integration)
-14. [Portfolio Dashboard (Mini App)](#portfolio-dashboard-mini-app)
-15. [Admin Dashboard](#admin-dashboard)
-15. [Security Best Practices](#security-best-practices)
-16. [Contributing](#contributing)
-17. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
-18. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
-19. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
-20. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
-21. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
-22. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
-23. [Production Agent Runtime](#production-agent-runtime)
-24. [Agent Control API](#agent-control-api)
-25. [Agent Plugin System](#agent-plugin-system)
-25. [Strategy Marketplace](#strategy-marketplace)
-26. [Strategy Reputation System](#strategy-reputation-system)
-27. [Live Trading Infrastructure](#live-trading-infrastructure)
-28. [AI Fund Manager](#ai-fund-manager)
-29. [Investor Demo](#investor-demo)
-30. [Strategy Backtesting](#strategy-backtesting)
-31. [Community](#community)
-32. [Risk Engine](#risk-engine)
-33. [License](#license)
+4. [Product Roadmap](#product-roadmap)
+5. [Overview](#overview)
+6. [Key Features](#key-features)
+7. [System Architecture](#system-architecture)
+8. [Core Modules](#core-modules)
+9. [Technology Stack](#technology-stack)
+10. [Prerequisites](#prerequisites)
+11. [Installation](#installation)
+12. [Configuration](#configuration)
+13. [Quick Start](#quick-start)
+14. [Telegram Integration](#telegram-integration)
+15. [Portfolio Dashboard (Mini App)](#portfolio-dashboard-mini-app)
+16. [Admin Dashboard](#admin-dashboard)
+17. [Security Best Practices](#security-best-practices)
+18. [Contributing](#contributing)
+19. [Global Autonomous Asset Management Protocol (GAAMP)](#global-autonomous-asset-management-protocol-gaamp)
+20. [Sovereign-Grade Institutional Alignment (SGIA)](#sovereign-grade-institutional-alignment-sgia)
+21. [Global Regulatory Integration Framework (GRIF)](#global-regulatory-integration-framework-grif)
+22. [Autonomous Global Financial Network (AGFN)](#autonomous-global-financial-network-agfn)
+23. [AI-native Financial Operating System (AIFOS)](#ai-native-financial-operating-system-aifos)
+24. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
+25. [Production Agent Runtime](#production-agent-runtime)
+26. [Agent Control API](#agent-control-api)
+27. [Agent Plugin System](#agent-plugin-system)
+28. [Strategy Marketplace](#strategy-marketplace)
+29. [Strategy Reputation System](#strategy-reputation-system)
+30. [Live Trading Infrastructure](#live-trading-infrastructure)
+31. [AI Fund Manager](#ai-fund-manager)
+32. [Investor Demo](#investor-demo)
+33. [Strategy Backtesting](#strategy-backtesting)
+34. [Community](#community)
+35. [Risk Engine](#risk-engine)
+36. [License](#license)
 
 ---
 
@@ -488,6 +489,129 @@ console.log('Platform status:', health.status);
 - Cross-chain liquidity
 - Clearing house systems
 - Institutional compliance layers
+
+---
+
+## Product Roadmap
+
+> **From AI Trading Demo → AI-Native Autonomous Financial Infrastructure**
+
+This roadmap defines the three main evolution phases of the platform, guiding future development through clear stages rather than uncontrolled feature expansion.
+
+### Phase 1 — MVP Product (Current Stage)
+
+**Goal**: Launch working AI trading agents inside Telegram.
+
+**Core Features**:
+- Agent Runtime
+- Strategy Engine
+- Market Data Layer
+- Trading Simulation
+- Portfolio API
+- Agent Control API
+- Telegram Mini App
+- Installer
+- Demo Agent
+
+**User Flow**:
+```
+Open Telegram → Create agent → Choose strategy → Start agent → Monitor performance
+```
+
+**Target Outcome**: Working demo product that enables investor demonstrations, early adopters, and ecosystem visibility.
+
+### Phase 2 — AI Agent Platform
+
+After MVP validation, the platform evolves into a **multi-agent ecosystem**.
+
+**New Capabilities**:
+- Strategy Marketplace
+- Agent Plugin System
+- Strategy Backtesting
+- Strategy Reputation System
+- Multi-user portfolios
+- Advanced analytics
+
+**Users will be able to**:
+- Create strategies
+- Share strategies
+- Deploy strategies
+- Monetize strategies
+
+**Ecosystem Roles**:
+- Strategy developers
+- Investors
+- Agent operators
+- Researchers
+
+This phase transforms the platform from a demo tool into a full **AI trading platform**.
+
+### Phase 3 — Autonomous Financial Infrastructure
+
+In the long term, the platform expands into **AI-native financial infrastructure**.
+
+**Future Components**:
+- AI investment funds
+- Tokenized strategy vaults
+- Institutional liquidity network
+- AI portfolio managers
+- Autonomous hedge funds
+
+**Vision**: The system becomes a **global autonomous asset management protocol**.
+
+**Key Innovations**:
+- AI strategy discovery
+- Self-optimizing agents
+- Decentralized financial coordination
+
+### Long-Term Architecture Vision
+
+```
+Users
+  │
+Telegram / Web Apps
+  │
+Agent Platform
+  │
+Strategy Marketplace
+  │
+Autonomous Agent Network
+  │
+AI Financial Infrastructure
+```
+
+Each layer increases the **network effect**.
+
+### Growth Strategy
+
+The roadmap follows a **bottom-up expansion model**:
+
+```
+working product → early users → strategy ecosystem → financial infrastructure
+```
+
+**Key Growth Drivers**:
+- Developer ecosystem
+- Strategy marketplace
+- AI automation
+- Financial integrations
+
+### Key Milestones
+
+| Milestone | Success Criteria |
+|-----------|------------------|
+| **MVP Launch** | AI trading agents operational, Telegram dashboard working, demo environment stable |
+| **Platform Expansion** | Strategy marketplace live, community developers onboarded, advanced analytics available |
+| **Protocol Infrastructure** | Autonomous investment layer operational, institutional integrations complete, global financial coordination enabled |
+
+### Strategic Impact
+
+A clear roadmap transforms the project from experimental architecture into a **structured long-term platform**, significantly improving:
+- Investor confidence
+- Developer engagement
+- Ecosystem growth
+
+> **Development Priority**: After this roadmap is defined, the only development priority should be completing MVP (#195). Future features should not be implemented until the MVP is fully functional.
 
 ---
 
