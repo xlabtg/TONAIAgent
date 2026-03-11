@@ -57,6 +57,13 @@
           </svg>
           <span>Trades</span>
         </button>
+        <button class="nav-item" data-page="marketplace">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>Market</span>
+        </button>
         <button class="nav-item" data-page="growth">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -288,6 +295,88 @@
       </section>
 
       <!-- ============================== -->
+      <!-- PAGE: Strategy Marketplace     -->
+      <!-- ============================== -->
+      <section id="page-marketplace" class="page hidden">
+        <header class="page-header">
+          <div class="page-title">Strategy Marketplace</div>
+          <button class="icon-btn" id="marketplace-filter-btn" aria-label="Filter">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+          </button>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="marketplace-search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="marketplace-search-input" placeholder="Search strategies..." />
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="marketplace-categories" id="marketplace-categories">
+          <button class="category-btn active" data-category="all">All</button>
+          <button class="category-btn" data-category="momentum">Momentum</button>
+          <button class="category-btn" data-category="mean_reversion">Mean Reversion</button>
+          <button class="category-btn" data-category="arbitrage">Arbitrage</button>
+          <button class="category-btn" data-category="grid_trading">Grid</button>
+          <button class="category-btn" data-category="yield_farming">Yield</button>
+        </div>
+
+        <!-- Filter Panel (hidden by default) -->
+        <div id="marketplace-filter-panel" class="filter-panel hidden">
+          <div class="filter-section">
+            <div class="filter-label">Risk Level</div>
+            <div class="filter-chips" id="risk-filter-chips">
+              <button class="chip active" data-risk="all">All</button>
+              <button class="chip" data-risk="low">Low</button>
+              <button class="chip" data-risk="medium">Medium</button>
+              <button class="chip" data-risk="high">High</button>
+            </div>
+          </div>
+          <div class="filter-section">
+            <div class="filter-label">Sort By</div>
+            <select class="filter-select" id="marketplace-sort">
+              <option value="roi">Highest ROI</option>
+              <option value="sharpe">Best Risk-Adjusted</option>
+              <option value="popularity">Most Popular</option>
+              <option value="newest">Newest</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-row marketplace-stats">
+          <div class="stat-card">
+            <div class="stat-label">Total Strategies</div>
+            <div class="stat-value" id="mp-total-strategies">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Top ROI (30d)</div>
+            <div class="stat-value positive" id="mp-top-roi">0%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Users</div>
+            <div class="stat-value" id="mp-active-users">0</div>
+          </div>
+        </div>
+
+        <!-- Strategy List -->
+        <div id="marketplace-empty" class="empty-state hidden">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <div class="empty-title">No strategies found</div>
+          <div class="empty-sub">Try adjusting your filters or search query</div>
+        </div>
+        <div id="marketplace-list" class="marketplace-list"></div>
+      </section>
+
+      <!-- ============================== -->
       <!-- PAGE: Growth Dashboard         -->
       <!-- ============================== -->
       <section id="page-growth" class="page hidden">
@@ -380,6 +469,136 @@
         </div>
       </div>
 
+      <!-- ============================== -->
+      <!-- Strategy Detail Modal          -->
+      <!-- ============================== -->
+      <div id="strategy-modal" class="modal hidden">
+        <div class="modal-overlay" id="strategy-modal-overlay"></div>
+        <div class="modal-sheet strategy-modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-header">
+            <h2 class="modal-title" id="modal-strategy-name">Strategy</h2>
+            <span class="strategy-badge" id="modal-strategy-badge">Verified</span>
+          </div>
+
+          <!-- Strategy Author -->
+          <div class="strategy-author" id="modal-strategy-author">
+            <div class="author-avatar">
+              <span id="modal-author-initials">?</span>
+            </div>
+            <div class="author-info">
+              <div class="author-name" id="modal-author-name">Creator</div>
+              <div class="author-meta" id="modal-author-meta">Strategy version 1.0.0</div>
+            </div>
+          </div>
+
+          <!-- Strategy Description -->
+          <div class="strategy-description" id="modal-strategy-description">
+            Strategy description will appear here.
+          </div>
+
+          <!-- Performance Metrics -->
+          <div class="modal-section-title">Performance Metrics</div>
+          <div class="modal-stats-grid">
+            <div class="modal-stat">
+              <div class="modal-stat-label">ROI (30d)</div>
+              <div class="modal-stat-value positive" id="modal-strategy-roi">+0%</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Win Rate</div>
+              <div class="modal-stat-value" id="modal-strategy-winrate">0%</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Total Trades</div>
+              <div class="modal-stat-value" id="modal-strategy-trades">0</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Max Drawdown</div>
+              <div class="modal-stat-value negative" id="modal-strategy-drawdown">0%</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Sharpe Ratio</div>
+              <div class="modal-stat-value" id="modal-strategy-sharpe">0.00</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-label">Reputation</div>
+              <div class="modal-stat-value" id="modal-strategy-reputation">0/10</div>
+            </div>
+          </div>
+
+          <!-- Risk Info -->
+          <div class="modal-section-title">Risk Profile</div>
+          <div class="risk-info-grid">
+            <div class="risk-item">
+              <span class="risk-label">Risk Level:</span>
+              <span class="risk-value" id="modal-risk-level">Medium</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-label">Supported Assets:</span>
+              <span class="risk-value" id="modal-supported-assets">BTC, ETH, TON</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-label">Min Capital:</span>
+              <span class="risk-value" id="modal-min-capital">10 TON</span>
+            </div>
+          </div>
+
+          <!-- Deploy Button -->
+          <button class="primary-btn full-width" id="deploy-strategy-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Deploy Strategy
+          </button>
+
+          <button class="close-modal-btn" id="close-strategy-modal">Close</button>
+        </div>
+      </div>
+
+      <!-- ============================== -->
+      <!-- Deploy Strategy Modal          -->
+      <!-- ============================== -->
+      <div id="deploy-modal" class="modal hidden">
+        <div class="modal-overlay" id="deploy-modal-overlay"></div>
+        <div class="modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-header">
+            <h2 class="modal-title">Deploy Strategy</h2>
+          </div>
+
+          <div class="deploy-strategy-info" id="deploy-strategy-summary">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Capital Input -->
+          <div class="form-group">
+            <label class="form-label" for="deploy-capital">Capital Allocation (TON)</label>
+            <input type="number" class="form-input" id="deploy-capital" placeholder="100" min="10" step="1" />
+            <div class="form-hint">Minimum: <span id="deploy-min-capital">10</span> TON</div>
+          </div>
+
+          <!-- Simulation Mode Toggle -->
+          <div class="form-group toggle-group">
+            <label class="toggle-label" for="deploy-simulation">
+              <span>Simulation Mode</span>
+              <span class="toggle-hint">Test strategy without real trades</span>
+            </label>
+            <input type="checkbox" id="deploy-simulation" class="toggle-input" checked />
+          </div>
+
+          <!-- Deploy Actions -->
+          <div class="deploy-actions">
+            <button class="secondary-btn" id="cancel-deploy-btn">Cancel</button>
+            <button class="primary-btn" id="confirm-deploy-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Deploy
+            </button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -391,5 +610,6 @@
   <script src="components/trades.js"></script>
   <script src="components/onboarding.js"></script>
   <script src="components/growth.js"></script>
+  <script src="components/marketplace.js"></script>
 </body>
 </html>

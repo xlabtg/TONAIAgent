@@ -1467,3 +1467,26 @@ export {
   type BacktestValidationRequirements,
   type BacktestValidationResult,
 } from './sdk';
+
+// Strategy Marketplace MVP (Issue #201)
+// Unified integration layer connecting Strategy Engine, Marketplace, and Agent Runtime.
+// Provides pre-registered marketplace strategies, strategy metadata for listing,
+// strategy deployment to agents, and performance tracking integration.
+// Enables: strategy discovery, deployment, reputation, and sharing.
+// Note: Import separately from '@tonaiagent/core/strategy-marketplace' for full access.
+export * as StrategyMarketplaceMVP from './strategy-marketplace';
+export {
+  // Marketplace
+  DefaultStrategyMarketplace,
+  createStrategyMarketplace,
+  // Built-in strategies
+  BUILTIN_STRATEGIES,
+  // Types
+  type MarketplaceStrategyCategory,
+  type MarketplaceRiskLevel,
+  type MarketplaceStrategyListing,
+  type DeployMarketplaceStrategyInput,
+  type MarketplaceDeployedAgent,
+  type MarketplaceStrategyFilter,
+  type StrategyMarketplace,
+} from './strategy-marketplace';
