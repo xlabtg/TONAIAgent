@@ -76,3 +76,50 @@ export type {
   InvestorDemoService,
 } from './types';
 export { defaultInvestorDemoConfig } from './types';
+
+// ============================================================================
+// Fund Investor Demo Flow (Issue #153)
+// ============================================================================
+
+export { FundInvestorDemoManager, createFundInvestorDemoManager } from './fund-demo';
+export {
+  executeStrategyDiscoveryStage,
+  executeFundCreationStage,
+  executeAgentDeploymentStage,
+  executeLiveExecutionStage,
+  executePerformanceMonitoringStage,
+  executeRebalancingStage,
+} from './fund-demo-steps';
+export type {
+  // Configuration
+  FundInvestorDemoConfig,
+  DemoMarketplaceStrategy,
+  // Stages
+  FundDemoStageId,
+  FundDemoStageStatus,
+  FundDemoStage,
+  FundDemoStageResult,
+  // Stage results
+  StrategyDiscoveryResult,
+  FundCreationResult,
+  AgentDeploymentResult,
+  DeployedStrategyAgent,
+  LiveExecutionResult,
+  SimulatedTrade,
+  SimulatedMarketEvent,
+  PerformanceMonitoringResult,
+  StrategyPerformanceSnapshot,
+  RebalancingResult,
+  RebalancingAction,
+  // Session
+  FundDemoSessionStatus,
+  FundDemoSession,
+  FundDemoSummary,
+  // Events
+  FundDemoEventType,
+  FundDemoEvent,
+  FundDemoEventCallback,
+  // Service
+  FundInvestorDemoService,
+} from './fund-demo-types';
+export { defaultFundInvestorDemoConfig, DEFAULT_DEMO_STRATEGIES } from './fund-demo-types';

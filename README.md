@@ -3045,6 +3045,148 @@ Fee Distribution:
 
 ---
 
+## Investor Demo
+
+The Investor Demo Flow provides a structured, interactive demonstration of the platform's
+full end-to-end investment lifecycle — from discovering strategies in the marketplace to
+monitoring a live AI-managed fund. The demo runs in **5–10 minutes** and is suitable
+for investor presentations, fundraising, partnership discussions, and community onboarding.
+
+### How the Demo Works
+
+The demo orchestrates six stages that mirror the real platform workflow:
+
+```
+Strategy Marketplace → AI Fund Manager → Agent Runtime → Live Trading Infrastructure
+```
+
+1. **Strategy Discovery** — Browse strategies in the Strategy Marketplace. Each strategy
+   shows its creator, performance metrics (annual return, Sharpe ratio, max drawdown), and
+   risk level. Investors select the strategies they want included in their fund.
+
+2. **AI Fund Creation** — Configure the fund with selected strategies, capital allocation
+   percentages, and initial capital. The AI Fund Manager automatically deploys the fund
+   and creates an on-chain smart contract.
+
+3. **Agent Deployment** — One strategy agent is launched per selected strategy via the
+   Production Agent Runtime. Capital is distributed according to the allocation breakdown.
+   Flow: `Investor → AI Fund Manager → Agent Runtime → Strategy Agents`
+
+4. **Live Execution Simulation** — Market events and trading activity are simulated across
+   all deployed agents. The demo shows executed trades, capital allocation changes, and
+   real-time strategy performance.
+
+5. **Performance Monitoring** — Investors see a dashboard with portfolio value, per-strategy
+   performance, allocation breakdown, and profit and loss. Example output:
+   ```
+   Total Capital:  $100,000
+   Current Value:  $104,200
+   Return:         +4.20%
+   ```
+
+6. **Rebalancing Demonstration** — Shows automatic portfolio rebalancing triggered by
+   performance drift. Adjusts strategy allocations and updates risk exposure — highlighting
+   the platform's autonomous management capability.
+
+### How Strategies Are Selected
+
+Strategies are discovered in the Strategy Marketplace, which displays:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | Strategy display name |
+| **Creator** | Strategy author / organization |
+| **Annual Return** | Historical or simulated annualized return (%) |
+| **Max Drawdown** | Worst peak-to-trough loss (%) |
+| **Sharpe Ratio** | Risk-adjusted return metric |
+| **Risk Level** | `low` / `medium` / `high` |
+
+The default demo configuration includes three strategies with a total allocation of 100%:
+
+| Strategy | Creator | Allocation | Risk |
+|----------|---------|-----------|------|
+| TON DCA Accumulator | AlphaLab | 40% | Low |
+| DeFi Yield Optimizer | YieldDAO | 35% | Low |
+| Cross-DEX Arbitrage | Quant42 | 25% | Medium |
+
+### How Funds Are Created
+
+```typescript
+import { createFundInvestorDemoManager } from '@tonaiagent/core/investor-demo';
+
+const demo = createFundInvestorDemoManager();
+
+// Run the full 6-stage demo (investor presentation mode)
+const session = await demo.runFullDemo({
+  fundName: 'TON AI Diversified Fund',
+  fundCapitalUsd: 100_000,
+  includeRebalancing: true,
+});
+
+console.log('Fund ID:', session.summary?.fundId);
+console.log('Return:', session.summary?.totalReturnPercent + '%');
+console.log('Agents deployed:', session.summary?.agentCount);
+```
+
+You can also step through the demo stage by stage:
+
+```typescript
+const demo = createFundInvestorDemoManager();
+const session = await demo.startSession({ fundCapitalUsd: 100_000 });
+
+// Stage 1: Strategy Discovery
+await demo.nextStage(session.sessionId);
+
+// Stage 2: Fund Creation
+await demo.nextStage(session.sessionId);
+
+// ... continue for all 6 stages
+```
+
+### How Agents Execute Strategies
+
+Once the fund is created, the AI Fund Manager deploys strategy agents through the
+Production Agent Runtime. Each agent:
+
+1. Receives its allocated capital from the fund
+2. Loads its strategy configuration
+3. Begins the 9-step execution pipeline (fetch market data → AI decision → risk validation → execute → log)
+4. Reports performance metrics back to the Fund Manager
+
+The demo simulates this entire flow with realistic trade data, market events, and
+performance metrics — all in simulation mode (no real funds).
+
+### How Performance Is Monitored
+
+The performance dashboard provides real-time visibility into:
+
+- **Portfolio value** — current total value vs. initial capital
+- **Strategy performance** — per-agent P&L, return %, and trade count
+- **Allocation breakdown** — current vs. target allocation percentages
+- **Rebalancing status** — drift detection and automatic correction
+
+Access the simulated dashboard at:
+```
+https://tonaiagent.com/funds/{fundId}/dashboard
+```
+
+### Running the Demo Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Run the fund investor demo example
+npx tsx examples/fund-investor-demo.ts
+```
+
+For the original 7-step individual agent demo (Issue #90):
+```bash
+npx tsx examples/investor-demo.ts
+```
+
+---
+
 ## Community
 
 ### Connect With Us
