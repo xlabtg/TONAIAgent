@@ -100,6 +100,34 @@ export {
   type UpdateDashboardInput,
 } from './viral-loops';
 
+// Export Telegram viral engine
+export {
+  DefaultTelegramViralEngine,
+  createTelegramViralEngine,
+  generatePerformanceCardText,
+  generateGroupPerformanceMessage,
+  generateGroupLeaderboardMessage,
+  generateChallengeAnnouncementMessage,
+  type TelegramViralEngine,
+  type TelegramViralConfig,
+  type TelegramReferralLink,
+  type ReferralLinkStats,
+  type AgentPerformanceCard,
+  type ShareableLinks,
+  type LeaderboardShareCard,
+  type GroupIntegration,
+  type GroupBotSettings,
+  type GroupStats,
+  type GroupMessage,
+  type AgentChallenge,
+  type ChallengeParticipant,
+  type ChallengeReward,
+  type CreateAgentChallengeInput,
+  type MiniAppAction,
+  type InlineButton,
+  type InlineKeyboard,
+} from './telegram-viral';
+
 // Export growth analytics engine
 export {
   DefaultGrowthAnalyticsEngine,
@@ -145,6 +173,7 @@ import { DefaultGamificationEngine, createGamificationEngine } from './gamificat
 import { DefaultViralLoopsEngine, createViralLoopsEngine } from './viral-loops';
 import { DefaultGrowthAnalyticsEngine, createGrowthAnalyticsEngine } from './analytics';
 import { DefaultAntiAbuseSystem, createAntiAbuseSystem } from './anti-abuse';
+import { DefaultTelegramViralEngine, createTelegramViralEngine } from './telegram-viral';
 
 // ============================================================================
 // Growth Engine Manager - Unified Entry Point
@@ -158,6 +187,7 @@ export interface GrowthEngine {
   readonly viralLoops: DefaultViralLoopsEngine;
   readonly analytics: DefaultGrowthAnalyticsEngine;
   readonly antiAbuse: DefaultAntiAbuseSystem;
+  readonly telegramViral: DefaultTelegramViralEngine;
 
   // Health check
   getHealth(): Promise<GrowthHealth>;
@@ -178,6 +208,7 @@ export interface GrowthHealth {
     viralLoops: boolean;
     analytics: boolean;
     antiAbuse: boolean;
+    telegramViral: boolean;
   };
   lastCheck: Date;
   details: Record<string, unknown>;
@@ -206,6 +237,7 @@ export class DefaultGrowthEngine implements GrowthEngine {
   readonly viralLoops: DefaultViralLoopsEngine;
   readonly analytics: DefaultGrowthAnalyticsEngine;
   readonly antiAbuse: DefaultAntiAbuseSystem;
+  readonly telegramViral: DefaultTelegramViralEngine;
 
   private readonly eventCallbacks: GrowthEventCallback[] = [];
 
@@ -230,6 +262,9 @@ export class DefaultGrowthEngine implements GrowthEngine {
     // Initialize anti-abuse system
     this.antiAbuse = createAntiAbuseSystem(config.antiAbuse);
 
+    // Initialize Telegram viral engine
+    this.telegramViral = createTelegramViralEngine(config.telegram);
+
     // Wire up event forwarding
     this.setupEventForwarding();
   }
@@ -243,6 +278,7 @@ export class DefaultGrowthEngine implements GrowthEngine {
       viralLoops: true,
       analytics: this.analytics.config.trackingEnabled,
       antiAbuse: this.antiAbuse.config.sybilDetectionEnabled,
+      telegramViral: this.telegramViral.config.challengesEnabled,
     };
 
     const healthyCount = Object.values(components).filter(Boolean).length;
@@ -309,6 +345,7 @@ export class DefaultGrowthEngine implements GrowthEngine {
     this.viralLoops.onEvent(forwardEvent);
     this.analytics.onEvent(forwardEvent);
     this.antiAbuse.onEvent(forwardEvent);
+    this.telegramViral.onEvent(forwardEvent);
   }
 }
 

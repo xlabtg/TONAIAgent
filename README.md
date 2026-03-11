@@ -1628,6 +1628,132 @@ From the Agents page, click any agent to open the detail panel with full control
 - Notification preferences
 - Dashboard widgets
 
+### Viral Growth Mechanics
+
+The platform includes native Telegram viral growth features to drive organic user acquisition:
+
+#### Referral Links
+
+Each user receives a unique referral link for inviting friends:
+
+```typescript
+import { createTelegramViralEngine } from '@tonaiagent/core/growth';
+
+const viralEngine = createTelegramViralEngine({
+  botUsername: 'TONAIAgentBot',
+});
+
+// Generate referral link for user
+const link = await viralEngine.generateReferralLink('user_123');
+// Returns: { deepLink: 'https://t.me/TONAIAgentBot?start=ref_ABCD1234', ... }
+
+// Track referral conversions
+await viralEngine.trackReferralClick(link.code);
+await viralEngine.trackReferralJoin(link.code, 'new_user_456');
+
+// Get referral stats
+const stats = await viralEngine.getReferralStats('user_123');
+// Returns: { clicks: 10, joins: 3, conversionRate: 30 }
+```
+
+#### Shareable Performance Cards
+
+Users can generate and share visual cards showcasing their agent performance:
+
+```typescript
+// Create a performance card
+const card = await viralEngine.createPerformanceCard('agent_001', 'user_123', '7d');
+
+// Share on Telegram
+const telegramLink = await viralEngine.sharePerformanceCard(card.id, 'telegram');
+
+// Generated card text example:
+// 🤖 My AI Agent Performance
+// 📊 Strategy: Momentum
+// 📈 ROI: +12.4%
+// 📉 Trades: 34
+// Launch your own AI agent: t.me/TONAIAgentBot
+```
+
+#### Global Leaderboard
+
+Public leaderboards encourage competition and sharing:
+
+```typescript
+import { createGamificationEngine } from '@tonaiagent/core/growth';
+
+const gamification = createGamificationEngine();
+
+// Get weekly leaderboard
+const leaderboard = await gamification.getLeaderboard('global', 'weekly', 10);
+
+// Create shareable leaderboard card
+const shareCard = await viralEngine.createLeaderboardShareCard(
+  'user_123',
+  'global',
+  'weekly'
+);
+```
+
+#### Weekly Agent Challenges
+
+Gamified challenges drive engagement and competition:
+
+```typescript
+// Create a weekly ROI challenge
+const challenge = await viralEngine.createChallenge({
+  name: 'Weekly ROI Champion',
+  description: 'Achieve the highest ROI this week',
+  type: 'weekly_roi',
+  startDate: new Date(),
+  endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  rewards: [
+    { rank: 1, badge: 'champion', title: 'Champion', xpBonus: 5000 },
+    { rank: 2, badge: 'silver', title: 'Runner Up', xpBonus: 3000 },
+    { rank: 3, badge: 'bronze', title: 'Third Place', xpBonus: 1500 },
+  ],
+  rules: ['Must have active agent', 'Minimum 10 trades'],
+});
+
+// Users join challenges
+await viralEngine.joinChallenge(challenge.id, 'user_123', 'agent_001');
+
+// Update and get leaderboard
+await viralEngine.updateChallengeScores(challenge.id);
+const leaderboard = await viralEngine.getChallengeLeaderboard(challenge.id);
+```
+
+#### Group Integration
+
+Bot capabilities for Telegram groups:
+
+```typescript
+// Register group for bot integration
+const group = await viralEngine.registerGroup('group_123', 'TON Traders', {
+  postPerformanceUpdates: true,
+  postLeaderboards: true,
+  postChallenges: true,
+  updateFrequency: 'daily',
+});
+
+// Post performance update to group
+await viralEngine.postToGroup('group_123', {
+  type: 'performance_update',
+  content: 'Alpha Bot executed BTC trade',
+});
+```
+
+#### Mini App Growth Dashboard
+
+The Mini App includes a dedicated Growth page with:
+
+| Feature | Description |
+|---------|-------------|
+| **Invite Friends** | Share referral link, track clicks/signups |
+| **Leaderboard** | View rankings, share your position |
+| **Challenges** | Join weekly challenges, compete for rewards |
+| **Share Cards** | Generate and share agent performance cards |
+
 ---
 
 ## Telegram SuperApp
