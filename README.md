@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.27.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.28.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -42,7 +42,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 23. [Production Agent Runtime](#production-agent-runtime)
 24. [Strategy Marketplace](#strategy-marketplace)
 25. [Live Trading Infrastructure](#live-trading-infrastructure)
-26. [Roadmap](#roadmap)
+26. [AI Fund Manager](#ai-fund-manager)
+27. [Roadmap](#roadmap)
 27. [Community](#community)
 28. [License](#license)
 
@@ -2868,6 +2869,178 @@ const sub = lti.marketData.subscribe('price', 'TON/USDT', (feed) => {
 // Get volatility metrics
 const volatility = await lti.marketData.getVolatility('TON/USDT', '24h');
 console.log('24h ATR:', volatility.atr);
+```
+
+---
+
+## AI Fund Manager
+
+> **From strategy marketplace to AI-native hedge fund infrastructure.**
+
+The AI Fund Manager transforms the platform from a strategy marketplace into a **full investment platform** — enabling AI-managed investment funds built from multiple strategies and managed through autonomous agents.
+
+Each fund allocates capital across strategies, rebalances portfolios automatically, manages risk exposure, tracks performance metrics, and distributes returns to investors.
+
+### Architecture
+
+```
+Investors
+    ↓
+AI Fund Manager
+    ↓
+Allocation Engine
+    ↓
+Strategy Agents (via Agent Runtime)
+    ↓
+Live Trading Infrastructure
+```
+
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| **Fund Creation Framework** | Create and configure AI-managed funds with strategy allocations, risk profiles, and fee structures |
+| **Allocation Engine** | Distributes investor capital across strategies according to target weights |
+| **Rebalancing Engine** | Automatically rebalances on drift, schedule, volatility, or risk triggers |
+| **Risk Management** | Fund-level controls: max drawdown, strategy exposure, daily loss limits, emergency stop |
+| **Investor Participation** | Open/private/institutional fund models with deposit, withdraw, and position tracking |
+| **Performance Tracking** | Returns, Sharpe ratio, Sortino ratio, max drawdown, win rate, volatility |
+| **Fee Distribution** | Management (2% annual) and performance (20% of profits) fees distributed to creators, developers, and treasury |
+
+### Fund Creation
+
+```typescript
+import { createAIFundManager } from '@tonaiagent/core/fund-manager';
+
+const manager = createAIFundManager({ enabled: true });
+manager.start();
+
+// Create a multi-strategy AI fund
+const fund = manager.funds.createFund({
+  name: 'Alpha Growth Fund',
+  description: 'AI-managed diversified DeFi fund on TON',
+  creatorId: 'creator_001',
+  type: 'open',           // open | private | institutional
+  baseAsset: 'TON',
+  strategyAllocations: [
+    { strategyId: 'dca-strategy-1',       targetWeightPercent: 40 },
+    { strategyId: 'yield-optimizer-1',    targetWeightPercent: 35 },
+    { strategyId: 'grid-trading-1',       targetWeightPercent: 25 },
+  ],
+  riskProfile: 'moderate',        // conservative | moderate | aggressive
+  managementFeePercent: 2.0,      // 2% annual management fee
+  performanceFeePercent: 20.0,    // 20% performance fee on profits
+});
+
+// Activate the fund to accept investor capital
+manager.funds.activateFund(fund.fundId);
+```
+
+### Capital Allocation
+
+```typescript
+// Investor deposits 100 TON into the fund
+const portfolio = manager.funds.getFundPortfolio(fund.fundId)!;
+const deposit = manager.investors.deposit(
+  {
+    fundId: fund.fundId,
+    investorId: 'investor_001',
+    investorAddress: 'EQD...',
+    amount: BigInt(100_000_000_000), // 100 TON in nanoTON
+  },
+  fund,
+  portfolio
+);
+console.log('Shares issued:', deposit.sharesIssued.toString());
+
+// Allocate capital across strategies
+const { updatedPortfolio, result } = manager.allocation.allocateDeposit(
+  portfolio, fund, BigInt(100_000_000_000)
+);
+console.log('Capital allocated to strategies:');
+for (const alloc of result.allocations) {
+  console.log(`  ${alloc.strategyId}: ${alloc.amountAllocated} nanoTON (${alloc.weightPercent}%)`);
+}
+```
+
+### Automatic Rebalancing
+
+```typescript
+// Check if rebalancing is needed
+const trigger = manager.rebalancing.shouldRebalance(fund, updatedPortfolio);
+// Returns: 'drift_threshold' | 'scheduled_interval' | 'volatility_spike' | null
+
+if (trigger) {
+  // Generate rebalancing plan
+  const plan = manager.rebalancing.generatePlan(fund, updatedPortfolio, trigger);
+  console.log('Rebalancing actions:', plan.actions.length);
+  console.log('Estimated gas:', plan.estimatedGasCost.toString());
+
+  // Execute plan — moves capital between strategy agents
+  const { result } = await manager.rebalancing.executePlan(plan, updatedPortfolio);
+  console.log('Rebalanced:', result.actionsCompleted, 'actions completed');
+}
+```
+
+### Risk Management
+
+```typescript
+// Assess fund risk status
+const riskStatus = manager.riskManagement.assessRisk(fund, updatedPortfolio);
+console.log('Risk score:', riskStatus.riskScore, '/ 100');
+console.log('Drawdown:', riskStatus.currentDrawdownPercent.toFixed(2) + '%');
+console.log('Breached limits:', riskStatus.breachedLimits);
+
+// Check for emergency stop condition
+const emergency = manager.riskManagement.checkEmergencyStop(fund, updatedPortfolio);
+if (emergency) {
+  manager.funds.emergencyStop(fund.fundId, emergency.reason);
+  console.log('Fund emergency stopped:', emergency.reason);
+}
+```
+
+### Performance Tracking
+
+```typescript
+// Record daily AUM snapshot
+manager.performance.recordSnapshot(updatedPortfolio, investorCount);
+
+// Calculate performance metrics
+const metrics = manager.performance.calculateMetrics(fund.fundId, 'all_time');
+console.log('Total return:', metrics.totalReturnPercent.toFixed(2) + '%');
+console.log('Sharpe ratio:', metrics.sharpeRatio.toFixed(2));
+console.log('Max drawdown:', metrics.maxDrawdownPercent.toFixed(2) + '%');
+console.log('Win rate:', metrics.winRatePercent.toFixed(1) + '%');
+```
+
+### Fee Distribution
+
+```typescript
+// Collect management fee (accrued daily, 2% annual)
+const mgmtFee = manager.fees.collectManagementFee(fund, updatedPortfolio);
+if (mgmtFee) {
+  console.log('Management fee collected:', mgmtFee.totalAmount.toString());
+  for (const dist of mgmtFee.distributions) {
+    console.log(`  ${dist.recipientType}: ${dist.amount} (${dist.sharePercent}%)`);
+  }
+}
+
+// Collect performance fee (only on new all-time highs above high-water mark)
+const perfFee = manager.fees.collectPerformanceFee(fund, updatedPortfolio);
+if (perfFee) {
+  console.log('Performance fee collected:', perfFee.totalAmount.toString());
+}
+```
+
+### Fee Structure
+
+```
+Management Fee: 2% annually (default)
+Performance Fee: 20% of profits above high-water mark (default)
+
+Fee Distribution:
+  Fund Creator:        70% of fees
+  Platform Treasury:   30% of fees
 ```
 
 ---
