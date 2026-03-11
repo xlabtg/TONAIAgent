@@ -5127,6 +5127,283 @@ const service = createMarketDataService({}, { coingecko: new MyProvider() });
 
 ---
 
+## Trading Engine
+
+The Trading Engine is the **execution layer** that sits between the Strategy Engine and the Portfolio Manager. It simulates trades in real-time, updates portfolio balances, and records every trade for analytics.
+
+### Architecture
+
+```
+Strategy Engine
+      |
+Trading Engine         ← simulation layer
+      |
+ ┌────┴─────┐
+ |          |
+Portfolio   Trade
+Manager   Executor (Simulation)
+      |
+Trade History Repository
+      |
+Portfolio Analytics
+```
+
+### Quick Start
+
+```typescript
+import { createTradingEngine } from '@tonaiagent/core/trading-engine';
+
+const engine = createTradingEngine();
+engine.start();
+
+engine.initPortfolio('agent-001', { USD: 10000, BTC: 0, ETH: 0 });
+
+const result = await engine.processSignal(
+  { action: 'BUY', asset: 'BTC', amount: '0.01', confidence: 0.8,
+    reason: 'Trend detected', strategyId: 'trend', generatedAt: new Date() },
+  'agent-001',
+  { BTC: 65000 }
+);
+// result.status === 'executed'
+// result.trade.value === 650
+
+const pnl = engine.calculatePnL('agent-001', { BTC: 66000 });
+// pnl.unrealizedPnl === 10  (0.01 BTC × $1000 price increase)
+// pnl.roiPercent === 0.1
+```
+
+### Components
+
+| File | Description |
+|---|---|
+| `types.ts` | All type definitions: `Portfolio`, `TradeRecord`, `TradeExecutionResult`, `PnLSummary`, `TradingEngineConfig`, events, errors |
+| `portfolio-manager.ts` | `DefaultPortfolioManager` — per-agent in-memory balance tracking with snapshot, delta updates, and event pub/sub |
+| `trade-history-repository.ts` | `DefaultTradeHistoryRepository` — in-memory trade record storage with per-agent limits and query methods |
+| `trade-executor.ts` | `SimulationTradeExecutor` — executes BUY/SELL signals at market price, validates balance, records trades |
+| `trading-engine.ts` | `TradingEngine` — core orchestrator: signal processing pipeline, portfolio initialization, PnL calculation, metrics, events |
+| `index.ts` | Module entry point with JSDoc quick-start examples and integration guide |
+
+---
+
+## Portfolio & Analytics
+
+The Portfolio Analytics layer is the **data interface between backend and UI**. It exposes structured portfolio data via REST API, computes advanced performance metrics, and powers dashboards, investor reports, and strategy rankings.
+
+### Architecture
+
+```
+Agent Runtime
+      │
+Trading Engine
+      │
+Portfolio Manager
+      │
+Portfolio API          ← REST endpoints
+      │
+Analytics Engine       ← metrics computation
+      │
+Frontend (Telegram Mini App)
+```
+
+### REST API Endpoints
+
+#### Portfolio API
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/portfolio` | Portfolio overview: value, profit, ROI, strategy count |
+| `GET /api/portfolio/value` | Real-time value breakdown by asset: `Σ(balance × price)` |
+| `GET /api/portfolio/trades` | Paginated trade history with filters and sorting |
+| `GET /api/portfolio/metrics` | Full performance metrics + per-strategy stats |
+
+Example response — `GET /api/portfolio`:
+
+```json
+{
+  "agent_id": "agent_001",
+  "portfolio_value": 15500,
+  "profit": 2500,
+  "roi": "19.23%",
+  "day_change": 150,
+  "day_change_percent": "0.98%",
+  "strategy_count": 2,
+  "last_updated": "2024-03-10T12:00:00Z"
+}
+```
+
+Example response — `GET /api/portfolio/value`:
+
+```json
+{
+  "portfolio_value": 15500,
+  "quote_currency": "USD",
+  "assets": [
+    { "asset": "BTC", "balance": 0.1, "price": 65000, "value": 6500 },
+    { "asset": "ETH", "balance": 2.0, "price": 3500, "value": 7000 },
+    { "asset": "USD", "balance": 2000, "price": 1,     "value": 2000 }
+  ],
+  "timestamp": "2024-03-10T12:00:00Z"
+}
+```
+
+#### Trade History API
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/trades` | All trades — paginated, filterable by asset/action/date, sortable |
+| `GET /api/trades/summary` | Aggregated statistics: win rate, volume, fees, best/worst trade |
+| `GET /api/trades/{id}` | Single trade record by ID |
+
+Query parameters for `GET /api/trades`:
+
+```
+page       — page number (default: 1)
+per_page   — results per page (default: 20, max: 100)
+asset      — filter by asset symbol (e.g. BTC)
+action     — filter by BUY or SELL
+sort       — asc or desc (default: desc by timestamp)
+from       — ISO-8601 date lower bound
+to         — ISO-8601 date upper bound
+min_value  — minimum trade value in USD
+max_value  — maximum trade value in USD
+```
+
+Example response — `GET /api/trades`:
+
+```json
+{
+  "trades": [
+    {
+      "id": "trade_agent_001_0",
+      "agent_id": "agent_001",
+      "asset": "BTC",
+      "action": "BUY",
+      "price": 65000,
+      "amount": 0.01,
+      "value": 650,
+      "fee": 0,
+      "pnl": 52,
+      "strategy_id": "strategy_0",
+      "confidence": 0.65,
+      "timestamp": 1710000000
+    }
+  ],
+  "pagination": { "page": 1, "per_page": 20, "total": 15, "pages": 1 }
+}
+```
+
+### Portfolio Metrics Engine
+
+`GET /api/portfolio/metrics` computes:
+
+```json
+{
+  "portfolio_value": 15500,
+  "profit": 2500,
+  "roi": "19.23%",
+  "total_trades": 15,
+  "win_rate": "66.7%",
+  "max_drawdown": "3.2%",
+  "avg_trade_profit": 166.67,
+  "strategies": [
+    {
+      "strategy_id": "strategy_0",
+      "strategy_name": "Default Strategy",
+      "profit": 1800,
+      "roi": "18.0%",
+      "win_rate": "70.0%",
+      "trades_count": 10,
+      "drawdown": "2.1%",
+      "avg_trade_profit": 180.0,
+      "total_volume": 10000
+    }
+  ]
+}
+```
+
+Metrics computed:
+
+| Metric | Description |
+|---|---|
+| `portfolio_value` | `Σ(asset_balance × asset_price)` |
+| `profit` | Total realized + unrealized PnL |
+| `roi` | Return on investment as percentage |
+| `win_rate` | Percentage of profitable trades |
+| `max_drawdown` | Maximum peak-to-trough decline |
+| `avg_trade_profit` | Average PnL per trade |
+
+### Strategy Performance Stats
+
+Each strategy within a portfolio has its own metrics:
+
+| Metric | Description |
+|---|---|
+| `profit` | Total PnL for this strategy |
+| `roi` | Return on capital allocated to this strategy |
+| `win_rate` | Win rate for this strategy's trades |
+| `trades_count` | Total number of trades executed |
+| `drawdown` | Maximum drawdown for this strategy |
+
+These metrics power:
+- **Strategy Marketplace** rankings
+- **Agent leaderboards**
+- **Investor reporting**
+
+### PHP Classes
+
+| Class | File | Description |
+|---|---|---|
+| `PortfolioAnalytics` | `app/analytics/PortfolioAnalytics.php` | Core analytics engine: portfolio value, trade history, metrics, max drawdown computation. Works with database or in demo mode. |
+| `StrategyMetrics` | `app/analytics/StrategyMetrics.php` | Per-strategy performance stats: profit, ROI, win rate, trades count, drawdown. |
+| `PortfolioController` | `app/api/PortfolioController.php` | REST controller for `GET /api/portfolio`, `/value`, `/trades`, `/metrics`. |
+| `TradeController` | `app/api/TradeController.php` | REST controller for `GET /api/trades`, `/summary`, `/{id}`. |
+
+### TypeScript Module
+
+```typescript
+import {
+  createPortfolioAnalyticsDashboard,
+  createPortfolioDataModel,
+  createAnalyticsEngine,
+  createRiskMonitor,
+  createStrategyComparison,
+  createTradeHistoryManager,
+} from '@tonaiagent/core/portfolio-analytics';
+
+const dashboard = createPortfolioAnalyticsDashboard({
+  drawdownAlertThreshold: 10,
+  concentrationAlertThreshold: 30,
+});
+
+// Record portfolio data
+dashboard.updatePortfolioValue('agent-001', 100000, 10000);
+dashboard.recordEquityPoint('agent-001', { timestamp: new Date(), value: 100000, pnl: 10000, pnlPercent: 10 });
+
+// Get analytics
+const metrics = await dashboard.getDashboardMetrics('agent-001', '30d');
+console.log(metrics.risk.riskGrade);        // 'A'
+console.log(metrics.overview.totalValue);   // 100000
+
+// Get chart data for UI
+const chart = dashboard.getChartData('equity_curve', 'agent-001', '30d');
+
+// Generate report
+const report = dashboard.generateReport('agent-001', '30d', 'json');
+```
+
+### PHP Usage Example
+
+```php
+$analytics = new PortfolioAnalytics($db);
+$metrics   = PortfolioAnalytics::calculate($analytics->getPortfolio('agent_001'));
+// => ['portfolio_value' => 15500, 'profit' => 2500, 'roi' => '19.23%', ...]
+
+$portfolio = $analytics->getPortfolio('agent_001');
+$metrics   = PortfolioAnalytics::calculate($portfolio);
+```
+
+---
+
 <p align="center">
   <strong>Built with ❤️ for the TON Ecosystem</strong>
 </p>
