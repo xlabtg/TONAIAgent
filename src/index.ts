@@ -1330,3 +1330,129 @@ export {
   type RiskProfile,
   type RiskCheckResult as LiveTradingRiskCheckResult,
 } from './live-trading';
+
+// AI Fund Manager (Issue #152)
+// Enables creation and management of AI-driven investment funds that allocate
+// capital across multiple strategies from the Strategy Marketplace, rebalance
+// portfolios automatically, manage risk exposure, track performance metrics,
+// and distribute fees to fund creators, strategy developers, and the platform.
+// Architecture: Investors → AI Fund Manager → Allocation Engine → Strategy Agents → Live Trading
+// Note: Import separately from '@tonaiagent/core/fund-manager' for full access.
+export * as FundManager from './fund-manager';
+export {
+  // Main fund manager factory
+  createAIFundManager,
+  AIFundManager,
+  DEFAULT_FUND_MANAGER_CONFIG,
+  // Component factories (aliased to avoid conflicts with investment module)
+  createFundCreationManager,
+  createAllocationEngine as createFundAllocationEngine,
+  createRebalancingEngine,
+  createRiskManagementService as createFundRiskManagementService,
+  createInvestorParticipationManager,
+  createPerformanceTrackingService as createFundPerformanceTrackingService,
+  createFeeDistributionEngine,
+  // Error
+  FundManagerError,
+  // Key types (aliased to avoid conflicts)
+  type AIFundManagerConfig,
+  type FundConfig,
+  type FundLifecycleState,
+  type FundType,
+  type FundBaseAsset,
+  type FundRiskProfile,
+  type FundPortfolio,
+  type StrategyAllocation as FundStrategyAllocation,
+  type FundRiskLimits,
+  type FundRiskStatus,
+  type FundPerformanceMetrics,
+  type AumSnapshot,
+  type InvestorPosition,
+  type DepositResult as FundDepositResult,
+  type WithdrawResult,
+  type AllocationResult as FundAllocationResult,
+  type RebalancingPlan,
+  type RebalancingResult,
+  type RebalanceTrigger,
+  type FeeCollectionEvent,
+  type FeeEarnings,
+  type FundManagerMetrics,
+  type FundManagerHealth,
+  type FundManagerEvent,
+  type FundManagerEventHandler,
+  type FundManagerUnsubscribe,
+  type FundManagerErrorCode,
+} from './fund-manager';
+
+// Agent Developer SDK (Issue #158)
+// Standardized framework for building, testing, and deploying autonomous agents.
+// Components:
+//   1. Agent Development Framework — standardized agent structure (strategy, risk_rules,
+//      execution_logic, configuration, event_handlers)
+//   2. Runtime Integration API — getMarketData, placeOrder, getPortfolio, allocateCapital,
+//      getRiskMetrics
+//   3. Strategy Development Toolkit — templates, example algorithms, risk helpers, utilities
+//   4. Backtesting Compatibility Layer — simulate, analyze, validate agents over historical data
+// Architecture: Developer → Agent SDK → Agent Runtime API → Production Agent Runtime → Trading Infrastructure
+// Note: Import separately from '@tonaiagent/core/sdk' for full access.
+export * as AgentDeveloperSDK from './sdk';
+export {
+  // Agent Framework
+  AgentDeveloperFramework,
+  createAgentFramework,
+  AgentFrameworkError,
+  // Runtime API
+  DefaultRuntimeAPI,
+  createRuntimeAPI,
+  RuntimeAPIError,
+  // Strategy Toolkit
+  StrategyDevelopmentToolkit,
+  createStrategyToolkit,
+  RiskConfigHelper,
+  ExampleAlgorithms,
+  // Backtesting
+  BacktestingCompatLayer,
+  createBacktestingCompat,
+  // Key agent framework types
+  type AgentDefinition,
+  type AgentStrategySpec,
+  type AgentStrategyType,
+  type AgentCondition,
+  type AgentRiskRules,
+  type AgentExecutionContext,
+  type AgentExecutionLogic,
+  type AgentExecutionSummary,
+  type AgentConfiguration,
+  type AgentEventHandlers,
+  type AgentMarketDataSnapshot,
+  type AgentOrderRequest,
+  type AgentOrderResult,
+  type AgentPortfolioSnapshot,
+  type AgentPosition,
+  type AgentCapitalAllocation,
+  type AgentAllocationResult,
+  type AgentRiskMetrics,
+  type AgentValidationResult,
+  type AgentDeploymentOptions,
+  type AgentDeploymentResult,
+  // Key runtime API types
+  type RuntimeAPI,
+  type RuntimeAPIConfig,
+  type RuntimeMarketData,
+  type OHLCVBar,
+  type RuntimePortfolio,
+  type RuntimeRiskMetrics,
+  type RuntimeSimulationState,
+  // Key strategy toolkit types
+  type StrategyTemplate,
+  type PositionSizeParams,
+  type BollingerBands,
+  type MACDResult,
+  // Key backtesting types
+  type BacktestConfig,
+  type BacktestResult,
+  type BacktestPerformance,
+  type BacktestTrade,
+  type BacktestValidationRequirements,
+  type BacktestValidationResult,
+} from './sdk';
