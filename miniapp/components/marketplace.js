@@ -380,6 +380,12 @@
         Marketplace.openDeployModal(MarketplaceState.selectedStrategy.id);
       }
     });
+    el('backtest-strategy-btn')?.addEventListener('click', () => {
+      if (MarketplaceState.selectedStrategy && window.Backtesting) {
+        Marketplace.closeStrategyModal();
+        window.Backtesting.openBacktestModal(MarketplaceState.selectedStrategy.id);
+      }
+    });
 
     // Deploy modal
     el('deploy-modal-overlay')?.addEventListener('click', () => {
