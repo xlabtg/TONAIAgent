@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.37.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.38.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -44,7 +44,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 25. [Sovereign Digital Asset Coordination Layer (SDACL)](#sovereign-digital-asset-coordination-layer-sdacl)
 26. [Production Agent Runtime](#production-agent-runtime)
 27. [Agent Control API](#agent-control-api)
-28. [Agent Plugin System](#agent-plugin-system)
+28. [Agent Manager API](#agent-manager-api)
+29. [Agent Plugin System](#agent-plugin-system)
 29. [Strategy Marketplace](#strategy-marketplace)
 30. [Strategy Reputation System](#strategy-reputation-system)
 31. [Live Trading Infrastructure](#live-trading-infrastructure)
@@ -3578,6 +3579,165 @@ Tests:
 ```
 
 **Full Implementation**: [src/agent-control](src/agent-control) | [php-app/app/agents](php-app/app/agents)
+
+---
+
+## Agent Manager API
+
+> **Centralized lifecycle management for AI agents — create, configure, start, pause, stop, and delete agents via a unified API.**
+
+The Agent Manager API (Issue #213) provides a complete lifecycle management layer for AI agents. It extends the basic Agent Control API with full agent creation, configuration, and a richer lifecycle state machine.
+
+### Agent Lifecycle Model
+
+```
+CREATED
+   ↓
+CONFIGURED
+   ↓
+RUNNING ←→ PAUSED
+   ↓
+STOPPED
+   ↓
+DELETED
+
+(Error state: ERROR — can transition to STOPPED)
+```
+
+### Core API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/agents` | Create a new agent |
+| `POST` | `/agents/{id}/config` | Configure strategy and risk parameters |
+| `POST` | `/agents/{id}/start` | Start a configured/stopped agent |
+| `POST` | `/agents/{id}/pause` | Pause a running agent |
+| `POST` | `/agents/{id}/resume` | Resume a paused agent |
+| `POST` | `/agents/{id}/stop` | Stop a running/paused agent |
+| `DELETE` | `/agents/{id}` | Delete a stopped agent |
+| `GET` | `/agents` | List all agents |
+| `GET` | `/agents/{id}` | Get agent details with performance metrics |
+
+### Quick Start
+
+```typescript
+import { createAgentManagerApi } from '@tonaiagent/core/agents';
+
+const api = createAgentManagerApi();
+
+// 1. Create an agent
+const createRes = await api.handle({
+  method: 'POST',
+  path: '/agents',
+  body: {
+    name: 'Momentum Trader',
+    strategy: 'momentum',
+    initial_balance: 10000,
+    base_asset: 'USDT',
+    pairs: ['TON/USDT'],
+  },
+});
+const agentId = createRes.body.data.agent_id;
+
+// 2. Configure strategy and risk parameters
+await api.handle({
+  method: 'POST',
+  path: `/agents/${agentId}/config`,
+  body: {
+    strategy_params: { lookback_period: 20, entry_threshold: 0.03 },
+    risk_params: { max_position_size: 0.1, stop_loss: 0.05 },
+  },
+});
+
+// 3. Start the agent
+await api.handle({
+  method: 'POST',
+  path: `/agents/${agentId}/start`,
+});
+
+// 4. Pause when needed
+await api.handle({
+  method: 'POST',
+  path: `/agents/${agentId}/pause`,
+});
+
+// 5. Resume execution
+await api.handle({
+  method: 'POST',
+  path: `/agents/${agentId}/resume`,
+});
+
+// 6. Stop the agent
+await api.handle({
+  method: 'POST',
+  path: `/agents/${agentId}/stop`,
+});
+
+// 7. Delete when no longer needed
+await api.handle({
+  method: 'DELETE',
+  path: `/agents/${agentId}`,
+});
+```
+
+### Event System
+
+Subscribe to agent lifecycle events for monitoring and logging:
+
+```typescript
+const service = api.getService();
+
+const unsubscribe = service.subscribe((event) => {
+  console.log(`[${event.type}] Agent: ${event.agent_id}`);
+  console.log(`  Status: ${event.previous_status} → ${event.new_status}`);
+});
+
+// Events: agent_created, agent_configured, agent_started,
+//         agent_paused, agent_resumed, agent_stopped, agent_deleted, agent_error
+```
+
+### Agent Configuration Schema
+
+```typescript
+interface AgentConfig {
+  strategy_params?: {
+    lookback_period?: number;
+    entry_threshold?: number;
+    exit_threshold?: number;
+  };
+  risk_params?: {
+    max_position_size?: number;  // 0-1
+    stop_loss?: number;          // 0-1
+    take_profit?: number;        // 0-1
+    max_daily_loss?: number;     // 0-1
+  };
+}
+```
+
+### Runtime Integration
+
+The Agent Manager integrates with:
+- **Agent Execution Loop** (#212) — registered agents are scheduled for execution
+- **Market Data Layer** (#211) — agents receive real-time price feeds
+- **Strategy Engine** — strategies are loaded and executed per agent config
+- **Risk Engine** — risk parameters are enforced during trading
+- **Portfolio Engine** — portfolio value and PnL are tracked per agent
+
+### File Structure
+
+```
+src/agents/
+  types.ts      — type definitions, AgentError, lifecycle states
+  storage.ts    — AgentStorage interface + InMemoryAgentStorage
+  service.ts    — AgentManagerService with lifecycle operations
+  api.ts        — AgentManagerApi REST handler
+  index.ts      — barrel exports
+
+tests/agents/
+  agents.test.ts — comprehensive test suite
+```
+
+**Full Implementation**: [src/agents](src/agents)
 
 ---
 
