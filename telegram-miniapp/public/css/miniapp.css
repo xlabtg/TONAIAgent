@@ -871,3 +871,321 @@ body {
   background: var(--bg-secondary);
   border-radius: var(--radius-full);
 }
+
+/* ============================================================================
+   Strategy Marketplace Enhanced Styles (Issue #216)
+   ============================================================================ */
+
+/* Marketplace Card - Enhanced */
+.marketplace-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.marketplace-card:hover {
+  border-color: var(--ton-blue);
+  box-shadow: var(--shadow-md);
+}
+
+.marketplace-card-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: var(--spacing-sm) 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Verified Badge */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background-color: var(--success);
+  color: white;
+  font-size: 10px;
+  border-radius: var(--radius-full);
+  margin-left: var(--spacing-xs);
+}
+
+/* Marketplace Metrics Grid */
+.marketplace-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-sm) 0;
+  border-top: 1px solid var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-secondary);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.metric-value.positive {
+  color: var(--success);
+}
+
+.metric-value.negative {
+  color: var(--danger);
+}
+
+/* Marketplace Card Footer */
+.marketplace-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.strategy-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.strategy-rating .stars {
+  color: #FFD700;
+  font-size: var(--font-size-sm);
+  letter-spacing: 1px;
+}
+
+.strategy-rating .rating-value {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.min-capital {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-full);
+}
+
+/* Marketplace Card Actions */
+.marketplace-card-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.marketplace-card-actions .btn {
+  flex: 1;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+/* Strategy Details Modal Styles */
+.strategy-details-modal {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.strategy-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.strategy-details-header h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.verified-status {
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.verified-status.verified {
+  background-color: rgba(40, 199, 111, 0.1);
+  color: var(--success);
+}
+
+.strategy-details-author {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.strategy-details-desc {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-lg);
+}
+
+.strategy-details-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.strategy-details-section h3 {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--bg-secondary);
+}
+
+/* Metrics Grid in Details */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.metric-item .label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.metric-item .value {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.metric-item .value.positive {
+  color: var(--success);
+}
+
+.metric-item .value.negative {
+  color: var(--danger);
+}
+
+/* Risk Info */
+.risk-info {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-sm);
+}
+
+.risk-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.risk-badge.low {
+  background-color: rgba(40, 199, 111, 0.1);
+  color: var(--success);
+}
+
+.risk-badge.medium {
+  background-color: rgba(255, 159, 67, 0.1);
+  color: var(--warning);
+}
+
+.risk-badge.high {
+  background-color: rgba(234, 84, 85, 0.1);
+  color: var(--danger);
+}
+
+.min-capital-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.supported-assets {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.supported-assets .label {
+  color: var(--text-secondary);
+}
+
+.supported-assets .assets {
+  font-weight: 500;
+}
+
+/* Rating Display */
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rating-display .stars.large {
+  font-size: var(--font-size-xl);
+  color: #FFD700;
+  letter-spacing: 2px;
+}
+
+.rating-display .rating-score {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Tags List */
+.tags-list {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.tag {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Mobile optimizations for marketplace */
+@media (max-width: 380px) {
+  .marketplace-card-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

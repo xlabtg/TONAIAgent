@@ -17,57 +17,168 @@
     currentSection: 'main'
   };
 
-  // Default Strategies (from MVP module)
-  const DEFAULT_STRATEGIES = [
+  // Strategy Marketplace Strategies (Issue #216)
+  // These map to the marketplace strategies from src/strategy-marketplace
+  const MARKETPLACE_STRATEGIES = [
+    {
+      id: 'momentum-trader',
+      name: 'Momentum Trader',
+      category: 'trading',
+      description: 'Captures short-term price momentum using moving average crossovers and volume confirmation. Ideal for trending markets.',
+      minInvestment: 10,
+      riskLevel: 'medium',
+      expectedApy: { min: 20, max: 35 },
+      creatorName: 'TONAIAgent',
+      roi30d: 8.2,
+      winRate: 68.5,
+      totalTrades: 124,
+      maxDrawdown: -5.8,
+      sharpeRatio: 1.82,
+      rating: 8.7,
+      activeUsers: 342,
+      verified: true,
+      supportedAssets: ['TON', 'BTC', 'ETH'],
+      tags: ['momentum', 'trend', 'beginner-friendly']
+    },
+    {
+      id: 'mean-reversion-pro',
+      name: 'Mean Reversion Pro',
+      category: 'yield',
+      description: 'Exploits price mean reversion patterns using statistical analysis and Bollinger Bands. Best for range-bound markets.',
+      minInvestment: 50,
+      riskLevel: 'low',
+      expectedApy: { min: 12, max: 25 },
+      creatorName: 'QuantLab',
+      roi30d: 5.4,
+      winRate: 72.1,
+      totalTrades: 89,
+      maxDrawdown: -3.2,
+      sharpeRatio: 2.14,
+      rating: 9.1,
+      activeUsers: 518,
+      verified: true,
+      supportedAssets: ['TON', 'BTC', 'ETH'],
+      tags: ['mean-reversion', 'low-risk', 'statistical']
+    },
+    {
+      id: 'dex-arbitrage-hunter',
+      name: 'DEX Arbitrage Hunter',
+      category: 'arbitrage',
+      description: 'Identifies and executes arbitrage opportunities across TON DEX protocols (STON.fi, DeDust). Requires higher capital.',
+      minInvestment: 100,
+      riskLevel: 'high',
+      expectedApy: { min: 35, max: 80 },
+      creatorName: 'ArbitrageKing',
+      roi30d: 12.7,
+      winRate: 61.3,
+      totalTrades: 456,
+      maxDrawdown: -8.5,
+      sharpeRatio: 1.45,
+      rating: 7.8,
+      activeUsers: 156,
+      verified: true,
+      supportedAssets: ['TON', 'USDT', 'USDC'],
+      tags: ['arbitrage', 'dex', 'advanced']
+    },
+    {
+      id: 'grid-trading-bot',
+      name: 'Grid Trading Bot',
+      category: 'trading',
+      description: 'Automated grid trading strategy for ranging markets. Places buy and sell orders at predefined price levels.',
+      minInvestment: 25,
+      riskLevel: 'medium',
+      expectedApy: { min: 18, max: 40 },
+      creatorName: 'GridMaster',
+      roi30d: 6.8,
+      winRate: 65.2,
+      totalTrades: 312,
+      maxDrawdown: -4.7,
+      sharpeRatio: 1.68,
+      rating: 8.2,
+      activeUsers: 289,
+      verified: true,
+      supportedAssets: ['TON', 'BTC', 'ETH', 'SOL'],
+      tags: ['grid', 'automated', 'passive']
+    },
+    {
+      id: 'yield-optimizer',
+      name: 'Yield Optimizer',
+      category: 'yield',
+      description: 'Maximizes DeFi yields by automatically rebalancing across TON yield protocols. Focuses on stable returns.',
+      minInvestment: 100,
+      riskLevel: 'low',
+      expectedApy: { min: 10, max: 25 },
+      creatorName: 'YieldHunter',
+      roi30d: 4.2,
+      winRate: 85.6,
+      totalTrades: 67,
+      maxDrawdown: -2.1,
+      sharpeRatio: 2.45,
+      rating: 9.4,
+      activeUsers: 723,
+      verified: true,
+      supportedAssets: ['TON', 'USDT', 'USDC'],
+      tags: ['yield', 'defi', 'passive', 'stable']
+    },
+    {
+      id: 'trend-following-alpha',
+      name: 'Trend Following Alpha',
+      category: 'trading',
+      description: 'Multi-timeframe trend following strategy with dynamic position sizing. Adapts to market conditions.',
+      minInvestment: 20,
+      riskLevel: 'medium',
+      expectedApy: { min: 25, max: 50 },
+      creatorName: 'AlphaTrader',
+      roi30d: 9.5,
+      winRate: 58.9,
+      totalTrades: 78,
+      maxDrawdown: -7.2,
+      sharpeRatio: 1.52,
+      rating: 7.2,
+      activeUsers: 98,
+      verified: false,
+      supportedAssets: ['TON', 'BTC', 'ETH'],
+      tags: ['trend', 'adaptive', 'intermediate']
+    },
     {
       id: 'dca-basic',
       name: 'DCA Basic',
       category: 'dca',
-      description: 'Dollar-cost averaging into selected assets',
+      description: 'Dollar-cost averaging into selected assets. Perfect for long-term accumulation with minimal risk.',
       minInvestment: 10,
       riskLevel: 'low',
       expectedApy: { min: 5, max: 15 },
-      creatorName: 'TON AI Agent'
-    },
-    {
-      id: 'yield-farming',
-      name: 'Yield Optimizer',
-      category: 'yield',
-      description: 'Automatically find and optimize yield farming opportunities',
-      minInvestment: 50,
-      riskLevel: 'medium',
-      expectedApy: { min: 15, max: 40 },
-      creatorName: 'TON AI Agent'
+      creatorName: 'TONAIAgent',
+      roi30d: 3.5,
+      winRate: 90.0,
+      totalTrades: 52,
+      maxDrawdown: -1.5,
+      sharpeRatio: 1.95,
+      rating: 8.9,
+      activeUsers: 845,
+      verified: true,
+      supportedAssets: ['TON', 'BTC', 'ETH'],
+      tags: ['dca', 'beginner', 'passive']
     },
     {
       id: 'liquidity-manager',
       name: 'Liquidity Manager',
       category: 'liquidity',
-      description: 'Manage liquidity positions across DEXes',
+      description: 'Manage liquidity positions across DEXes. Automatically rebalances for optimal fee collection.',
       minInvestment: 100,
       riskLevel: 'medium',
       expectedApy: { min: 20, max: 50 },
-      creatorName: 'TON AI Agent'
-    },
-    {
-      id: 'rebalancer',
-      name: 'Portfolio Rebalancer',
-      category: 'trading',
-      description: 'Automatically rebalance portfolio based on targets',
-      minInvestment: 25,
-      riskLevel: 'low',
-      expectedApy: { min: 8, max: 20 },
-      creatorName: 'TON AI Agent'
-    },
-    {
-      id: 'arbitrage-bot',
-      name: 'DEX Arbitrage',
-      category: 'arbitrage',
-      description: 'Capture arbitrage opportunities across DEXes',
-      minInvestment: 200,
-      riskLevel: 'high',
-      expectedApy: { min: 30, max: 100 },
-      creatorName: 'TON AI Agent'
+      creatorName: 'TONAIAgent',
+      roi30d: 7.5,
+      winRate: 70.0,
+      totalTrades: 45,
+      maxDrawdown: -6.0,
+      sharpeRatio: 1.75,
+      rating: 8.0,
+      activeUsers: 234,
+      verified: true,
+      supportedAssets: ['TON', 'USDT'],
+      tags: ['liquidity', 'defi', 'lp']
     }
   ];
 
@@ -96,8 +207,8 @@
     // Wait for Telegram WebApp to be ready
     window.addEventListener('tg:ready', onTelegramReady);
 
-    // Initialize strategies
-    state.strategies = DEFAULT_STRATEGIES;
+    // Initialize strategies from marketplace
+    state.strategies = MARKETPLACE_STRATEGIES;
   }
 
   /**
@@ -476,7 +587,7 @@
   }
 
   /**
-   * Render marketplace strategies
+   * Render marketplace strategies (Issue #216: Strategy Marketplace UI)
    */
   function renderMarketplace() {
     const categoryFilter = document.getElementById('category-filter').value;
@@ -492,36 +603,189 @@
       filtered = filtered.filter(s => s.riskLevel === riskFilter);
     }
 
-    elements.marketplaceList.innerHTML = filtered.map(strategy => `
-      <div class="marketplace-card">
-        <div class="marketplace-card-header">
-          <div class="marketplace-card-info">
-            <span class="marketplace-card-name">${escapeHtml(strategy.name)}</span>
-            <span class="marketplace-card-creator">by ${escapeHtml(strategy.creatorName)}</span>
+    // Sort by rating (popularity) by default
+    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+    elements.marketplaceList.innerHTML = filtered.map(strategy => {
+      const riskEmoji = getRiskEmoji(strategy.riskLevel);
+      const starRating = getStarRating(strategy.rating || 0);
+      const verifiedBadge = strategy.verified ? '<span class="verified-badge" title="Verified Strategy">✓</span>' : '';
+
+      return `
+        <div class="marketplace-card" onclick="showStrategyDetails('${strategy.id}')">
+          <div class="marketplace-card-header">
+            <div class="marketplace-card-info">
+              <span class="marketplace-card-name">${escapeHtml(strategy.name)} ${verifiedBadge}</span>
+              <span class="marketplace-card-creator">by ${escapeHtml(strategy.creatorName)}</span>
+            </div>
+            <span class="strategy-risk ${strategy.riskLevel}">${riskEmoji} ${strategy.riskLevel}</span>
           </div>
-          <span class="strategy-risk ${strategy.riskLevel}">${strategy.riskLevel}</span>
+          <p class="marketplace-card-desc">${escapeHtml(strategy.description)}</p>
+          <div class="marketplace-card-metrics">
+            <div class="metric">
+              <span class="metric-label">30d ROI</span>
+              <span class="metric-value ${(strategy.roi30d || 0) >= 0 ? 'positive' : 'negative'}">
+                ${(strategy.roi30d || 0) >= 0 ? '+' : ''}${(strategy.roi30d || 0).toFixed(1)}%
+              </span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Win Rate</span>
+              <span class="metric-value">${(strategy.winRate || 0).toFixed(0)}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Trades</span>
+              <span class="metric-value">${strategy.totalTrades || 0}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Users</span>
+              <span class="metric-value">${formatCompactNumber(strategy.activeUsers || 0)}</span>
+            </div>
+          </div>
+          <div class="marketplace-card-footer">
+            <div class="strategy-rating">
+              <span class="stars">${starRating}</span>
+              <span class="rating-value">${(strategy.rating || 0).toFixed(1)}/10</span>
+            </div>
+            <span class="min-capital">${strategy.minInvestment} TON min</span>
+          </div>
+          <div class="marketplace-card-actions">
+            <button class="btn secondary" onclick="event.stopPropagation(); showStrategyDetails('${strategy.id}')">
+              Details
+            </button>
+            <button class="btn primary" onclick="event.stopPropagation(); copyStrategy('${strategy.id}')">
+              Deploy
+            </button>
+          </div>
         </div>
-        <p style="font-size: 14px; color: var(--text-secondary); margin-top: 8px;">
-          ${escapeHtml(strategy.description)}
-        </p>
-        <div class="marketplace-card-stats">
-          <div class="agent-stat">
-            <span class="agent-stat-label">Expected APY</span>
-            <span class="agent-stat-value positive">${strategy.expectedApy.min}-${strategy.expectedApy.max}%</span>
-          </div>
-          <div class="agent-stat">
-            <span class="agent-stat-label">Min Investment</span>
-            <span class="agent-stat-value">${strategy.minInvestment} TON</span>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Get risk level emoji
+   */
+  function getRiskEmoji(level) {
+    const emojis = { low: '🟢', medium: '🟡', high: '🔴' };
+    return emojis[level] || '⚪';
+  }
+
+  /**
+   * Get star rating display
+   */
+  function getStarRating(rating) {
+    const normalizedRating = rating / 2; // Convert 0-10 to 0-5
+    const fullStars = Math.floor(normalizedRating);
+    const halfStar = normalizedRating - fullStars >= 0.5;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+    return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
+  }
+
+  /**
+   * Format number compactly (e.g., 1.2K, 5.3M)
+   */
+  function formatCompactNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  }
+
+  /**
+   * Show strategy details modal (Issue #216)
+   */
+  window.showStrategyDetails = function(strategyId) {
+    const strategy = state.strategies.find(s => s.id === strategyId);
+    if (!strategy) return;
+
+    TelegramMiniApp.haptic.impactOccurred('light');
+
+    const riskEmoji = getRiskEmoji(strategy.riskLevel);
+    const starRating = getStarRating(strategy.rating || 0);
+    const verifiedText = strategy.verified ? '✓ Verified' : 'Unverified';
+
+    // Create modal content
+    const detailsHtml = `
+      <div class="strategy-details-modal">
+        <div class="strategy-details-header">
+          <h2>${escapeHtml(strategy.name)}</h2>
+          <span class="verified-status ${strategy.verified ? 'verified' : ''}">${verifiedText}</span>
+        </div>
+        <p class="strategy-details-author">by ${escapeHtml(strategy.creatorName)}</p>
+        <p class="strategy-details-desc">${escapeHtml(strategy.description)}</p>
+
+        <div class="strategy-details-section">
+          <h3>Performance Metrics</h3>
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <span class="label">30-Day ROI</span>
+              <span class="value ${(strategy.roi30d || 0) >= 0 ? 'positive' : 'negative'}">
+                ${(strategy.roi30d || 0) >= 0 ? '+' : ''}${(strategy.roi30d || 0).toFixed(1)}%
+              </span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Win Rate</span>
+              <span class="value">${(strategy.winRate || 0).toFixed(1)}%</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Max Drawdown</span>
+              <span class="value negative">${(strategy.maxDrawdown || 0).toFixed(1)}%</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Sharpe Ratio</span>
+              <span class="value">${(strategy.sharpeRatio || 0).toFixed(2)}</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Total Trades</span>
+              <span class="value">${strategy.totalTrades || 0}</span>
+            </div>
+            <div class="metric-item">
+              <span class="label">Active Users</span>
+              <span class="value">${formatCompactNumber(strategy.activeUsers || 0)}</span>
+            </div>
           </div>
         </div>
-        <div class="marketplace-card-actions">
-          <button class="btn primary" style="width: 100%;" onclick="copyStrategy('${strategy.id}')">
-            Copy Strategy
-          </button>
+
+        <div class="strategy-details-section">
+          <h3>Risk Profile</h3>
+          <div class="risk-info">
+            <span class="risk-badge ${strategy.riskLevel}">${riskEmoji} ${strategy.riskLevel.charAt(0).toUpperCase() + strategy.riskLevel.slice(1)} Risk</span>
+            <span class="min-capital-badge">${strategy.minInvestment} TON minimum</span>
+          </div>
+          <div class="supported-assets">
+            <span class="label">Supported Assets:</span>
+            <span class="assets">${(strategy.supportedAssets || []).join(', ')}</span>
+          </div>
+        </div>
+
+        <div class="strategy-details-section">
+          <h3>Rating</h3>
+          <div class="rating-display">
+            <span class="stars large">${starRating}</span>
+            <span class="rating-score">${(strategy.rating || 0).toFixed(1)} / 10</span>
+          </div>
+        </div>
+
+        <div class="strategy-details-section">
+          <h3>Tags</h3>
+          <div class="tags-list">
+            ${(strategy.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+          </div>
         </div>
       </div>
-    `).join('');
-  }
+    `;
+
+    TelegramMiniApp.showPopup({
+      title: 'Strategy Details',
+      message: detailsHtml,
+      buttons: [
+        { id: 'deploy', type: 'default', text: 'Deploy Strategy' },
+        { id: 'close', type: 'cancel', text: 'Close' }
+      ]
+    }, (buttonId) => {
+      if (buttonId === 'deploy') {
+        copyStrategy(strategyId);
+      }
+    });
+  };
 
   /**
    * Filter marketplace
