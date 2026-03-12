@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.38.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.39.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -5089,6 +5089,91 @@ Marketplace Leaderboards (Top Performing / Lowest Risk / Trending / Most Trusted
 
 **Full Reputation System Documentation**: [src/marketplace/ranking.ts](src/marketplace/ranking.ts), [src/marketplace/user-feedback.ts](src/marketplace/user-feedback.ts), [src/marketplace/performance-history.ts](src/marketplace/performance-history.ts)
 
+### Dedicated Reputation Module
+
+The platform also provides a standalone reputation module (`@tonaiagent/core/reputation`) for scenarios requiring independent reputation services outside of the full marketplace:
+
+```typescript
+import {
+  createReputationApi,
+  createStrategyRankingEngine,
+  createMetricsAggregator,
+} from '@tonaiagent/core/reputation';
+
+// Create the ranking engine directly
+const engine = createStrategyRankingEngine();
+
+// Register a strategy
+engine.registerStrategy('momentum_v1', 'AI Momentum Pro', 'developer_123');
+
+// Update metrics from your data sources
+engine.updateStrategyMetrics('momentum_v1', {
+  roi: 18.4,
+  win_rate: 62,
+  max_drawdown: -12,
+  trade_count: 312,
+  agents_using: 148,
+  rating: 4.6,
+  reviews: 82,
+});
+
+// Get the reputation score
+const score = engine.getStrategyScore('momentum_v1');
+console.log(`Reputation: ${score.reputation_score}`);  // e.g. 78.3
+console.log(`Tier: ${score.tier}`);                    // e.g. 'trusted'
+console.log(`Badges: ${score.badges}`);                // e.g. ['top_performer', 'trending']
+
+// Get leaderboards by category
+const topPerforming = engine.getLeaderboard('top_performing');
+const mostPopular = engine.getLeaderboard('most_popular');
+const lowRisk = engine.getLeaderboard('low_risk');
+const trending = engine.getLeaderboard('trending');
+const newStrategies = engine.getLeaderboard('new_strategies');
+```
+
+#### Reputation API Endpoints
+
+The reputation module includes a REST API handler:
+
+```typescript
+const api = createReputationApi(engine);
+
+// GET /api/strategies/ranking
+const ranking = await api.handle({
+  method: 'GET',
+  path: '/api/strategies/ranking',
+  query: { category: 'top_performing', limit: '10' },
+});
+
+// GET /api/strategies/{id}/metrics
+const metrics = await api.handle({
+  method: 'GET',
+  path: '/api/strategies/momentum_v1/metrics',
+});
+
+// GET /api/leaderboards/{category}
+const leaderboard = await api.handle({
+  method: 'GET',
+  path: '/api/leaderboards/most_popular',
+});
+```
+
+#### Reputation Score Formula
+
+The reputation module uses the formula specified in Issue #218:
+
+```
+Reputation Score =
+  (ROI × 0.35)
+  + (Win Rate × 0.20)
+  + (Popularity × 0.20)
+  + (User Rating × 0.15)
+  - (Drawdown × 0.10)
+```
+
+This produces a score from 0-100 that determines marketplace ordering and tier placement.
+
+**Module Documentation**: [src/reputation/](src/reputation/)
 
 ---
 
