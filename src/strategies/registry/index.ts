@@ -577,4 +577,4 @@ export function createStrategyRegistry(): InMemoryStrategyRegistry {
 // Exports
 // ============================================================================
 
-export type { StrategyRegistryStorage };
+// Note: StrategyRegistryStorage is already exported at declaration

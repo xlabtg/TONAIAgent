@@ -332,4 +332,4 @@ export function createMarketplaceIntegration(
 // Exports
 // ============================================================================
 
-export type { MarketplaceIntegration };
+// Note: MarketplaceIntegration is already exported at declaration
