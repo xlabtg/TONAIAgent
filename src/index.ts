@@ -1504,3 +1504,56 @@ export {
   type MarketplaceBacktester,
   type CLIBacktestConfig,
 } from './strategy-marketplace';
+
+// Portfolio Engine (Issue #214)
+// Persistent portfolio tracking for AI trading agents including:
+//   1. Portfolio Management   — create, update, query agent portfolios
+//   2. Trade History System   — complete trade recording and filtering
+//   3. Position Tracking      — open positions, averaging, closing
+//   4. Balance Management     — multi-asset balance tracking
+//   5. PnL Metrics            — realized/unrealized PnL, ROI, win rate
+//   6. Portfolio API          — REST endpoints for portfolio data
+// Architecture: Agent Runtime → Trade Execution → Portfolio Engine → Database Storage → Analytics/Dashboard
+// Note: Import separately from '@tonaiagent/core/portfolio' for full access.
+export * as PortfolioEngine from './portfolio';
+export {
+  // Storage
+  PortfolioStorage,
+  createPortfolioStorage,
+  createDemoPortfolioStorage,
+  // Engine
+  PortfolioEngine as PortfolioEngineClass,
+  createPortfolioEngine,
+  createDemoPortfolioEngine,
+  // API
+  PortfolioApi,
+  createPortfolioApi,
+  createDemoPortfolioApi,
+  // Error
+  PortfolioError,
+  // Config
+  DEFAULT_PORTFOLIO_ENGINE_CONFIG,
+  // Key types
+  type Portfolio,
+  type Position,
+  type Trade,
+  type BalanceRecord,
+  type PortfolioSummary as PortfolioEngineSummary,
+  type PortfolioMetrics,
+  type TradeSide,
+  type PositionStatus,
+  type TradeFilter,
+  type PortfolioEngineConfig,
+  type PortfolioEvent,
+  type PortfolioEventType,
+  type PortfolioEventHandler,
+  type PortfolioUnsubscribe,
+  type PortfolioErrorCode,
+  type PortfolioApiRequest,
+  type PortfolioApiResponse,
+  type PortfolioOverviewResponse,
+  type TradeHistoryResponse,
+  type PositionsResponse,
+  type ExecuteTradeRequest,
+  type ExecuteTradeResult,
+} from './portfolio';
