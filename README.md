@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.35.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.36.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -6128,6 +6128,154 @@ const result = await engine.execute({
 console.log(result.signal);
 // { action: 'BUY', asset: 'TON', amount: '100000000', confidence: 0.72, ... }
 ```
+
+### TON DEX Connectors (v2)
+
+The Market Data Layer v2 introduces **live market data connectors** for major TON DeFi DEX protocols, enabling real-time price aggregation from on-chain liquidity sources.
+
+#### Supported TON DEXs
+
+| DEX | Type | Features |
+|-----|------|----------|
+| **DeDust** | AMM | Pool discovery, swap routing, price extraction, liquidity data |
+| **STON.fi** | AMM | REST API, jetton pairs, swap events, trading history |
+| **TONCO** | Concentrated Liquidity | Algebra protocol, efficient capital, tight spreads |
+
+#### Architecture
+
+```
+TON DEX Protocols (DeDust, STON.fi, TONCO)
+         |
+TON DEX Connectors
+         |
+Market Data Aggregator
+         |
+Aggregated Price Engine (liquidity/volume weighted)
+         |
+Strategy Engine / Portfolio Analytics
+```
+
+#### Quick Start — Multi-DEX Aggregation
+
+```typescript
+import { createMarketDataAggregator } from '@tonaiagent/core/market-data';
+
+// Create and start the aggregator
+const aggregator = createMarketDataAggregator();
+aggregator.start();
+
+// Get aggregated price from all TON DEXs
+const price = await aggregator.getAggregatedPrice('TON');
+console.log(price.priceUsd);        // Liquidity-weighted average price
+console.log(price.spreadPercent);   // Price spread across DEXs
+console.log(price.quotes);          // Individual DEX quotes
+console.log(price.totalLiquidityUsd); // Combined liquidity
+
+// Get all liquidity pools
+const pools = await aggregator.getAllPools();
+
+// Get trading pairs
+const pairs = await aggregator.getTradingPairs();
+
+// Check provider health
+const health = await aggregator.healthCheck();
+// { dedust: true, stonfi: true, tonco: true }
+```
+
+#### Individual DEX Providers
+
+```typescript
+import {
+  createDedustProvider,
+  createStonfiProvider,
+  createToncoProvider,
+} from '@tonaiagent/core/market-data';
+
+// DeDust provider
+const dedust = createDedustProvider();
+const dedustPrice = await dedust.getPrice('TON');
+const dedustPools = await dedust.getPools();
+
+// STON.fi provider
+const stonfi = createStonfiProvider();
+const stonfiPrice = await stonfi.getPrice('TON');
+const stonfiSwaps = await stonfi.getRecentSwaps(100);
+
+// TONCO provider
+const tonco = createToncoProvider();
+const toncoPrice = await tonco.getPrice('TON');
+const toncoPools = await tonco.getPoolsForToken('USDT');
+```
+
+#### Aggregation Methods
+
+The aggregator supports multiple price aggregation strategies:
+
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| `liquidity_weighted` | Weights by TVL (default) | Most accurate for large trades |
+| `volume_weighted` | Weights by 24h volume | Reflects trading activity |
+| `median` | Median of all quotes | Resistant to outliers |
+
+```typescript
+const aggregator = createMarketDataAggregator({
+  providers: ['dedust', 'stonfi', 'tonco'],
+  aggregationMethod: 'liquidity_weighted',
+  minLiquidityUsd: 1000,      // Filter low-liquidity quotes
+  maxSpreadPercent: 10,       // Flag anomalies above threshold
+  cacheTtlSeconds: 10,        // Cache duration
+  pollingIntervalMs: 5000,    // Auto-refresh interval
+});
+```
+
+#### TON DEX Data Types
+
+```typescript
+// Liquidity pool data
+interface LiquidityPool {
+  poolId: string;
+  dex: 'dedust' | 'stonfi' | 'tonco';
+  token0: TokenInfo;
+  token1: TokenInfo;
+  reserve0: string;
+  reserve1: string;
+  tvlUsd: number;
+  feePercent: number;
+  volume24hUsd: number;
+  apr?: number;
+}
+
+// Aggregated price
+interface AggregatedPrice {
+  asset: string;
+  priceUsd: number;
+  quotes: DexPriceQuote[];
+  totalLiquidityUsd: number;
+  totalVolume24hUsd: number;
+  aggregationMethod: string;
+  spreadPercent: number;
+}
+```
+
+#### Event Subscription
+
+```typescript
+aggregator.subscribe((event) => {
+  switch (event.type) {
+    case 'aggregation.completed':
+      console.log('Price updated:', event.data);
+      break;
+    case 'anomaly.detected':
+      console.warn('Price anomaly:', event.data);
+      break;
+    case 'provider.error':
+      console.error('Provider failed:', event.provider, event.data);
+      break;
+  }
+});
+```
+
+---
 
 ### Custom Providers
 

@@ -1,22 +1,30 @@
 /**
- * TONAIAgent - Market Data Layer v1
+ * TONAIAgent - Market Data Layer v2
  *
  * Unified system for fetching, normalizing, caching, and distributing real-time
  * cryptocurrency market data to agents and strategies.
  *
+ * **v2 Features (Issue #211):**
+ * - TON DEX connectors: DeDust, STON.fi, TONCO
+ * - Multi-DEX price aggregation with liquidity/volume weighting
+ * - Liquidity pool data and trading pairs
+ * - Swap event tracking
+ * - Outlier detection and price manipulation protection
+ *
  * Architecture:
  * ```
- *   External APIs (CoinGecko, Binance)
+ *   External APIs                    TON DEX Protocols
+ *   (CoinGecko, Binance)            (DeDust, STON.fi, TONCO)
+ *         |                                   |
+ *   Market Data Providers            TON DEX Connectors
+ *         |                                   |
+ *   Data Normalizer                  Market Data Aggregator
+ *         |                                   |
+ *   Cache Layer                       ← MarketDataCache (10s TTL)
+ *         |                                   |
+ *   Market Data Service  ←─────────── Aggregated Price Engine
  *         |
- *   Market Data Providers     ← CoinGeckoProvider, BinanceProvider
- *         |
- *   Data Normalizer           ← Built into each provider
- *         |
- *   Cache Layer               ← MarketDataCache (30s TTL)
- *         |
- *   Market Data Service       ← DefaultMarketDataService
- *         |
- *   Strategy Engine           ← Issue #180
+ *   Strategy Engine
  * ```
  *
  * ## Quick Start
@@ -38,6 +46,33 @@
  * // 3. Fetch a full snapshot (all MVP assets) — compatible with Strategy Engine
  * const snapshot = await service.getSnapshot();
  * console.log(snapshot.prices['TON'].price); // 5.25
+ * ```
+ *
+ * ## TON DEX Integration (v2)
+ *
+ * ```typescript
+ * import {
+ *   createMarketDataAggregator,
+ *   createDedustProvider,
+ *   createStonfiProvider,
+ *   createToncoProvider,
+ * } from '@tonaiagent/core/market-data';
+ *
+ * // Use the aggregator for multi-DEX data
+ * const aggregator = createMarketDataAggregator();
+ * aggregator.start();
+ *
+ * // Get aggregated price from all TON DEXs
+ * const price = await aggregator.getAggregatedPrice('TON');
+ * console.log(price.priceUsd);        // Weighted average price
+ * console.log(price.spreadPercent);   // Price spread across DEXs
+ * console.log(price.quotes);          // Individual DEX quotes
+ *
+ * // Get all liquidity pools
+ * const pools = await aggregator.getAllPools();
+ *
+ * // Get trading pairs
+ * const pairs = await aggregator.getTradingPairs();
  * ```
  *
  * ## Integration with Strategy Engine
@@ -145,3 +180,55 @@ export {
   BINANCE_SYMBOLS,
   BASELINE_PRICES,
 } from './config/assets';
+
+// ============================================================================
+// TON DEX Connectors (Issue #211)
+// ============================================================================
+
+export type {
+  // TON DEX Provider types
+  TonDexProviderName,
+  TonDexProvider,
+  TonDexProviderConfig,
+  // Pool types
+  LiquidityPool,
+  TokenInfo,
+  TradingPair,
+  // Price types
+  DexPriceQuote,
+  AggregatedPrice,
+  // Swap types
+  SwapEvent,
+  // Historical data types
+  OHLCVCandle,
+  CandleInterval,
+  // Aggregator types
+  AggregatorConfig,
+  // Event types
+  TonDexEventType,
+  TonDexEvent,
+  TonDexEventHandler,
+  TonDexUnsubscribe,
+  // Error types
+  TonDexErrorCode,
+} from './connectors';
+
+export { TonDexError } from './connectors';
+
+// TON DEX Providers
+export {
+  BaseTonDexProvider,
+  DedustProvider,
+  createDedustProvider,
+  StonfiProvider,
+  createStonfiProvider,
+  ToncoProvider,
+  createToncoProvider,
+} from './connectors';
+
+// Market Data Aggregator
+export {
+  MarketDataAggregator,
+  createMarketDataAggregator,
+  DEFAULT_AGGREGATOR_CONFIG,
+} from './connectors';
