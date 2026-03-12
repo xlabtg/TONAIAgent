@@ -4788,6 +4788,88 @@ const agents = await marketplace.getUserAgents('user_123');
 
 **Module Path**: [src/strategy-marketplace](src/strategy-marketplace) | **Tests**: [tests/strategy-marketplace](tests/strategy-marketplace)
 
+### Strategy Marketplace UI (Issue #216)
+
+The Strategy Marketplace UI provides a complete interface for discovering, evaluating, and deploying strategies through both the Telegram Mini App and web dashboard.
+
+**REST API Endpoints:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/marketplace/strategies` | GET | List strategies with filters |
+| `/api/marketplace/strategies/:id` | GET | Get strategy details |
+| `/api/marketplace/strategies/:id/performance` | GET | Get strategy performance data |
+| `/api/marketplace/strategies/:id/reviews` | GET | Get strategy reviews |
+| `/api/marketplace/strategies/:id/deploy` | POST | Deploy strategy to agent |
+| `/api/marketplace/strategies/:id/rate` | POST | Rate a strategy (1-5 stars) |
+| `/api/marketplace/categories` | GET | Get category list with stats |
+| `/api/marketplace/stats` | GET | Get marketplace statistics |
+| `/api/marketplace/top` | GET | Get top strategies by metric |
+| `/api/marketplace/agents` | GET | Get user's deployed agents |
+| `/api/marketplace/agents/:id/stop` | POST | Stop a deployed agent |
+
+**API Usage:**
+
+```typescript
+import { createMarketplaceApi } from '@tonaiagent/core/strategy-marketplace';
+
+const api = createMarketplaceApi();
+
+// List strategies with filters
+const response = await api.handle({
+  method: 'GET',
+  path: '/api/marketplace/strategies',
+  query: { category: 'momentum', riskLevel: 'medium', sortBy: 'roi' },
+});
+
+// Get strategy details with performance data
+const details = await api.handle({
+  method: 'GET',
+  path: '/api/marketplace/strategies/momentum-trader',
+});
+
+// Deploy strategy
+const deployResult = await api.handle({
+  method: 'POST',
+  path: '/api/marketplace/strategies/momentum-trader/deploy',
+  body: { capitalTON: 100, simulationMode: true },
+  userId: 'user_123',
+});
+```
+
+**Dashboard UI Components:**
+
+The dashboard module provides text/HTML renderers for displaying marketplace data:
+
+```typescript
+import {
+  renderMarketplaceListing,
+  renderStrategyDetails,
+  renderEquityCurve,
+  createMarketplaceDashboard,
+} from '@tonaiagent/core/strategy-marketplace';
+
+// Render strategy listing
+const listingText = renderMarketplaceListing(strategies);
+
+// Render detailed strategy page
+const dashboard = createMarketplaceDashboard();
+const pageText = dashboard.renderStrategyPage(strategy, performance, reviews);
+```
+
+**Performance Charts:**
+- Equity curve (30-day portfolio value)
+- Drawdown chart (risk visualization)
+- Trade distribution (wins/losses/breakeven)
+- Monthly returns table
+
+**Telegram Mini App Integration:**
+- Marketplace tab with strategy discovery
+- Filter by category and risk level
+- Strategy details modal with performance metrics
+- One-click deployment with capital configuration
+- User rating system (1-5 stars with reviews)
+
 ---
 
 ## Strategy Reputation System

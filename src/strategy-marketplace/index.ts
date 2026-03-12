@@ -559,4 +559,59 @@ export {
   formatCLIBacktestResult,
 } from './backtesting-integration';
 
+// ============================================================================
+// Marketplace API (Issue #216)
+// ============================================================================
+
+export {
+  // API Handler
+  MarketplaceApi,
+  createMarketplaceApi,
+  createDemoMarketplaceApi,
+  // Types
+  MarketplaceError,
+  type MarketplaceApiRequest,
+  type MarketplaceApiResponse,
+  type MarketplaceApiResponseBody,
+  type MarketplaceErrorCode,
+  type StrategyListResponse,
+  type StrategyDetailsResponse,
+  type StrategyPerformanceData,
+  type DeployStrategyRequest,
+  type RateStrategyRequest,
+  type CategoriesResponse,
+  type TopStrategiesResponse,
+} from './api';
+
+// ============================================================================
+// Marketplace Dashboard UI (Issue #216)
+// ============================================================================
+
+export {
+  // Dashboard Component
+  MarketplaceDashboard,
+  createMarketplaceDashboard,
+  // Renderers
+  renderMarketplaceListing,
+  renderStrategyCard,
+  renderStrategyDetails,
+  renderEquityCurve,
+  renderDrawdownChart,
+  renderTradeDistribution,
+  renderMonthlyReturns,
+  renderReviews,
+  renderDeployedAgents,
+  renderCategories,
+  renderMarketplaceStats,
+  // Utilities
+  getRiskLevelEmoji,
+  getRiskLevelText,
+  getCategoryEmoji,
+  getStarRating,
+  formatPercent,
+  formatCurrency,
+  formatNumber,
+  getAgentStatusEmoji,
+} from './dashboard';
+
 export default DefaultStrategyMarketplace;
