@@ -45,7 +45,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 26. [Production Agent Runtime](#production-agent-runtime)
 27. [Agent Control API](#agent-control-api)
 28. [Agent Manager API](#agent-manager-api)
-29. [Agent Plugin System](#agent-plugin-system)
+29. [Portfolio Engine](#portfolio-engine)
+30. [Agent Plugin System](#agent-plugin-system)
 29. [Strategy Marketplace](#strategy-marketplace)
 30. [Strategy Reputation System](#strategy-reputation-system)
 31. [Live Trading Infrastructure](#live-trading-infrastructure)
@@ -3738,6 +3739,270 @@ tests/agents/
 ```
 
 **Full Implementation**: [src/agents](src/agents)
+
+---
+
+## Portfolio Engine
+
+> **Persistent portfolio tracking for AI trading agents — balances, positions, trade history, and PnL metrics.**
+
+The Portfolio Engine (Issue #214) provides a complete persistent storage layer for agent portfolios. It integrates with the Agent Runtime to store trade execution results, track positions, manage balances, and calculate performance metrics. This data feeds into analytics, dashboards, and the Telegram Mini App.
+
+### Portfolio Engine Architecture
+
+```
+Agent Runtime (#212)
+        ↓
+Trade Execution
+        ↓
+Portfolio Engine
+        ↓
+Database Storage
+        ↓
+Analytics / Dashboard
+```
+
+The Portfolio Engine acts as the **source of truth for agent financial state**.
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Portfolio Management** | Create and manage portfolios per agent |
+| **Trade History** | Complete trade recording with filtering |
+| **Position Tracking** | Open positions, averaging, closing |
+| **Balance Management** | Multi-asset balance tracking |
+| **PnL Metrics** | Realized/unrealized PnL, ROI, win rate |
+| **Portfolio API** | REST endpoints for portfolio data |
+| **Event System** | Real-time notifications for updates |
+
+### Quick Start
+
+```typescript
+import {
+  createPortfolioEngine,
+  createPortfolioApi,
+} from '@tonaiagent/core/portfolio';
+
+// Create the Portfolio Engine
+const engine = createPortfolioEngine();
+
+// Create portfolio for an agent (auto-initialized with default balance)
+const portfolio = engine.getOrCreatePortfolio('agent_001');
+
+// Execute a BUY trade
+const buyResult = engine.executeTrade({
+  agentId: 'agent_001',
+  pair: 'TON/USDT',
+  side: 'BUY',
+  quantity: 200,
+  price: 5.21,
+});
+
+console.log('Trade executed:', buyResult.trade);
+console.log('Position opened:', buyResult.position);
+
+// Execute a SELL trade
+const sellResult = engine.executeTrade({
+  agentId: 'agent_001',
+  pair: 'TON/USDT',
+  side: 'SELL',
+  quantity: 100,
+  price: 5.50,
+});
+
+console.log('Realized PnL:', sellResult.trade?.realizedPnl);
+
+// Get portfolio summary
+const summary = engine.getPortfolioSummary('agent_001');
+console.log('Portfolio Value:', summary.portfolio.totalValue);
+console.log('Positions:', summary.positions);
+console.log('Metrics:', summary.metrics);
+```
+
+### Portfolio Data Model
+
+**Portfolio:**
+```json
+{
+  "portfolioId": "portfolio_001",
+  "agentId": "agent_001",
+  "baseCurrency": "USDT",
+  "totalValue": 10420,
+  "createdAt": "2026-03-12T10:00:00Z",
+  "updatedAt": "2026-03-12T13:00:00Z"
+}
+```
+
+**Position:**
+```json
+{
+  "positionId": "pos_001",
+  "agentId": "agent_001",
+  "asset": "TON",
+  "size": 200,
+  "avgEntryPrice": 5.21,
+  "currentPrice": 5.34,
+  "unrealizedPnl": 26,
+  "status": "open"
+}
+```
+
+**Trade:**
+```json
+{
+  "tradeId": "trade_123",
+  "agentId": "agent_001",
+  "pair": "TON/USDT",
+  "side": "BUY",
+  "price": 5.21,
+  "quantity": 200,
+  "value": 1042,
+  "fee": 1.042,
+  "timestamp": "2026-03-12T13:00:00Z"
+}
+```
+
+**Balance:**
+```json
+{
+  "agentId": "agent_001",
+  "asset": "USDT",
+  "balance": 9458,
+  "available": 9458,
+  "reserved": 0
+}
+```
+
+### Portfolio API
+
+The Portfolio API exposes portfolio data through REST endpoints:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/portfolio/:agentId` | GET | Get portfolio overview |
+| `/api/portfolio/:agentId/trades` | GET | Get trade history |
+| `/api/portfolio/:agentId/positions` | GET | Get active positions |
+| `/api/portfolio/:agentId/balances` | GET | Get balances |
+| `/api/portfolio/:agentId/metrics` | GET | Get portfolio metrics |
+| `/api/portfolio/:agentId/trades` | POST | Execute a new trade |
+
+**Example API Usage:**
+
+```typescript
+import { createPortfolioApi } from '@tonaiagent/core/portfolio';
+
+const api = createPortfolioApi();
+
+// Get portfolio overview
+const response = await api.handle({
+  method: 'GET',
+  path: '/api/portfolio/agent_001',
+});
+
+// Response:
+// {
+//   statusCode: 200,
+//   body: {
+//     success: true,
+//     data: {
+//       portfolioValue: 10420,
+//       baseCurrency: "USDT",
+//       positions: [...],
+//       balances: { USDT: 9458, TON: 200 },
+//       metrics: { roi: 4.2, totalPnl: 420, ... }
+//     }
+//   }
+// }
+```
+
+### Position Tracking
+
+The engine automatically tracks and updates positions:
+
+```typescript
+// Position averaging on multiple buys
+engine.executeTrade({ agentId: 'agent_001', pair: 'TON/USDT', side: 'BUY', quantity: 100, price: 5.00 });
+engine.executeTrade({ agentId: 'agent_001', pair: 'TON/USDT', side: 'BUY', quantity: 100, price: 6.00 });
+
+const positions = engine.getPositions('agent_001');
+// Position: size=200, avgEntryPrice=5.50
+
+// Partial close
+engine.executeTrade({ agentId: 'agent_001', pair: 'TON/USDT', side: 'SELL', quantity: 50, price: 6.50 });
+// Position: size=150, status='partially_closed', realizedPnl=50
+
+// Full close
+engine.executeTrade({ agentId: 'agent_001', pair: 'TON/USDT', side: 'SELL', quantity: 150, price: 7.00 });
+// Position: status='closed'
+```
+
+### Portfolio Metrics
+
+Calculate comprehensive performance metrics:
+
+```typescript
+const metrics = engine.calculateMetrics('agent_001');
+
+// Returns:
+// {
+//   agentId: 'agent_001',
+//   portfolioValue: 10420,
+//   initialValue: 10000,
+//   realizedPnl: 320,
+//   unrealizedPnl: 100,
+//   totalPnl: 420,
+//   roi: 4.2,
+//   maxDrawdown: 2.1,
+//   totalTrades: 42,
+//   winningTrades: 28,
+//   losingTrades: 14,
+//   winRate: 66.67,
+//   totalFees: 10.5,
+//   calculatedAt: Date
+// }
+```
+
+### Event System
+
+Subscribe to portfolio events for real-time updates:
+
+```typescript
+const unsubscribe = engine.subscribe((event) => {
+  switch (event.type) {
+    case 'portfolio.created':
+      console.log('New portfolio:', event.agentId);
+      break;
+    case 'trade.executed':
+      console.log('Trade executed:', event.data.trade);
+      break;
+    case 'position.opened':
+      console.log('Position opened:', event.data);
+      break;
+    case 'position.closed':
+      console.log('Position closed, PnL:', event.data.realizedPnl);
+      break;
+  }
+});
+
+// Later: unsubscribe();
+```
+
+### Module Structure
+
+```
+src/portfolio/
+  types.ts      — type definitions, PortfolioError, configs
+  storage.ts    — PortfolioStorage with CRUD operations
+  engine.ts     — PortfolioEngine with trade execution
+  api.ts        — PortfolioApi REST handler
+  index.ts      — barrel exports
+
+tests/portfolio/
+  portfolio.test.ts — comprehensive test suite
+```
+
+**Full Implementation**: [src/portfolio](src/portfolio)
 
 ---
 
