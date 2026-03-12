@@ -216,7 +216,7 @@ export class AgentManagerApi {
       const result = this.service.listAgents(ownerId);
       return this.ok(result);
     } catch (err) {
-      return this.handleError(err);
+      return this.handleError(err) as AgentApiResponse<ListAgentsResponse>;
     }
   }
 
@@ -225,7 +225,7 @@ export class AgentManagerApi {
       const result = this.service.getAgentDetails(agentId);
       return this.ok(result);
     } catch (err) {
-      return this.handleError(err);
+      return this.handleError(err) as AgentApiResponse<AgentDetailsResponse>;
     }
   }
 
