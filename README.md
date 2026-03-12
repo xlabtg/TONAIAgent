@@ -2,7 +2,7 @@
 
 > **AI-Native Global Financial Infrastructure (AGFI) — The Next Generation of Capital Coordination**
 
-[![Version](https://img.shields.io/badge/version-2.36.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
+[![Version](https://img.shields.io/badge/version-2.37.0-blue.svg)](https://github.com/xlabtg/TONAIAgent/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%3E%3D5.0.0-blue.svg)](https://www.typescriptlang.org/)
@@ -3267,6 +3267,193 @@ runtime.registerAgent(savedConfig);
 ```
 
 **Full PAR Documentation**: [src/agent-runtime](src/agent-runtime)
+
+---
+
+## Agent Execution Loop
+
+> **Continuous Runtime Engine for Autonomous Trading Agents (Issue #212)**
+
+The Agent Execution Loop is the core runtime mechanism that actually executes agents. It processes market data, generates strategy signals, validates risk, executes trades, and updates portfolios in a continuous loop for each active agent.
+
+### Why Agent Execution Loop?
+
+Without this component, strategies cannot run continuously or react to live market conditions. The Agent Execution Loop enables:
+
+- **Autonomous trading agents** that run without manual intervention
+- **Real-time strategy execution** with configurable intervals
+- **Multi-agent infrastructure** supporting 100+ concurrent agents
+- **Production-ready runtime** with fault tolerance and monitoring
+
+### Execution Cycle Workflow
+
+Each cycle processes the following steps:
+
+```
+1. Fetch Market Data     → Get TON/USDT price, liquidity, volume from DEX connectors
+        ↓
+2. Execute Strategy      → Run momentum, arbitrage, or AI-based strategy logic
+        ↓
+3. Validate Risk         → Check position size, exposure limits, daily risk caps
+        ↓
+4. Execute Trade         → Process BUY/SELL/HOLD signal (simulation or live)
+        ↓
+5. Update Portfolio      → Update positions, balances, trade history
+        ↓
+6. Update Metrics        → Calculate ROI, Sharpe ratio, drawdown, win rate
+```
+
+### Agent State Machine
+
+Agents transition through well-defined states:
+
+```
+CREATED → RUNNING ↔ PAUSED → STOPPED
+              ↓
+           ERROR (can recover)
+```
+
+### Quick Start
+
+```typescript
+import { createAgentManager } from '@tonaiagent/core/runtime';
+
+// Create and start the manager
+const manager = createAgentManager();
+manager.start();
+
+// Create an agent
+await manager.createAgent({
+  agentId: 'agent-001',
+  name: 'Momentum Bot',
+  ownerId: 'user-123',
+  strategyId: 'momentum',
+  tradingPair: 'TON/USDT',
+  interval: { value: 10, unit: 'seconds' },
+  initialBalance: { USDT: 10000 },
+  riskLimits: {
+    maxPositionSizePercent: 5,
+    maxPortfolioExposurePercent: 20,
+    stopLossPercent: 10,
+    maxDailyLossPercent: 3,
+    maxTradesPerDay: 100,
+  },
+  simulationMode: true,
+});
+
+// Start the agent - begins continuous execution
+await manager.startAgent('agent-001');
+
+// Monitor performance
+const telemetry = manager.getTelemetry();
+console.log(`Running agents: ${telemetry.runningAgents}`);
+console.log(`Total trades: ${telemetry.totalTrades}`);
+console.log(`Avg cycle latency: ${telemetry.avgCycleLatencyMs}ms`);
+
+// Subscribe to events
+manager.subscribe((event) => {
+  if (event.type === 'trade.executed') {
+    console.log('Trade:', event.data);
+  }
+});
+
+// Control agents
+await manager.pauseAgent('agent-001');
+await manager.resumeAgent('agent-001');
+await manager.stopAgent('agent-001');
+
+// Shutdown
+manager.stop();
+```
+
+### Multi-Agent Support
+
+Run multiple agents in parallel with different strategies:
+
+```typescript
+// Create multiple agents
+await manager.createAgent({ agentId: 'agent-001', strategyId: 'momentum', ... });
+await manager.createAgent({ agentId: 'agent-002', strategyId: 'arbitrage', ... });
+await manager.createAgent({ agentId: 'agent-003', strategyId: 'ai-signal', ... });
+
+// Start all agents
+await manager.startAgent('agent-001');
+await manager.startAgent('agent-002');
+await manager.startAgent('agent-003');
+
+// Get all statuses
+const statuses = manager.getAllAgentStatuses();
+for (const status of statuses) {
+  console.log(`${status.name}: ${status.state}, ROI: ${status.roi}%`);
+}
+```
+
+### Configurable Intervals
+
+Agents can run at different frequencies:
+
+```typescript
+// Every 5 seconds
+{ interval: { value: 5, unit: 'seconds' } }
+
+// Every 10 seconds
+{ interval: { value: 10, unit: 'seconds' } }
+
+// Every 30 seconds
+{ interval: { value: 30, unit: 'seconds' } }
+
+// Every 1 minute
+{ interval: { value: 1, unit: 'minutes' } }
+```
+
+### Runtime Monitoring
+
+The runtime provides comprehensive telemetry:
+
+```typescript
+const telemetry = manager.getTelemetry();
+
+// Agent metrics
+console.log('Active agents:', telemetry.activeAgents);
+console.log('Running agents:', telemetry.runningAgents);
+console.log('Error agents:', telemetry.errorAgents);
+
+// Execution metrics
+console.log('Total cycles:', telemetry.totalCycles);
+console.log('Success rate:', (telemetry.successfulCycles / telemetry.totalCycles) * 100);
+console.log('Avg latency:', telemetry.avgCycleLatencyMs);
+
+// Trading metrics
+console.log('Total trades:', telemetry.totalTrades);
+console.log('Volume processed:', telemetry.totalVolumeProcessed);
+```
+
+### Alerting
+
+The monitor raises alerts on anomalies:
+
+```typescript
+manager.onAlert((alert) => {
+  console.log(`[${alert.severity}] ${alert.type}: ${alert.message}`);
+});
+
+// Example alerts:
+// - [warning] consecutive_errors: Agent agent-001 has 5 consecutive errors
+// - [critical] agent_error: Agent agent-001 is in ERROR state
+// - [warning] high_latency: Average cycle latency is 12000ms
+```
+
+### Integration with Existing Components
+
+The Agent Execution Loop integrates with:
+
+- **Market Data Layer** (Issue #211) — Real-time TON DEX data
+- **Strategy Engine** — Trend, arbitrage, AI-signal strategies
+- **Risk Engine** (Issue #203) — Trade validation, stop-loss, portfolio protection
+- **Trading Engine** — Simulated and live trade execution
+- **Telegram Mini App** — User controls for start/pause/stop
+
+**Full Documentation**: [src/runtime](src/runtime)
 
 ---
 
