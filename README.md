@@ -5092,6 +5092,215 @@ Marketplace Leaderboards (Top Performing / Lowest Risk / Trending / Most Trusted
 
 ---
 
+## Strategy Publishing
+
+> **Developer Strategy Registry**: Enables developers to publish, update, and maintain trading strategies in the marketplace.
+
+The Strategy Publishing System (Issue #217) provides a complete workflow for developers to create and manage trading strategies that appear in the Strategy Marketplace (#216).
+
+### Publishing Architecture
+
+```
+Developer
+   ↓
+Strategy Publishing API
+   ↓
+Strategy Validation
+   ↓
+Strategy Registry
+   ↓
+Strategy Marketplace (#216)
+```
+
+### Strategy Package Format
+
+Developers submit strategies as structured packages:
+
+```json
+{
+  "name": "Momentum Trader",
+  "description": "Momentum-based trading strategy with RSI confirmation",
+  "version": "1.0",
+  "author": "dev123",
+  "supported_pairs": ["TON/USDT"],
+  "risk_level": "medium",
+  "category": "momentum",
+  "recommended_capital": 100,
+  "execution_interval": 300,
+  "tags": ["momentum", "rsi", "trend"]
+}
+```
+
+### Publishing API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/strategies/publish` | Publish a new strategy (creates as draft) |
+| `POST` | `/api/strategies/:id/update` | Update strategy version |
+| `POST` | `/api/strategies/:id/publish` | Make strategy public |
+| `POST` | `/api/strategies/:id/deprecate` | Deprecate a strategy |
+| `POST` | `/api/strategies/:id/hide` | Hide a strategy |
+| `GET` | `/api/developers/:id/strategies` | List developer's strategies |
+| `GET` | `/api/strategies/:id` | Get strategy details |
+| `GET` | `/api/strategies/:id/versions` | Get version history |
+| `GET` | `/api/strategies/:id/metrics` | Get performance metrics |
+| `DELETE` | `/api/strategies/:id` | Delete draft strategy |
+
+### Quick Start
+
+```typescript
+import { createPublishingApi } from '@tonaiagent/core/strategies/publishing';
+
+const api = createPublishingApi();
+
+// 1. Publish a new strategy (saved as draft)
+const response = await api.handle({
+  method: 'POST',
+  path: '/api/strategies/publish',
+  body: {
+    package: {
+      name: 'Momentum Trader',
+      description: 'A momentum-based trading strategy with RSI confirmation',
+      version: '1.0',
+      supported_pairs: ['TON/USDT'],
+      risk_level: 'medium',
+      category: 'momentum',
+      recommended_capital: 100,
+    },
+  },
+  developerId: 'dev123',
+});
+
+const strategyId = response.body.data.strategy_id;
+
+// 2. Update the strategy
+await api.handle({
+  method: 'POST',
+  path: `/api/strategies/${strategyId}/update`,
+  body: {
+    version: '1.1',
+    description: 'Improved entry signals with MACD confirmation',
+  },
+  developerId: 'dev123',
+});
+
+// 3. Make the strategy public
+await api.handle({
+  method: 'POST',
+  path: `/api/strategies/${strategyId}/publish`,
+  developerId: 'dev123',
+});
+
+// 4. List developer's strategies
+const list = await api.handle({
+  method: 'GET',
+  path: '/api/developers/dev123/strategies',
+});
+
+console.log('My strategies:', list.body.data.strategies);
+```
+
+### Strategy Lifecycle
+
+```
+Draft
+  ↓ (publish)
+Published
+  ↓ (deprecate)
+Deprecated
+```
+
+Strategies start in **draft** status and must be explicitly published to appear in the marketplace. Published strategies can be hidden or deprecated when no longer maintained.
+
+### Strategy Validation
+
+Before publishing, all strategies are validated:
+
+- **Configuration validation** — required fields, valid formats
+- **Supported asset pairs** — verified against platform pairs
+- **Valid parameters** — type checking, range validation
+- **Runtime compatibility** — execution interval, capital requirements
+
+```typescript
+import { createStrategyValidator } from '@tonaiagent/core/strategies/publishing';
+
+const validator = createStrategyValidator();
+
+const result = validator.validate({
+  name: 'My Strategy',
+  description: 'A test strategy',
+  version: '1.0',
+  author: 'dev123',
+  supported_pairs: ['TON/USDT'],
+  risk_level: 'medium',
+  category: 'momentum',
+});
+
+if (!result.valid) {
+  console.log('Validation errors:', result.errors);
+}
+if (result.warnings.length > 0) {
+  console.log('Warnings:', result.warnings);
+}
+```
+
+### Performance Metrics
+
+Published strategies automatically track usage metrics:
+
+```json
+{
+  "strategy_id": "momentum_v1",
+  "agents_using": 42,
+  "avg_roi": 18.2,
+  "avg_drawdown": 12.0,
+  "trade_count": 1250,
+  "avg_win_rate": 68.5,
+  "sharpe_ratio": 1.82,
+  "total_aum": 50000
+}
+```
+
+These metrics feed into the **Strategy Marketplace (#216)** and **Strategy Reputation System**.
+
+### Marketplace Integration
+
+Published strategies automatically appear in the marketplace:
+
+```typescript
+import {
+  createPublishingApi,
+  createMarketplaceIntegration,
+} from '@tonaiagent/core/strategies/publishing';
+
+const api = createPublishingApi();
+const integration = createMarketplaceIntegration(api.getRegistry());
+
+// After publishing a strategy, sync to marketplace
+const listing = await integration.syncToMarketplace(strategyId);
+console.log('Listed in marketplace:', listing.name);
+```
+
+### Module Structure
+
+```
+src/strategies/
+  publishing/
+    types.ts              — Type definitions
+    api.ts                — Publishing API handler
+    marketplace-integration.ts — Marketplace sync
+    index.ts              — Barrel exports
+  validation/
+    index.ts              — Strategy validator
+  registry/
+    index.ts              — Strategy storage
+  index.ts                — Module exports
+```
+
+**Full Implementation**: [src/strategies/publishing](src/strategies/publishing)
+
+---
+
 ## Live Trading Infrastructure
 
 > **From Simulation to Real Capital**: The Live Trading Infrastructure enables AI agents to execute real trades through integrated liquidity venues, transitioning the platform from backtesting and simulation to live financial activity.
