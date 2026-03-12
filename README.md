@@ -46,7 +46,8 @@ TON AI Agent is an institutional-grade platform for global AI-native capital coo
 27. [Agent Control API](#agent-control-api)
 28. [Agent Manager API](#agent-manager-api)
 29. [Portfolio Engine](#portfolio-engine)
-30. [Agent Plugin System](#agent-plugin-system)
+30. [Agent Monitoring Dashboard](#agent-monitoring-dashboard)
+31. [Agent Plugin System](#agent-plugin-system)
 29. [Strategy Marketplace](#strategy-marketplace)
 30. [Strategy Reputation System](#strategy-reputation-system)
 31. [Live Trading Infrastructure](#live-trading-infrastructure)
@@ -4003,6 +4004,244 @@ tests/portfolio/
 ```
 
 **Full Implementation**: [src/portfolio](src/portfolio)
+
+---
+
+## Agent Monitoring Dashboard
+
+> **Real-time monitoring for AI trading agents — status, portfolio, positions, trades, and performance metrics.**
+
+The Agent Monitoring Dashboard (Issue #215) provides a real-time visualization layer for observing agent activity and performance. It aggregates data from the Agent Manager API (#213) and Portfolio Engine (#214) to display comprehensive metrics in the Telegram Mini App and web interface.
+
+### Dashboard Architecture
+
+```
+Agent Runtime (#212)
+        ↓
+Portfolio Engine (#214)
+        ↓
+Monitoring API
+        ↓
+Dashboard UI
+```
+
+The Monitoring Dashboard acts as the **user-facing window into agent performance**.
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **Dashboard Overview** | All agents with status, portfolio value, ROI |
+| **Agent Metrics** | Portfolio value, PnL, drawdown, win rate, profit factor |
+| **Position Monitoring** | Active positions with unrealized PnL |
+| **Trade History** | Recent trades with pagination |
+| **Equity Curve** | Portfolio value over time with drawdown visualization |
+| **Risk Indicators** | Risk level, exposure, VaR, daily loss usage |
+| **Real-Time Updates** | Live data via WebSocket or polling |
+| **Dashboard UI** | Text/HTML renderers for Telegram Mini App |
+
+### Quick Start
+
+```typescript
+import {
+  createDemoMonitoringApi,
+  renderDashboardOverview,
+} from '@tonaiagent/core/monitoring';
+
+// Create the Monitoring API with demo data
+const api = createDemoMonitoringApi();
+
+// Get dashboard overview
+const response = await api.handle({
+  method: 'GET',
+  path: '/api/monitoring/dashboard',
+});
+
+console.log('Dashboard:', response.body.data);
+// {
+//   agents: [...],
+//   totalAgents: 5,
+//   statusCounts: { RUNNING: 2, PAUSED: 1, ... },
+//   generatedAt: Date
+// }
+
+// Get agent metrics
+const metricsResponse = await api.handle({
+  method: 'GET',
+  path: '/api/monitoring/agents/agent_001/metrics',
+});
+
+console.log('Metrics:', metricsResponse.body.data);
+// {
+//   portfolioValue: 10420,
+//   roi: 4.2,
+//   maxDrawdown: -3.1,
+//   tradeCount: 24,
+//   winRate: 62.5,
+//   ...
+// }
+
+// Render dashboard as text (for console or Telegram)
+const overview = api.getService().getDashboardOverview();
+console.log(renderDashboardOverview(overview));
+```
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/monitoring/dashboard` | Dashboard overview with all agents |
+| `GET /api/monitoring/agents/:id/metrics` | Agent performance metrics |
+| `GET /api/monitoring/agents/:id/positions` | Active positions |
+| `GET /api/monitoring/agents/:id/trades` | Trade history (paginated) |
+| `GET /api/monitoring/agents/:id/performance` | Equity curve (timeframe param) |
+| `GET /api/monitoring/agents/:id/risk` | Risk indicators |
+
+### Dashboard Data Model
+
+**Dashboard Overview:**
+```json
+{
+  "agents": [
+    {
+      "agentId": "agent_001",
+      "name": "Momentum Agent",
+      "status": "RUNNING",
+      "strategy": "momentum",
+      "portfolioValue": 10420,
+      "roi": 4.2
+    }
+  ],
+  "totalAgents": 5,
+  "statusCounts": {
+    "RUNNING": 2,
+    "PAUSED": 1,
+    "STOPPED": 1,
+    "ERROR": 1
+  },
+  "generatedAt": "2026-03-12T13:00:00Z"
+}
+```
+
+**Agent Metrics:**
+```json
+{
+  "agentId": "agent_001",
+  "portfolioValue": 10420,
+  "initialCapital": 10000,
+  "totalProfit": 420,
+  "roi": 4.2,
+  "maxDrawdown": -3.1,
+  "tradeCount": 24,
+  "winRate": 62.5,
+  "profitFactor": 1.89
+}
+```
+
+**Risk Indicators:**
+```json
+{
+  "agentId": "agent_001",
+  "riskLevel": "medium",
+  "drawdown": -1.2,
+  "exposure": 18,
+  "valueAtRisk": 520,
+  "dailyLossUsage": 15
+}
+```
+
+### Real-Time Updates
+
+The Monitoring Service supports real-time event subscriptions:
+
+```typescript
+import { createDemoMonitoringMetricsService } from '@tonaiagent/core/monitoring';
+
+const service = createDemoMonitoringMetricsService();
+
+// Subscribe to real-time updates
+const unsubscribe = service.subscribe(update => {
+  console.log('Update:', update.type, update.agentId);
+
+  switch (update.type) {
+    case 'agent.status_changed':
+      console.log('Status:', update.data);
+      break;
+    case 'portfolio.value_updated':
+      console.log('New value:', update.data.newValue);
+      break;
+    case 'trade.executed':
+      console.log('Trade:', update.data);
+      break;
+  }
+});
+
+// Later: unsubscribe
+unsubscribe();
+```
+
+### Dashboard UI Renderers
+
+Text-based renderers for Telegram Mini App and console output:
+
+```typescript
+import {
+  renderDashboardOverview,
+  renderMetricsPanel,
+  renderPositionsTable,
+  renderTradesTable,
+  renderRiskPanel,
+  renderEquityCurve,
+} from '@tonaiagent/core/monitoring';
+
+// Render dashboard overview
+const overview = service.getDashboardOverview();
+console.log(renderDashboardOverview(overview));
+// ═══════════════════════════════════════════════════════
+//                  AGENT MONITORING DASHBOARD
+// ═══════════════════════════════════════════════════════
+//
+// Agent Name          Status     Portfolio      ROI
+// ───────────────────────────────────────────────────────
+// 🟢 Momentum Agent   RUNNING    $10,420.00    +4.2%
+// 🟡 Mean Reversion   PAUSED     $9,800.00     -2.0%
+// ...
+```
+
+### Status Indicators
+
+| Status | Emoji | Description |
+|--------|-------|-------------|
+| CREATED | ⚪ | Agent created, not yet started |
+| RUNNING | 🟢 | Agent actively executing |
+| PAUSED | 🟡 | Agent paused by user |
+| STOPPED | ⚫ | Agent stopped |
+| ERROR | 🔴 | Agent in error state |
+
+### Risk Level Indicators
+
+| Level | Emoji | Description |
+|-------|-------|-------------|
+| low | 🟢 | Low risk, conservative exposure |
+| medium | 🟡 | Medium risk, moderate exposure |
+| high | 🟠 | High risk, significant exposure |
+| critical | 🔴 | Critical risk, immediate attention needed |
+
+### Module Structure
+
+```
+src/monitoring/
+  types.ts      — type definitions, MonitoringError, configs
+  metrics.ts    — MonitoringMetricsService for data aggregation
+  api.ts        — MonitoringApi REST handler
+  dashboard.ts  — Dashboard UI renderers
+  index.ts      — barrel exports
+
+tests/monitoring/
+  monitoring.test.ts — comprehensive test suite
+```
+
+**Full Implementation**: [src/monitoring](src/monitoring)
 
 ---
 
