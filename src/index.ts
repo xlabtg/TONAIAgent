@@ -1557,3 +1557,66 @@ export {
   type ExecuteTradeRequest,
   type ExecuteTradeResult,
 } from './portfolio';
+
+// Agent Monitoring Dashboard (Issue #215)
+// Real-time monitoring dashboard for AI trading agents providing:
+//   1. Dashboard Overview        — all agents with status, portfolio, ROI
+//   2. Performance Metrics       — portfolio value, PnL, drawdown, win rate
+//   3. Position Monitoring       — active positions with unrealized PnL
+//   4. Trade History             — recent trades with filtering/pagination
+//   5. Equity Curve              — portfolio value over time with drawdown
+//   6. Risk Indicators           — risk level, exposure, VaR, daily loss usage
+//   7. Real-Time Updates         — WebSocket/polling support for live data
+//   8. Dashboard UI Components   — text/HTML renderers for Telegram Mini App
+// Architecture: Agent Runtime → Portfolio Engine → Monitoring API → Dashboard UI
+// Note: Import separately from '@tonaiagent/core/monitoring' for full access.
+export * as Monitoring from './monitoring';
+export {
+  // Metrics Service
+  MonitoringMetricsService,
+  createMonitoringMetricsService,
+  createDemoMonitoringMetricsService,
+  // API
+  MonitoringApi,
+  createMonitoringApi,
+  createDemoMonitoringApi,
+  // Dashboard UI
+  DashboardRenderer,
+  createDashboardRenderer,
+  renderDashboardOverview,
+  renderMetricsPanel,
+  renderPositionsTable,
+  renderTradesTable,
+  renderRiskPanel,
+  renderEquityCurve,
+  getStatusEmoji,
+  getRiskEmoji,
+  formatPnl,
+  formatRoi,
+  formatCurrency,
+  // Error
+  MonitoringError,
+  // Config
+  DEFAULT_MONITORING_CONFIG,
+  // Key types
+  type AgentMonitoringStatus,
+  type RiskLevel as MonitoringRiskLevel,
+  type AgentDashboardSummary,
+  type DashboardOverview,
+  type AgentMetrics,
+  type MonitoringPosition,
+  type MonitoringTrade,
+  type PositionsResponse as MonitoringPositionsResponse,
+  type TradeHistoryResponse as MonitoringTradeHistoryResponse,
+  type EquityPoint,
+  type EquityCurveResponse,
+  type RiskIndicators,
+  type MonitoringUpdate,
+  type MonitoringUpdateType,
+  type MonitoringUpdateHandler,
+  type MonitoringUnsubscribe,
+  type MonitoringConfig,
+  type MonitoringErrorCode,
+  type MonitoringApiRequest,
+  type MonitoringApiResponse,
+} from './monitoring';
