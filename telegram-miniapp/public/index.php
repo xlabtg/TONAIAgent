@@ -18,6 +18,7 @@ require_once APP_ROOT . '/app/security.php';
 require_once APP_ROOT . '/app/db.php';
 require_once APP_ROOT . '/app/telegram.php';
 require_once APP_ROOT . '/app/ai.php';
+require_once APP_ROOT . '/app/wallet.php';
 
 // Initialize security
 Security::init();
@@ -41,6 +42,7 @@ $routes = [
         '/api/user' => 'handleUser',
         '/api/agents' => 'handleAgents',
         '/api/strategies' => 'handleStrategies',
+        '/api/wallet' => 'handleWallet',
         '/api/ai/chat' => 'handleAiChat',
         '/webhook' => 'handleWebhook',
     ],

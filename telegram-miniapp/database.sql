@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS `taa_users` (
     `subscription_tier` ENUM('basic', 'pro', 'institutional') DEFAULT 'basic',
     `subscription_expires_at` DATETIME DEFAULT NULL,
     `wallet_address` VARCHAR(128) DEFAULT NULL,
+    `wallet_connected_at` DATETIME DEFAULT NULL,
     `referral_code` VARCHAR(32) DEFAULT NULL,
     `referred_by` BIGINT UNSIGNED DEFAULT NULL,
     `total_earnings` DECIMAL(20, 8) DEFAULT 0,
@@ -33,7 +34,8 @@ CREATE TABLE IF NOT EXISTS `taa_users` (
     PRIMARY KEY (`id`),
     INDEX `idx_telegram_id` (`telegram_id`),
     INDEX `idx_referral_code` (`referral_code`),
-    INDEX `idx_referred_by` (`referred_by`)
+    INDEX `idx_referred_by` (`referred_by`),
+    INDEX `idx_wallet_address` (`wallet_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
@@ -84,6 +86,7 @@ CREATE TABLE IF NOT EXISTS `taa_agents` (
     `total_trades` INT UNSIGNED DEFAULT 0,
     `winning_trades` INT UNSIGNED DEFAULT 0,
     `wallet_address` VARCHAR(128) DEFAULT NULL,
+    `owner_wallet` VARCHAR(128) DEFAULT NULL COMMENT 'TON wallet address of the agent owner (set at deploy time)',
     `last_activity_at` DATETIME DEFAULT NULL,
     `started_at` DATETIME DEFAULT NULL,
     `stopped_at` DATETIME DEFAULT NULL,
@@ -93,6 +96,7 @@ CREATE TABLE IF NOT EXISTS `taa_agents` (
     INDEX `idx_user` (`user_id`),
     INDEX `idx_strategy` (`strategy_id`),
     INDEX `idx_status` (`status`),
+    INDEX `idx_owner_wallet` (`owner_wallet`),
     FOREIGN KEY (`user_id`) REFERENCES `taa_users` (`id`) ON DELETE CASCADE,
     FOREIGN KEY (`strategy_id`) REFERENCES `taa_strategies` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -255,3 +259,18 @@ INSERT INTO `taa_strategies` (`name`, `description`, `category`, `risk_level`, `
 ('DEX Arbitrage', 'Capture price differences across TON DEXes. High frequency, algorithmically optimized execution.', 'arbitrage', 'high', 200, 30, 100, 1, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- -----------------------------------------------------
+-- Migration: TON Wallet Integration (Issue #233)
+-- Run these statements on existing installations to add
+-- the wallet-related columns without rebuilding the schema.
+-- -----------------------------------------------------
+-- ALTER TABLE `taa_users`
+--     ADD COLUMN IF NOT EXISTS `wallet_connected_at` DATETIME DEFAULT NULL AFTER `wallet_address`,
+--     ADD INDEX IF NOT EXISTS `idx_wallet_address` (`wallet_address`);
+--
+-- ALTER TABLE `taa_agents`
+--     ADD COLUMN IF NOT EXISTS `owner_wallet` VARCHAR(128) DEFAULT NULL
+--         COMMENT 'TON wallet address of the agent owner (set at deploy time)'
+--         AFTER `wallet_address`,
+--     ADD INDEX IF NOT EXISTS `idx_owner_wallet` (`owner_wallet`);
