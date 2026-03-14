@@ -2,7 +2,9 @@
 /**
  * TON AI Agent - Telegram Integration
  *
- * Handles Telegram Bot API and WebApp integration
+ * Handles Telegram Bot API and WebApp integration.
+ * Compatible with Telegram Bot API 9.5 (March 2026) and later.
+ * Reference: https://core.telegram.org/bots/api
  */
 
 // Prevent direct access
@@ -159,7 +161,10 @@ class Telegram
     }
 
     /**
-     * Set webhook
+     * Set webhook.
+     *
+     * allowed_updates includes chat_member / my_chat_member / chat_join_request
+     * for Bot API 9.5 member-tagging and group management events.
      */
     public static function setWebhook(string $url): array
     {
@@ -168,7 +173,32 @@ class Telegram
         return self::apiRequest('setWebhook', [
             'url' => $url,
             'secret_token' => $secret,
-            'allowed_updates' => ['message', 'callback_query', 'inline_query'],
+            'allowed_updates' => [
+                'message',
+                'callback_query',
+                'inline_query',
+                'web_app_data',
+                'chat_member',
+                'my_chat_member',
+                'chat_join_request',
+            ],
+        ]);
+    }
+
+    /**
+     * Set a member tag in a supergroup chat (Bot API 9.5+).
+     * Requires the bot to be an admin with can_manage_tags privilege.
+     *
+     * @param int    $chatId Unique identifier of the target supergroup
+     * @param int    $userId Unique identifier of the target user
+     * @param string $tag    Custom tag text (may be empty to remove the tag)
+     */
+    public static function setChatMemberTag(int $chatId, int $userId, string $tag): array
+    {
+        return self::apiRequest('setChatMemberTag', [
+            'chat_id' => $chatId,
+            'user_id' => $userId,
+            'tag'     => $tag,
         ]);
     }
 

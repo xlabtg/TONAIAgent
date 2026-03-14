@@ -1,0 +1,8 @@
+# Cloudflare Pages configuration for TON AI Agent Mini App
+# Deploy with:  wrangler pages deploy public --project-name ton-ai-agent-miniapp
+
+name = "ton-ai-agent-miniapp"
+pages_build_output_dir = "public"
+
+[env.production]
+# Add secrets via: wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name ton-ai-agent-miniapp

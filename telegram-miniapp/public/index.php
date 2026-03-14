@@ -492,7 +492,7 @@ function handleWebhook(): void
         exit;
     }
 
-    // Process update
+    // Process update (Bot API 9.5 compatible)
     try {
         if (isset($update['message'])) {
             $message = $update['message'];
@@ -507,11 +507,30 @@ function handleWebhook(): void
                     "🚀 Open App"
                 );
             }
+
+            // Bot API 9.5: messages may carry a sender_tag field
+            if (!empty($update['message']['sender_tag'])) {
+                error_log('Message sender tag: ' . $update['message']['sender_tag']);
+            }
         }
 
         if (isset($update['callback_query'])) {
             $callbackQuery = $update['callback_query'];
             Telegram::answerCallbackQuery($callbackQuery['id']);
+        }
+
+        // Bot API 9.5: handle chat_member updates (member tagging events)
+        if (isset($update['chat_member'])) {
+            $chatMember = $update['chat_member'];
+            // Log tag changes for monitoring; extend here to react to tag assignments
+            if (isset($chatMember['new_chat_member']['tag'])) {
+                error_log(sprintf(
+                    'Member tag update in chat %d: user %d tag="%s"',
+                    $chatMember['chat']['id'] ?? 0,
+                    $chatMember['new_chat_member']['user']['id'] ?? 0,
+                    $chatMember['new_chat_member']['tag']
+                ));
+            }
         }
 
     } catch (Exception $e) {
