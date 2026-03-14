@@ -7,13 +7,15 @@
 #   - Menu button / Mini App link setup
 #   - Bot commands setup
 #
+# Compatible with Telegram Bot API 9.5 (March 2026) and later.
+#
 # Usage:
 #   ./scripts/setup-bot.sh
 #   BOT_TOKEN=xxx MINIAPP_URL=https://example.com ./scripts/setup-bot.sh
 #
 # Environment variables (or values from .env):
-#   TELEGRAM_BOT_TOKEN   - Bot token from @BotFather (required)
-#   TELEGRAM_MINI_APP_URL - Public HTTPS URL of the Mini App (required)
+#   TELEGRAM_BOT_TOKEN      - Bot token from @BotFather (required)
+#   TELEGRAM_MINI_APP_URL   - Public HTTPS URL of the Mini App (required)
 #   TELEGRAM_WEBHOOK_SECRET - Optional webhook secret for request validation
 
 set -euo pipefail
@@ -93,7 +95,10 @@ validate_bot_token() {
 
   BOT_USERNAME=$(echo "$resp" | jq -r '.result.username')
   BOT_FIRST_NAME=$(echo "$resp" | jq -r '.result.first_name')
+  BOT_CAN_JOIN=$(echo "$resp" | jq -r '.result.can_join_groups // false')
   log_ok "Bot verified: @${BOT_USERNAME} (${BOT_FIRST_NAME})"
+  log_info "Can join groups: ${BOT_CAN_JOIN}"
+  log_info "Target API: Bot API 9.5 (https://core.telegram.org/bots/api)"
 }
 
 delete_old_webhook() {
@@ -115,11 +120,12 @@ register_webhook() {
   local webhook_url="${MINIAPP_URL}/webhook"
 
   # Build request body
+  # allowed_updates includes chat_member for Bot API 9.5 member-tagging events
   local body
   body=$(jq -n \
     --arg url "$webhook_url" \
     --argjson max_conn 100 \
-    --argjson allowed '["message","callback_query","inline_query","web_app_data","chat_member"]' \
+    --argjson allowed '["message","callback_query","inline_query","web_app_data","chat_member","my_chat_member","chat_join_request"]' \
     '{
       url: $url,
       max_connections: $max_conn,
@@ -221,9 +227,9 @@ setup_bot_commands() {
 }
 
 setup_bot_description() {
-  log_section "Step 7 — Set Bot Description"
+  log_section "Step 7 — Set Bot Name & Description"
 
-  local description="Deploy autonomous AI trading agents on TON blockchain. Manage strategies, monitor portfolio, and earn yield — all inside Telegram."
+  local description="Deploy autonomous AI trading agents on TON blockchain. Manage strategies, monitor portfolio, and earn yield — all inside Telegram. Powered by TON AI Agent (Bot API 9.5)."
   local short_description="AI trading agents for TON blockchain"
 
   local resp
