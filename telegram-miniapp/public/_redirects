@@ -1,0 +1,3 @@
+# Netlify / Cloudflare Pages SPA fallback
+/health    /health.txt    200
+/*         /index.html    200

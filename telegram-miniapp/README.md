@@ -11,6 +11,107 @@ A production-ready Telegram Mini App for deploying autonomous AI trading agents 
 - **AI Integration**: Server-side AI calls (Groq, OpenAI, Anthropic)
 - **Non-Custodial**: Users control their own wallets
 
+## Telegram Mini App Deployment
+
+### Bot setup (one command)
+
+```bash
+# Copy and fill in your credentials
+cp .env.example .env && nano .env
+
+# Validate bot token, register webhook, set menu button & commands
+./scripts/setup-bot.sh
+```
+
+The script will:
+- Validate your bot token with the Telegram API
+- Remove any stale webhook
+- Register a new webhook at `<TELEGRAM_MINI_APP_URL>/webhook`
+- Set the menu button so users can open the Mini App directly
+- Register bot commands (`/start`, `/app`, `/portfolio`, `/agents`, `/strategies`)
+- Set bot description
+
+Required variables in `.env` (or exported environment variables):
+
+| Variable | Description |
+|---|---|
+| `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_MINI_APP_URL` | Public HTTPS URL where the Mini App is hosted |
+| `TELEGRAM_WEBHOOK_SECRET` | Optional secret for webhook request validation |
+
+### One-command deployment
+
+```bash
+./scripts/deploy-miniapp.sh [mode]
+```
+
+| Mode | Description |
+|---|---|
+| `static` (default) | Print upload instructions + local preview server |
+| `vercel` | Deploy to Vercel with `vercel` CLI |
+| `cloudflare` | Deploy to Cloudflare Pages with `wrangler` CLI |
+| `docker` | Run Mini App locally via Docker + Nginx |
+| `php` | Sync PHP backend to a remote server via rsync/SSH |
+
+After a successful deploy, each mode (except `static`) automatically calls `setup-bot.sh` to wire up the Telegram bot.
+
+### Mini App launch flow
+
+```
+User opens Telegram
+  ↓
+Clicks menu button  OR  follows t.me/<bot>?startapp
+  ↓
+Telegram opens Mini App URL
+  ↓
+telegram-webapp.js calls tg.ready() then tg.expand()
+  ↓
+Telegram theme colours applied → CSS variables updated
+  ↓
+tg:ready event fired → app.js loads user session
+  ↓
+POST /api/auth — initData validated server-side
+  ↓
+Dashboard loads with portfolio & agent data
+```
+
+### Deep links
+
+```
+# Launch Mini App from any chat
+https://t.me/<bot_username>?startapp
+
+# Direct Mini App button (requires /newapp in @BotFather)
+https://t.me/<bot_username>/app
+
+# Deep link with start parameter
+https://t.me/<bot_username>?startapp=strategy_123
+```
+
+Access the `start_param` value in JavaScript:
+
+```javascript
+const startParam = window.TelegramMiniApp.getStartParam();
+// or: window.Telegram.WebApp.initDataUnsafe.start_param
+```
+
+### Production hosting
+
+The Mini App works with any HTTPS-capable static host.
+
+| Host | Method |
+|---|---|
+| Vercel | `./scripts/deploy-miniapp.sh vercel` |
+| Cloudflare Pages | `./scripts/deploy-miniapp.sh cloudflare` |
+| Netlify | Drag-and-drop `public/` or connect repo; set publish directory to `telegram-miniapp/public` |
+| GitHub Pages | Push `public/` contents to `gh-pages` branch |
+| Nginx / Apache | Upload `public/` and point document root there |
+| Docker | `./scripts/deploy-miniapp.sh docker` |
+
+> **HTTPS required.** Telegram Mini Apps and webhooks must be served over HTTPS.
+
+---
+
 ## Quick Start
 
 ### Option 1: Static HTML Only (No Backend)

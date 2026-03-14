@@ -386,6 +386,28 @@ The platform includes a step-by-step web installer for standard shared hosting:
 - Apache with `mod_rewrite` or Nginx
 - Telegram Bot Token from [@BotFather](https://t.me/BotFather)
 
+### Telegram Mini App — Automated Deployment
+
+The `telegram-miniapp/` package ships with two scripts that fully automate the setup:
+
+```bash
+cd telegram-miniapp
+
+# 1. Fill in credentials
+cp .env.example .env && nano .env
+
+# 2. Deploy the static frontend (choose a mode)
+./scripts/deploy-miniapp.sh vercel       # → Vercel
+./scripts/deploy-miniapp.sh cloudflare   # → Cloudflare Pages
+./scripts/deploy-miniapp.sh docker       # → Docker + Nginx
+./scripts/deploy-miniapp.sh php          # → PHP server via SSH
+
+# 3. Wire up the Telegram bot (webhook, menu button, commands)
+./scripts/setup-bot.sh
+```
+
+See [`telegram-miniapp/README.md`](telegram-miniapp/README.md) for the complete deployment guide including deep links, security validation, and production hosting options.
+
 ### Vercel / Cloud Deployment
 
 See [docs/deployment.md](docs/deployment.md) for cloud deployment instructions including Vercel, Docker, and VPS configurations.
