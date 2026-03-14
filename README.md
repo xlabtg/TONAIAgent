@@ -16,16 +16,17 @@ TONAIAgent is an AI-native autonomous trading platform built on TON. The platfor
 1. [Key Features](#key-features)
 2. [Platform Architecture](#platform-architecture)
 3. [Telegram SuperApp](#telegram-superapp)
-4. [Agent Runtime](#agent-runtime)
-5. [Strategy Marketplace](#strategy-marketplace)
-6. [Market Data Infrastructure](#market-data-infrastructure)
-7. [Portfolio & Monitoring](#portfolio--monitoring)
-8. [Developer SDK](#developer-sdk)
-9. [Deployment](#deployment)
-10. [Roadmap](#roadmap)
-11. [Long-Term Vision](#long-term-vision)
-12. [Contributing](#contributing)
-13. [License](#license)
+4. [TON Wallet Integration](#ton-wallet-integration)
+5. [Agent Runtime](#agent-runtime)
+6. [Strategy Marketplace](#strategy-marketplace)
+7. [Market Data Infrastructure](#market-data-infrastructure)
+8. [Portfolio & Monitoring](#portfolio--monitoring)
+9. [Developer SDK](#developer-sdk)
+10. [Deployment](#deployment)
+11. [Roadmap](#roadmap)
+12. [Long-Term Vision](#long-term-vision)
+13. [Contributing](#contributing)
+14. [License](#license)
 
 ---
 
@@ -124,6 +125,88 @@ The Mini App provides:
 - Agent start/stop controls
 
 See [docs/superapp.md](docs/superapp.md) for full Telegram integration details.
+
+---
+
+## TON Wallet Integration
+
+The platform implements a two-identity-layer authentication model:
+
+```
+telegram_user_id  +  wallet_address
+       ↓                   ↓
+Telegram identity    On-chain identity
+```
+
+### Connection Flow
+
+```
+User opens Mini App
+        ↓
+Telegram initData verified (HMAC-SHA256)
+        ↓
+User taps "Connect Wallet" in header
+        ↓
+Wallet selector opens (Tonkeeper / OpenMask / MyTonWallet / TON Space)
+        ↓
+User approves connection in wallet app
+        ↓
+Wallet address returned and validated
+        ↓
+Address persisted to user profile in DB (POST /api/wallet)
+        ↓
+Header shows shortened address (EQC…A1B2)
+```
+
+### Supported Wallets
+
+| Wallet | Integration Method |
+|---|---|
+| **Tonkeeper** | JS Bridge (in-app browser) + Universal Link |
+| **OpenMask** | JS Bridge |
+| **MyTonWallet** | JS Bridge + Universal Link |
+| **TON Space** | JS Bridge + Universal Link |
+
+### Frontend Files
+
+| File | Purpose |
+|---|---|
+| `telegram-miniapp/public/js/ton-connect.js` | TON Connect 2.0-compatible wallet module |
+| `telegram-miniapp/public/index.html` | Wallet selector modal and connected-state UI |
+| `telegram-miniapp/public/js/app.js` | Wallet state management and UI binding |
+| `telegram-miniapp/public/css/miniapp.css` | Wallet UI styles |
+
+### Backend API
+
+**POST `/api/wallet`** — authenticated via `X-Telegram-Init-Data` header.
+
+| Action | Description |
+|---|---|
+| `connect` | Link wallet address to user; stores `wallet_address` and `wallet_connected_at` |
+| `disconnect` | Remove wallet link from user record |
+| `status` | Return current wallet connection state for the user |
+
+### Database Schema
+
+The `taa_users` table stores wallet data:
+
+```sql
+wallet_address      VARCHAR(128)  -- TON address in user-friendly format
+wallet_connected_at DATETIME      -- Timestamp of last successful connection
+```
+
+The `taa_agents` table tracks agent ownership:
+
+```sql
+owner_wallet  VARCHAR(128)  -- TON wallet of the agent owner (set at deploy time)
+```
+
+### Security
+
+- Wallet connection requests are authenticated with Telegram `initData` verified via HMAC-SHA256.
+- Wallet address format is validated server-side before storage (user-friendly or raw TON format).
+- Session storage is used client-side to persist the connection within the Mini App session.
+- The backend never stores private keys; only the public wallet address is persisted.
 
 ---
 

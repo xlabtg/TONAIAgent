@@ -209,6 +209,9 @@
 
     // Initialize strategies from marketplace
     state.strategies = MARKETPLACE_STRATEGIES;
+
+    // Initialize TON Connect wallet module
+    initWallet();
   }
 
   /**
@@ -221,6 +224,15 @@
     elements.avatarInitials = document.getElementById('avatar-initials');
     elements.userName = document.getElementById('user-name');
     elements.userBalance = document.getElementById('user-balance');
+    elements.walletConnectBtn = document.getElementById('wallet-connect-btn');
+    elements.walletModal = document.getElementById('wallet-modal');
+    elements.walletSelector = document.getElementById('wallet-selector');
+    elements.walletList = document.getElementById('wallet-list');
+    elements.walletConnectedView = document.getElementById('wallet-connected-view');
+    elements.walletConnectingView = document.getElementById('wallet-connecting-view');
+    elements.connectedWalletName = document.getElementById('connected-wallet-name');
+    elements.connectedWalletAddress = document.getElementById('connected-wallet-address');
+    elements.connectingWalletName = document.getElementById('connecting-wallet-name');
     elements.portfolioAmount = document.getElementById('portfolio-amount');
     elements.portfolioChange = document.getElementById('portfolio-change');
     elements.activeAgents = document.getElementById('active-agents');
@@ -248,6 +260,15 @@
    * Set up event listeners
    */
   function setupEventListeners() {
+    // Wallet button
+    elements.walletConnectBtn?.addEventListener('click', openWalletModal);
+
+    // Wallet modal controls
+    document.getElementById('close-wallet-modal-btn')?.addEventListener('click', closeWalletModal);
+    document.getElementById('copy-address-btn')?.addEventListener('click', copyWalletAddress);
+    document.getElementById('view-explorer-btn')?.addEventListener('click', viewOnExplorer);
+    document.getElementById('disconnect-wallet-btn')?.addEventListener('click', disconnectWallet);
+
     // Quick action buttons
     document.getElementById('create-agent-btn')?.addEventListener('click', openCreateAgentModal);
     document.getElementById('empty-create-btn')?.addEventListener('click', openCreateAgentModal);
@@ -872,6 +893,236 @@
     } else if (!elements.createAgentModal.classList.contains('hidden')) {
       closeCreateAgentModal();
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // TON Wallet integration
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Initialize TON Connect and restore any saved session.
+   */
+  function initWallet() {
+    if (!window.TONConnect) return;
+
+    TONConnect.init();
+
+    // Subscribe to wallet state changes
+    TONConnect.onStateChange(function(walletState) {
+      state.wallet = walletState.connected ? walletState : null;
+      updateWalletUI(walletState);
+    });
+
+    // Apply current state (may be restored from session storage)
+    updateWalletUI(TONConnect.getState());
+  }
+
+  /**
+   * Update all wallet-related UI elements based on current wallet state.
+   * @param {{ connected: boolean, address: string|null, shortAddress: string|null, walletName: string|null, connecting: boolean }} walletState
+   */
+  function updateWalletUI(walletState) {
+    if (!elements.userBalance) return;
+
+    if (walletState.connecting) {
+      elements.userBalance.textContent = 'Connecting…';
+      if (elements.walletConnectBtn) {
+        elements.walletConnectBtn.classList.add('connecting');
+        elements.walletConnectBtn.disabled = true;
+      }
+      return;
+    }
+
+    if (elements.walletConnectBtn) {
+      elements.walletConnectBtn.disabled = false;
+      elements.walletConnectBtn.classList.remove('connecting');
+    }
+
+    if (walletState.connected && walletState.address) {
+      elements.userBalance.textContent = walletState.shortAddress || TONConnect.formatAddress(walletState.address);
+      if (elements.walletConnectBtn) {
+        elements.walletConnectBtn.classList.add('wallet-connected');
+      }
+    } else {
+      elements.userBalance.textContent = 'Connect Wallet';
+      if (elements.walletConnectBtn) {
+        elements.walletConnectBtn.classList.remove('wallet-connected');
+      }
+    }
+  }
+
+  /**
+   * Open the wallet modal.
+   * Shows the connected state if already connected, otherwise the selector.
+   */
+  function openWalletModal() {
+    TelegramMiniApp.haptic.impactOccurred('light');
+
+    const walletState = TONConnect ? TONConnect.getState() : { connected: false };
+
+    if (walletState.connected) {
+      showWalletConnectedView(walletState);
+    } else {
+      showWalletSelectorView();
+    }
+
+    elements.walletModal.classList.remove('hidden');
+    TelegramMiniApp.showBackButton(closeWalletModal);
+  }
+
+  /**
+   * Close the wallet modal.
+   */
+  function closeWalletModal() {
+    elements.walletModal.classList.add('hidden');
+    TelegramMiniApp.hideBackButton();
+  }
+
+  /**
+   * Show the wallet selector inside the modal.
+   */
+  function showWalletSelectorView() {
+    elements.walletSelector.classList.remove('hidden');
+    elements.walletConnectedView.classList.add('hidden');
+    elements.walletConnectingView.classList.add('hidden');
+
+    if (!TONConnect) return;
+
+    const wallets = TONConnect.getSupportedWallets();
+    elements.walletList.innerHTML = wallets.map(function(w) {
+      return `
+        <button class="wallet-item" data-wallet-id="${escapeHtml(w.id)}">
+          <img class="wallet-item-icon" src="${escapeHtml(w.icon)}" alt="${escapeHtml(w.name)}" onerror="this.style.display='none'">
+          <span class="wallet-item-name">${escapeHtml(w.name)}</span>
+          <svg class="wallet-item-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      `;
+    }).join('');
+
+    elements.walletList.querySelectorAll('.wallet-item').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const walletId = btn.dataset.walletId;
+        const wallet = TONConnect.getSupportedWallets().find(function(w) { return w.id === walletId; });
+        if (wallet) initiateWalletConnection(wallet);
+      });
+    });
+  }
+
+  /**
+   * Show the connected wallet view inside the modal.
+   * @param {{ address: string, walletName: string|null }} walletState
+   */
+  function showWalletConnectedView(walletState) {
+    elements.walletSelector.classList.add('hidden');
+    elements.walletConnectingView.classList.add('hidden');
+    elements.walletConnectedView.classList.remove('hidden');
+
+    if (elements.connectedWalletName) {
+      elements.connectedWalletName.textContent = walletState.walletName || 'TON Wallet';
+    }
+    if (elements.connectedWalletAddress) {
+      elements.connectedWalletAddress.textContent = walletState.shortAddress
+        || (walletState.address ? TONConnect.formatAddress(walletState.address) : '');
+    }
+  }
+
+  /**
+   * Initiate a connection attempt with the given wallet.
+   * @param {object} wallet - Wallet descriptor
+   */
+  async function initiateWalletConnection(wallet) {
+    if (!TONConnect) return;
+
+    elements.walletSelector.classList.add('hidden');
+    elements.walletConnectedView.classList.add('hidden');
+    elements.walletConnectingView.classList.remove('hidden');
+    if (elements.connectingWalletName) {
+      elements.connectingWalletName.textContent = wallet.name;
+    }
+
+    try {
+      let result;
+      try {
+        result = await TONConnect.connect(wallet);
+      } catch (err) {
+        if (err.code === 'SHOW_WALLET_SELECTOR') {
+          // JS bridge not available — open universal link
+          TONConnect.connectViaUniversalLink(wallet);
+          // Show a message to the user
+          elements.walletConnectingView.classList.add('hidden');
+          elements.walletSelector.classList.remove('hidden');
+          TelegramMiniApp.showAlert(
+            'Opening ' + wallet.name + '…\nAfter approving in your wallet, come back to the app.'
+          );
+          return;
+        }
+        throw err;
+      }
+
+      // Connection succeeded — persist on backend
+      try {
+        await TONConnect.saveWalletToBackend(result.address, result.walletName);
+      } catch (backendErr) {
+        console.warn('[App] Backend wallet save failed:', backendErr.message);
+        // Non-fatal: wallet is still connected client-side
+      }
+
+      showWalletConnectedView(TONConnect.getState());
+      TelegramMiniApp.haptic.notificationOccurred('success');
+    } catch (err) {
+      console.error('[App] Wallet connection failed:', err);
+      elements.walletConnectingView.classList.add('hidden');
+      elements.walletSelector.classList.remove('hidden');
+      TelegramMiniApp.showAlert('Failed to connect wallet: ' + (err.message || 'Unknown error'));
+    }
+  }
+
+  /**
+   * Copy the connected wallet address to clipboard.
+   */
+  function copyWalletAddress() {
+    const walletState = TONConnect ? TONConnect.getState() : null;
+    if (!walletState || !walletState.address) return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(walletState.address).then(function() {
+        TelegramMiniApp.haptic.notificationOccurred('success');
+        TelegramMiniApp.showAlert('Address copied to clipboard!');
+      }).catch(function() {
+        TelegramMiniApp.showAlert(walletState.address);
+      });
+    } else {
+      TelegramMiniApp.showAlert(walletState.address);
+    }
+  }
+
+  /**
+   * Open the TON explorer for the connected wallet address.
+   */
+  function viewOnExplorer() {
+    const walletState = TONConnect ? TONConnect.getState() : null;
+    if (!walletState || !walletState.address) return;
+
+    const explorerUrl = 'https://tonscan.org/address/' + encodeURIComponent(walletState.address);
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+      window.Telegram.WebApp.openLink(explorerUrl);
+    } else {
+      window.open(explorerUrl, '_blank');
+    }
+  }
+
+  /**
+   * Disconnect the wallet.
+   */
+  async function disconnectWallet() {
+    if (!TONConnect) return;
+
+    TelegramMiniApp.haptic.impactOccurred('medium');
+    await TONConnect.disconnect();
+    closeWalletModal();
+    TelegramMiniApp.showAlert('Wallet disconnected.');
   }
 
   /**
