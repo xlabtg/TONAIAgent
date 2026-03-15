@@ -60,26 +60,61 @@ The primary product interface is a Telegram Mini App — no separate app install
 
 ## Platform Architecture
 
+### System Layers
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        User Layer                           │
-│         Telegram Mini App       Web Dashboard               │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                    Application Layer                        │
-│      Agent Manager    Strategy Engine    Execution Loop     │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                   Infrastructure Layer                      │
-│   Market Data Connectors   Trading Simulation   Portfolio   │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                     Economy Layer                           │
-│    Strategy Marketplace   Reputation Engine   Revenue Share │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  USER LAYER                                                         │
+│  Telegram Mini App (miniapp/)    Web Dashboard (website/)           │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│  PRODUCT / MVP LAYER                                                │
+│  mvp-platform · superapp · production-miniapp                       │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│  APPLICATION LAYER                                                  │
+│  agent-runtime · agent-orchestrator · agent-control                 │
+│  marketplace · strategy-engine · portfolio-analytics                │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│  DOMAIN LAYER                                                       │
+│  strategies · trading-engine · backtesting · risk-engine            │
+│  reputation · revenue · monitoring · distributed-scheduler          │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│  INFRASTRUCTURE LAYER                                               │
+│  market-data · ai · ai-safety · protocol · security                 │
+│  plugins · runtime · multi-agent                                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Repository Structure
+
+```
+TONAIAgent/
+├── src/                    Core TypeScript library (@tonaiagent/core)
+│   ├── agent-runtime/      9-step execution pipeline
+│   ├── strategy-engine/    Trend, Arbitrage, AI Signal strategies
+│   ├── market-data/        CoinGecko, Binance, DEX price feeds
+│   ├── trading-engine/     Trade execution, PnL tracking
+│   ├── portfolio-analytics/ Metrics, equity curve, risk monitoring
+│   ├── ai/                 Multi-provider AI routing
+│   ├── marketplace/        Strategy discovery and publishing
+│   ├── mvp-platform/       Integration entry point
+│   └── ... (82 modules total — see docs/module-dependencies.md)
+│
+├── miniapp/                Telegram Mini App frontend (HTML/CSS/JS)
+├── telegram-miniapp/       Telegram Mini App PHP backend
+├── website/                Next.js marketing and product site
+├── static-website/         Static HTML deployment alternative
+├── deploy/                 AWS, Kubernetes, Docker, Vercel configs
+├── docs/                   Architecture, guides, and module documentation
+├── tests/                  Test suite (mirrors src/ structure)
+└── examples/               Developer examples (9 TypeScript demos)
 ```
 
 ### Core Components
@@ -97,6 +132,22 @@ The primary product interface is a Telegram Mini App — no separate app install
 | **Revenue Sharing** | `src/revenue/` | On-chain revenue distribution for strategy authors |
 | **Telegram Mini App** | `miniapp/` | HTML/CSS/JS dashboard — portfolio view, agent management, strategy selection |
 
+### Extended Platform Modules
+
+Beyond the MVP core, the platform includes advanced modules for institutional and DeFi use cases:
+
+| Category | Modules |
+|----------|---------|
+| **DeFi Infrastructure** | `omnichain`, `cross-chain-liquidity`, `liquidity-network`, `liquidity-router` |
+| **Fund Management** | `hedgefund`, `fund-manager`, `ecosystem-fund`, `investment` |
+| **Institutional** | `institutional`, `institutional-network`, `prime-brokerage`, `clearing-house` |
+| **AI & Safety** | `ai-safety`, `ai-credit`, `risk-engine`, `systemic-risk` |
+| **Governance** | `dao-governance`, `protocol-constitution`, `monetary-policy` |
+| **Tokenomics** | `tokenomics`, `token-strategy`, `token-utility-economy` |
+| **Research** | `agfi`, `agfn`, `gaei`, `gaamp`, `grif`, `sgia`, `aifos`, `acms` |
+
+For the full dependency map and module classification see [docs/module-dependencies.md](docs/module-dependencies.md).
+For the architectural audit and restructuring plan see [docs/architecture-audit.md](docs/architecture-audit.md).
 For deeper technical details see [docs/architecture.md](docs/architecture.md).
 
 ---
