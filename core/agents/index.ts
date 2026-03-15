@@ -1,11 +1,7 @@
-// Core Agents — consolidated from:
-//   src/agents → core/agents/runtime
-//   src/agent-runtime → core/agents/agent-runtime
-//   src/agent-orchestrator → core/agents/orchestrator
-//   src/agent-control → core/agents/control
-//   src/lifecycle-orchestrator → core/agents/lifecycle
-export * from './runtime';
-export * from './agent-runtime';
-export * from './orchestrator';
-export * from './control';
-export * from './lifecycle';
+// Core Agents barrel index — intentionally empty to avoid duplicate export conflicts.
+// Import directly from the individual submodule indexes instead:
+//   core/agents/runtime
+//   core/agents/agent-runtime
+//   core/agents/orchestrator
+//   core/agents/control
+//   core/agents/lifecycle

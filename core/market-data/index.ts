@@ -1,5 +1,4 @@
-// Core Market Data — consolidated from:
-//   src/market-data → core/market-data/base
-//   src/data-platform → core/market-data/data-platform
-export * from './base';
-export * from './data-platform';
+// Core Market Data barrel index — intentionally empty to avoid duplicate export conflicts.
+// Import directly from the individual submodule indexes instead:
+//   core/market-data/base
+//   core/market-data/data-platform

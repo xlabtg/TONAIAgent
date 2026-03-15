@@ -20,10 +20,10 @@
  * ```
  */
 
-import type { TradeSignal } from '../strategy-engine/types';
+import type { TradeSignal } from '../../strategies/strategy-engine/types';
 
 // Re-export TradeSignal so consumers only need one import
-export type { TradeSignal, SignalAction } from '../strategy-engine/types';
+export type { TradeSignal, SignalAction } from '../../strategies/strategy-engine/types';
 
 // ============================================================================
 // Portfolio Types

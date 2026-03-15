@@ -1,11 +1,7 @@
-// Core Strategies — consolidated from:
-//   src/strategy → core/strategies/engine
-//   src/strategies → core/strategies/implementations
-//   src/strategy-engine → core/strategies/strategy-engine
-//   src/strategy-marketplace → core/strategies/marketplace
-//   src/backtesting → core/strategies/backtesting
-export * from './engine';
-export * from './implementations';
-export * from './strategy-engine';
-export * from './marketplace';
-export * from './backtesting';
+// Core Strategies barrel index — intentionally empty to avoid duplicate export conflicts.
+// Import directly from the individual submodule indexes instead:
+//   core/strategies/engine
+//   core/strategies/implementations
+//   core/strategies/strategy-engine
+//   core/strategies/marketplace
+//   core/strategies/backtesting
