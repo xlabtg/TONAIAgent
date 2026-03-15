@@ -1,5 +1,85 @@
-// Core Portfolio barrel index — intentionally empty to avoid duplicate export conflicts.
-// Import directly from the individual submodule indexes instead:
-//   core/portfolio/base
-//   core/portfolio/analytics
-//   core/portfolio/multi-user
+// Core Portfolio — consolidated from:
+//   src/portfolio → core/portfolio/base
+//   src/portfolio-analytics → core/portfolio/analytics
+//   src/multi-user-portfolio → core/portfolio/multi-user
+
+export * from './base';
+// analytics defines AnalyticsPeriod as canonical
+export * from './analytics';
+// multi-user: exclude AnalyticsPeriod (already exported from analytics)
+export type {
+  PortfolioRoleName,
+  PortfolioRole,
+  PortfolioResourceType,
+  PortfolioActionType,
+  PortfolioPermission,
+  SharedPortfolio,
+  SharedPortfolioStatus,
+  SharedPortfolioSettings,
+  SharedPortfolioMetadata,
+  PortfolioMember,
+  CreateSharedPortfolioInput,
+  AddPortfolioMemberInput,
+  StrategyProposal,
+  StrategyProposalStatus,
+  StrategyVote,
+  ProposedAllocation,
+  CurrentAllocation,
+  StrategyImpactProjection,
+  CreateStrategyProposalInput,
+  TeamAnalyticsDashboard,
+  TeamPortfolioPerformance,
+  StrategyContribution,
+  TeamRiskExposure,
+  AssetConcentration,
+  MemberActivitySummary,
+  ActivityLogEntry,
+  ActivityType,
+  ActivitySeverity,
+  NotificationRecord,
+  InstitutionalFund,
+  InstitutionalFundStatus,
+  InstitutionalReport,
+  DelegatedManager,
+  FeesSummary,
+  CreateInstitutionalFundInput,
+  PortfolioAccessCheckRequest,
+  PortfolioAccessCheckResult,
+  MultiUserPortfolioConfig,
+  MultiUserPortfolioHealth,
+  MultiUserPortfolioEventType,
+  MultiUserPortfolioEvent,
+  MultiUserPortfolioEventCallback,
+} from './multi-user';
+export {
+  PORTFOLIO_ROLES,
+  DefaultPortfolioPermissionsManager,
+  createPortfolioPermissionsManager,
+  DefaultSharedPortfolioManager,
+  createSharedPortfolioManager,
+  DefaultCollaborativeStrategyManager,
+  createCollaborativeStrategyManager,
+  DefaultTeamAnalyticsManager,
+  createTeamAnalyticsManager,
+  DefaultActivityLogManager,
+  createActivityLogManager,
+  DefaultInstitutionalPortfolioManager,
+  createInstitutionalPortfolioManager,
+  MultiUserPortfolioManager,
+  createMultiUserPortfolioManager,
+} from './multi-user';
+export type {
+  PortfolioPermissionsManager,
+  SharedPortfolioManager,
+  CollaborativeStrategyManager,
+  TeamAnalyticsManager,
+  TradeRecord,
+  PortfolioSnapshot,
+  StrategyRecord,
+  ActivityLogManager,
+  RecordActivityInput,
+  ActivityLogFilter,
+  NotificationConfig,
+  InstitutionalPortfolioManager,
+  GenerateReportInput,
+} from './multi-user';
