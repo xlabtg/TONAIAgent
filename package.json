@@ -349,7 +349,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "backtest": "npx ts-node scripts/backtest.ts",
+    "backtest": "npx ts-node infrastructure/scripts/backtest.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
