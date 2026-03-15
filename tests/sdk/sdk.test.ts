@@ -31,7 +31,7 @@ import {
   // Utilities
   SDKBuilder,
   QuickStart,
-} from '../../src/sdk';
+} from '../../packages/sdk';
 
 // ============================================================================
 // Test Helpers

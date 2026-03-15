@@ -41,26 +41,26 @@ import {
   // Dashboard
   MarketplaceDashboard,
   createMarketplaceDashboard,
-} from '../../src/strategy-marketplace/dashboard';
+} from '../../core/strategies/marketplace/dashboard';
 
 import {
   BUILTIN_STRATEGIES,
-} from '../../src/strategy-marketplace';
+} from '../../core/strategies/marketplace';
 
 import type {
   MarketplaceStrategyListing,
   MarketplaceDeployedAgent,
-} from '../../src/strategy-marketplace';
+} from '../../core/strategies/marketplace';
 
 import type {
   MarketplaceStats,
   StrategyCategoryInfo,
   StrategyReview,
-} from '../../src/strategy-marketplace/types';
+} from '../../core/strategies/marketplace/types';
 
 import type {
   StrategyPerformanceData,
-} from '../../src/strategy-marketplace/api';
+} from '../../core/strategies/marketplace/api';
 
 // ============================================================================
 // Utility Function Tests

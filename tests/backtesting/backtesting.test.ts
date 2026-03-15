@@ -56,7 +56,7 @@ import {
   EquityCurvePoint,
   RiskEvaluationResult,
   BacktestRunResult,
-} from '../../src/backtesting';
+} from '../../core/strategies/backtesting';
 
 // ============================================================================
 // Test Helpers

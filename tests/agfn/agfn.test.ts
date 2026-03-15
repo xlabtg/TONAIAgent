@@ -19,7 +19,7 @@ import {
   createAICoordinationLayer,
   createMultiReserveTreasuryNetwork,
   createGlobalStabilityDashboard,
-} from '../../src/agfn/index';
+} from '../../research/agfn/index';
 
 // ============================================================================
 // Global Node Architecture Tests

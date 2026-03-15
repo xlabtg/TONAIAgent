@@ -19,7 +19,7 @@ import {
   createApplicationLayer,
   createPermissionIdentityLayer,
   createInteroperabilityLayer,
-} from '../../src/aifos/index';
+} from '../../research/aifos/index';
 
 // ============================================================================
 // Financial Kernel Tests

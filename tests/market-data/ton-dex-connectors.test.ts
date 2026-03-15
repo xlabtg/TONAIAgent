@@ -26,7 +26,7 @@ import {
   MarketDataAggregator,
   createMarketDataAggregator,
   DEFAULT_AGGREGATOR_CONFIG,
-} from '../../src/market-data';
+} from '../../core/market-data/base';
 import type {
   TonDexProvider,
   TonDexProviderName,
@@ -35,7 +35,7 @@ import type {
   SwapEvent,
   TonDexEvent,
   AggregatedPrice,
-} from '../../src/market-data';
+} from '../../core/market-data/base';
 
 // ============================================================================
 // Test Helpers

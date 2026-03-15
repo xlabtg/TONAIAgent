@@ -21,7 +21,7 @@ import {
   DefaultStrategyComparison,
   createTradeHistoryManager,
   DefaultTradeHistoryManager,
-} from '../../src/portfolio-analytics';
+} from '../../core/portfolio/analytics';
 
 import type {
   PortfolioAnalyticsConfig,
@@ -30,7 +30,7 @@ import type {
   TradeActivity,
   PortfolioAnalyticsEvent,
   RiskAlert,
-} from '../../src/portfolio-analytics';
+} from '../../core/portfolio/analytics';
 
 // ============================================================================
 // Test Helpers

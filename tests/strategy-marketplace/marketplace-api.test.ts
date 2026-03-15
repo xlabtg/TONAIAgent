@@ -19,7 +19,7 @@ import {
   MarketplaceApi,
   createMarketplaceApi,
   createDemoMarketplaceApi,
-} from '../../src/strategy-marketplace/api';
+} from '../../core/strategies/marketplace/api';
 
 import type {
   MarketplaceApiRequest,
@@ -28,16 +28,16 @@ import type {
   StrategyPerformanceData,
   CategoriesResponse,
   TopStrategiesResponse,
-} from '../../src/strategy-marketplace/api';
+} from '../../core/strategies/marketplace/api';
 
 import type {
   MarketplaceStats,
   StrategyReview,
-} from '../../src/strategy-marketplace/types';
+} from '../../core/strategies/marketplace/types';
 
 import type {
   MarketplaceDeployedAgent,
-} from '../../src/strategy-marketplace';
+} from '../../core/strategies/marketplace';
 
 // ============================================================================
 // API Setup

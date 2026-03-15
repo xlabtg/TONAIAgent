@@ -15,7 +15,7 @@ import {
   createActivityLogManager,
   createInstitutionalPortfolioManager,
   PORTFOLIO_ROLES,
-} from '../../src/multi-user-portfolio';
+} from '../../core/portfolio/multi-user';
 
 // ============================================================================
 // Helpers

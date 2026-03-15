@@ -31,7 +31,7 @@ import {
   SimulationBalanceManager,
   RiskManager,
   DemoAgentApi,
-} from '../../src/demo-agent';
+} from '../../examples/demo-agent';
 
 import type {
   AgentConfig,
@@ -41,7 +41,7 @@ import type {
   MarketData,
   SimulationBalance,
   StrategyContext,
-} from '../../src/demo-agent';
+} from '../../examples/demo-agent';
 
 // ============================================================================
 // Test Helpers

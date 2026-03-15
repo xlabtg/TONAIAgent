@@ -27,7 +27,7 @@ import {
   executeLiveExecutionStage,
   executePerformanceMonitoringStage,
   executeRebalancingStage,
-} from '../../src/investor-demo';
+} from '../../examples/investor-demo';
 
 import type {
   FundInvestorDemoConfig,
@@ -39,7 +39,7 @@ import type {
   LiveExecutionResult,
   PerformanceMonitoringResult,
   DemoMarketplaceStrategy,
-} from '../../src/investor-demo';
+} from '../../examples/investor-demo';
 
 // ============================================================================
 // Test Helpers

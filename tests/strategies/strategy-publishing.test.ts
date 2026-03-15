@@ -33,7 +33,7 @@ import {
   type StrategyPackage,
   type StrategyMetadata,
   type ValidationResult,
-} from '../../src/strategies/publishing';
+} from '../../core/strategies/implementations/publishing';
 
 // ============================================================================
 // Strategy Validation Tests

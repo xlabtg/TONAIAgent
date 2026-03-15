@@ -25,7 +25,7 @@ import {
   createAgentManagerApiWithConfig,
   DEFAULT_AGENT_MANAGER_CONFIG,
   toAgentSummary,
-} from '../../src/agents';
+} from '../../core/agents/runtime';
 
 import type {
   AgentRecord,
@@ -34,7 +34,7 @@ import type {
   CreateAgentRequest,
   ConfigureAgentRequest,
   AgentStorage,
-} from '../../src/agents';
+} from '../../core/agents/runtime';
 
 // ============================================================================
 // Test Helpers

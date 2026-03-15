@@ -47,7 +47,7 @@ import {
   StrategyStatus,
   BacktestConfig,
   OptimizationConfig,
-} from '../../src/strategy';
+} from '../../core/strategies/engine';
 
 // ============================================================================
 // Test Helpers

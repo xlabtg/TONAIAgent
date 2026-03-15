@@ -27,7 +27,7 @@ import {
   ConnectorError,
   ExecutionError,
   KeyManagementError,
-} from '../../src/live-trading';
+} from '../../core/trading/live';
 
 import type {
   ExchangeConnectorConfig,
@@ -35,7 +35,7 @@ import type {
   LiveTradingEvent,
   PortfolioState,
   PriceFeed,
-} from '../../src/live-trading';
+} from '../../core/trading/live';
 
 // ============================================================================
 // Helper Factories
