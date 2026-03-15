@@ -40,11 +40,20 @@ export class MemorySettingsStorage implements SettingsStorage {
   }
 }
 
-/** localStorage-backed storage (browser only) */
+/**
+ * localStorage-backed storage (browser only).
+ * Accesses localStorage via globalThis to avoid requiring the DOM lib in the
+ * TypeScript compilation target (lib: ["ES2022"]).
+ */
 export class LocalSettingsStorage implements SettingsStorage {
+  private get ls(): { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void } | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (globalThis as Record<string, unknown>)['localStorage'] as { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void } | undefined;
+  }
+
   get(key: string): string | null {
     try {
-      return localStorage.getItem(key);
+      return this.ls?.getItem(key) ?? null;
     } catch {
       return null;
     }
@@ -52,13 +61,13 @@ export class LocalSettingsStorage implements SettingsStorage {
 
   set(key: string, value: string): void {
     try {
-      localStorage.setItem(key, value);
+      this.ls?.setItem(key, value);
     } catch { /* quota exceeded or private browsing */ }
   }
 
   remove(key: string): void {
     try {
-      localStorage.removeItem(key);
+      this.ls?.removeItem(key);
     } catch { /* ignore */ }
   }
 }

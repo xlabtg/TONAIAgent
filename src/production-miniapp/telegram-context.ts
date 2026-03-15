@@ -134,12 +134,19 @@ export function parseSafeArea(webApp: TelegramWebAppLike): SafeAreaInsets {
 /**
  * Map Telegram theme params to CSS custom properties on :root so that the
  * Mini App automatically inherits the user's Telegram colour scheme.
+ *
+ * Designed to be called in browser environments only; is a no-op in Node/test
+ * environments because `document` is accessed through globalThis to avoid
+ * requiring the DOM lib in the TypeScript compilation target.
  */
 export function applyThemeVars(params: TelegramThemeParams): void {
-  // Guard for non-browser environments (tests / SSR)
-  if (typeof document === 'undefined') return;
+  // Access document through globalThis to stay compatible with lib: ["ES2022"]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const g = globalThis as Record<string, unknown>;
+  const doc = g['document'] as { documentElement: { style: { setProperty(k: string, v: string): void } } } | undefined;
+  if (!doc) return;
 
-  const root = document.documentElement;
+  const rootStyle = doc.documentElement.style;
   const map: Array<[keyof TelegramThemeParams, string]> = [
     ['bg_color', '--tg-theme-bg-color'],
     ['text_color', '--tg-theme-text-color'],
@@ -152,7 +159,7 @@ export function applyThemeVars(params: TelegramThemeParams): void {
 
   for (const [key, cssVar] of map) {
     const value = params[key];
-    if (value) root.style.setProperty(cssVar, value);
+    if (value) rootStyle.setProperty(cssVar, value);
   }
 }
 

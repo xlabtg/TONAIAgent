@@ -254,11 +254,18 @@ function now(): number {
   return Math.floor(Date.now() / 1000);
 }
 
-/** Attempt to retrieve a TON Connect JS bridge from window */
+/**
+ * Attempt to retrieve a TON Connect JS bridge from globalThis (window in browsers).
+ * Uses globalThis to stay compatible with lib: ["ES2022"] (no DOM lib required).
+ */
 function getBridge(key?: string): TONConnectBridge | undefined {
-  if (!key || typeof window === 'undefined') return undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (window as any)[key] as TONConnectBridge | undefined;
+  if (!key) return undefined;
+  const g = globalThis as Record<string, unknown>;
+  const candidate = g[key];
+  if (candidate && typeof (candidate as TONConnectBridge).connect === 'function') {
+    return candidate as TONConnectBridge;
+  }
+  return undefined;
 }
 
 // Minimal TON Connect bridge interface
