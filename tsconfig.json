@@ -24,7 +24,8 @@
     "src/**/*",
     "core/**/*",
     "research/**/*",
-    "examples/**/*",
+    "examples/investor-demo/**/*",
+    "examples/demo-agent/**/*",
     "packages/**/*",
     "services/**/*",
     "connectors/**/*"
