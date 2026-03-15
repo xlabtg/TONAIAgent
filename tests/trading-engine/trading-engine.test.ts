@@ -31,13 +31,13 @@ import {
   createSimulationTradeExecutor,
   // Error
   TradingEngineError,
-} from '../../src/trading-engine';
+} from '../../core/trading/engine';
 import type {
   TradeSignal,
   TradeRecord,
   TradingEngineEvent,
   PortfolioBalance,
-} from '../../src/trading-engine';
+} from '../../core/trading/engine';
 
 // ============================================================================
 // Test Helpers

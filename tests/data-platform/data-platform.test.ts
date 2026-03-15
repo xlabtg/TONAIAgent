@@ -28,7 +28,7 @@ import {
   DefaultSignalMarketplaceService,
   DefaultContinuousLearningService,
   DefaultSecurityGovernanceService,
-} from '../../src/data-platform';
+} from '../../core/market-data/data-platform';
 
 // ============================================================================
 // Data Platform Manager Tests

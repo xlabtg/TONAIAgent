@@ -32,7 +32,7 @@ import {
   BacktestingCompatLayer,
   createBacktestingCompat,
   type BacktestConfig,
-} from '../../src/sdk';
+} from '../../packages/sdk';
 
 // ============================================================================
 // Test Helpers

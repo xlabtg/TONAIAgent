@@ -32,7 +32,7 @@ import {
   BaseStrategy,
   // Types
   StrategyEngineError,
-} from '../../src/strategy-engine';
+} from '../../core/strategies/strategy-engine';
 import type {
   MarketData,
   StrategyEngineEvent,
@@ -40,7 +40,7 @@ import type {
   StrategyMetadata,
   StrategyParams,
   TradeSignal,
-} from '../../src/strategy-engine';
+} from '../../core/strategies/strategy-engine';
 
 // ============================================================================
 // Test Helpers

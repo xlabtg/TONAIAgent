@@ -17,7 +17,7 @@ import {
   type MarketplaceBacktestConfig,
   type BacktestTimeframe,
   type BacktestResultSummary,
-} from '../../src/strategy-marketplace';
+} from '../../core/strategies/marketplace';
 
 describe('Strategy Marketplace Backtesting Integration', () => {
   let backtester: DefaultMarketplaceBacktester;

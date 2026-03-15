@@ -26,7 +26,7 @@ import {
   TransparencyPortal,
   AuditAttestationLayer,
   RegulatoryDialogueFramework,
-} from '../../src/grif/index';
+} from '../../research/grif/index';
 
 // ============================================================================
 // GRIFManager Tests

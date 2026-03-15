@@ -14,7 +14,7 @@
  * 9. Show system status
  */
 
-import { createGAAMPProtocol } from '../src/gaamp/index';
+import { createGAAMPProtocol } from '../research/gaamp/index';
 
 async function runGAAMPDemo() {
   console.log('=== GAAMP v1 Protocol Demo ===\n');

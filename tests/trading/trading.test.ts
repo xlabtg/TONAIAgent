@@ -35,7 +35,7 @@ import {
   // Executor
   SwapExecutor,
   createSwapExecutor,
-} from '../../src/trading';
+} from '../../core/trading/base';
 import type {
   OnChainTradeSignal,
   SwapQuote,
@@ -44,7 +44,7 @@ import type {
   TradingEvent,
   DexQuoteFetcher,
   DexName,
-} from '../../src/trading';
+} from '../../core/trading/base';
 
 // ============================================================================
 // Test Helpers

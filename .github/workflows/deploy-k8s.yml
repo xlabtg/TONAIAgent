@@ -32,7 +32,7 @@ on:
 env:
   NAMESPACE: tonaiagent
   RELEASE_NAME: tonaiagent
-  CHART_PATH: deploy/kubernetes/helm/tonaiagent
+  CHART_PATH: infrastructure/deploy/kubernetes/helm/tonaiagent
 
 jobs:
   deploy:

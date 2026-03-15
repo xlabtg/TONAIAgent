@@ -19,7 +19,7 @@ import {
   createMonetaryCoordinationLayer,
   createEconomicNodeArchitecture,
   createStabilityDashboardLayer,
-} from '../../src/gaei/index';
+} from '../../research/gaei/index';
 
 // ============================================================================
 // Capital Coordination Layer Tests

@@ -19,7 +19,7 @@ import {
   AgentRuntimeError,
   RuntimeAgentConfig,
   RuntimeEvent,
-} from '../../src/agent-runtime';
+} from '../../core/agents/agent-runtime';
 
 // ============================================================================
 // Test Helpers

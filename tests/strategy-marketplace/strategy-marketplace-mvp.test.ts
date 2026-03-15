@@ -17,13 +17,13 @@ import {
   createStrategyMarketplace,
   DefaultStrategyMarketplace,
   BUILTIN_STRATEGIES,
-} from '../../src/strategy-marketplace';
+} from '../../core/strategies/marketplace';
 
 import type {
   MarketplaceStrategyListing,
   MarketplaceStrategyFilter,
   DeployMarketplaceStrategyInput,
-} from '../../src/strategy-marketplace';
+} from '../../core/strategies/marketplace';
 
 // ============================================================================
 // Built-in Strategies Tests

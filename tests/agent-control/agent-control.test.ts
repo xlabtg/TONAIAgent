@@ -24,13 +24,13 @@ import {
   createAgentControlApi,
   createDemoRegistry,
   DEFAULT_AGENT_CONTROL_CONFIG,
-} from '../../src/agent-control';
+} from '../../core/agents/control';
 
 import type {
   AgentControlEvent,
   AgentControlRequest,
   AgentRecord,
-} from '../../src/agent-control';
+} from '../../core/agents/control';
 
 // ============================================================================
 // Test Helpers

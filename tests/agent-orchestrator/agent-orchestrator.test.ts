@@ -26,14 +26,14 @@ import {
   createAgentOrchestrator,
   createAgentOrchestratorApi,
   DEFAULT_ORCHESTRATOR_CONFIG,
-} from '../../src/agent-orchestrator';
+} from '../../core/agents/orchestrator';
 
 import type {
   CreateAgentInput,
   OrchestratorEvent,
   AgentStrategy,
   AgentEnvironment,
-} from '../../src/agent-orchestrator';
+} from '../../core/agents/orchestrator';
 
 // ============================================================================
 // Test Helpers

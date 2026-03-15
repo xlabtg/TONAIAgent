@@ -8,7 +8,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -20,6 +20,15 @@
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "core/**/*",
+    "research/**/*",
+    "examples/investor-demo/**/*",
+    "examples/demo-agent/**/*",
+    "packages/**/*",
+    "services/**/*",
+    "connectors/**/*"
+  ],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

@@ -34,8 +34,8 @@ import {
   type DiscoveryEvent,
 } from '../../src/autonomous-discovery';
 
-import { createBacktestingEngine } from '../../src/strategy';
-import type { StrategyPerformance } from '../../src/strategy';
+import { createBacktestingEngine } from '../../core/strategies/engine';
+import type { StrategyPerformance } from '../../core/strategies/engine';
 
 // ============================================================================
 // Test Helpers

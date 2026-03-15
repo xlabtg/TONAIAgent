@@ -30,7 +30,7 @@ import {
   createDemoPortfolioEngine,
   createDemoPortfolioApi,
   DEFAULT_PORTFOLIO_ENGINE_CONFIG,
-} from '../../src/portfolio';
+} from '../../core/portfolio/base';
 
 import type {
   Portfolio,
@@ -39,7 +39,7 @@ import type {
   BalanceRecord,
   PortfolioEvent,
   PortfolioApiRequest,
-} from '../../src/portfolio';
+} from '../../core/portfolio/base';
 
 // ============================================================================
 // Test Helpers

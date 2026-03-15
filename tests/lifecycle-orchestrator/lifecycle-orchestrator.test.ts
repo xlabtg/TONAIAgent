@@ -31,13 +31,13 @@ import {
   createLifecycleOrchestratorApi,
   DEFAULT_LIFECYCLE_CONFIG,
   LIFECYCLE_TRANSITIONS,
-} from '../../src/lifecycle-orchestrator';
+} from '../../core/agents/lifecycle';
 
 import type {
   RegisterAgentInput,
   LifecycleEvent,
   LifecycleState,
-} from '../../src/lifecycle-orchestrator';
+} from '../../core/agents/lifecycle';
 
 // ============================================================================
 // Test Helpers

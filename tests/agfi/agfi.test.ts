@@ -19,7 +19,7 @@ import {
   createAutonomousMonetaryInfrastructure,
   createGovernanceInstitutionalAlignment,
   createInteroperabilityGlobalIntegration,
-} from '../../src/agfi/index';
+} from '../../research/agfi/index';
 
 // ============================================================================
 // Global Capital Layer Tests

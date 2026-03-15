@@ -25,7 +25,7 @@ import {
   executeTelegramIntegrationStep,
   executeWalletCreationStep,
   executeSocialViralStep,
-} from '../../src/investor-demo';
+} from '../../examples/investor-demo';
 
 import type {
   InvestorDemoConfig,
@@ -34,7 +34,7 @@ import type {
   InvestorDemoEvent,
   AgentCreationResult,
   LiveDashboardResult,
-} from '../../src/investor-demo';
+} from '../../examples/investor-demo';
 
 // ============================================================================
 // Test Helpers

@@ -19,7 +19,7 @@ import {
   createTransparencyAuditFramework,
   createCapitalAdequacyAndReserveModel,
   createSovereignParticipationManager,
-} from '../../src/sgia/index';
+} from '../../research/sgia/index';
 
 // ============================================================================
 // Sovereign Integration Framework Tests

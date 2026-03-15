@@ -35,14 +35,14 @@ import {
   DEFAULT_SERVICE_CONFIG,
   // Base
   BaseMarketDataProvider,
-} from '../../src/market-data';
+} from '../../core/market-data/base';
 import type {
   MarketDataEvent,
   MarketDataProvider,
   NormalizedPrice,
   ProviderConfig,
   Ticker,
-} from '../../src/market-data';
+} from '../../core/market-data/base';
 
 // ============================================================================
 // Test Helpers

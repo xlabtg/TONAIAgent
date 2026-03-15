@@ -42,3 +42,6 @@ coverage/
 
 # Lock files (library - let consumers manage their own)
 package-lock.json
+
+# Build artifacts
+*.zip

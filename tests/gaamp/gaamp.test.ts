@@ -18,7 +18,7 @@ import {
   DEFAULT_PROTOCOL_PARAMETERS,
   DEFAULT_BLOCKED_JURISDICTIONS,
   FUND_CLASS_KYC_REQUIREMENTS,
-} from '../../src/gaamp/index';
+} from '../../research/gaamp/index';
 
 // ============================================================================
 // Agent Layer Tests
