@@ -24,10 +24,10 @@ import type {
   MarketplaceStrategyListing,
   MarketplaceStrategyCategory,
   MarketplaceRiskLevel,
-} from '../../strategy-marketplace';
+} from '../../marketplace';
 
 import { InMemoryStrategyRegistry } from '../registry';
-import { DefaultStrategyMarketplace, createStrategyMarketplace } from '../../strategy-marketplace';
+import { DefaultStrategyMarketplace, createStrategyMarketplace } from '../../marketplace';
 
 // ============================================================================
 // Category and Risk Level Mappings
