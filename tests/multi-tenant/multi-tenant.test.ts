@@ -42,7 +42,7 @@ import {
   TenantContext,
   RoleName,
   IsolatedWallet,
-} from '../../src/multi-tenant';
+} from '../../services/multi-tenant';
 
 // ============================================================================
 // Tenant Manager Tests

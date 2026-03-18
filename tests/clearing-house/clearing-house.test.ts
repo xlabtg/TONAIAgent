@@ -15,7 +15,7 @@ import {
   createDefaultResolutionManager,
   createSettlementLayer,
   createClearingAuditModule,
-} from '../../src/clearing-house/index';
+} from '../../services/clearing-house/index';
 
 // ============================================================================
 // Central Clearing Manager Tests

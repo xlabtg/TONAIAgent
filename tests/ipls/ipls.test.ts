@@ -14,7 +14,7 @@ import {
   createAdapterLayerManager,
   createProtocolApiManager,
   DEFAULT_IPLS_CONFIG,
-} from '../../src/ipls/index';
+} from '../../connectors/ipls/index';
 
 // ============================================================================
 // LiquidityStandardManager Tests

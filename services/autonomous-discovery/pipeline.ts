@@ -7,8 +7,8 @@
  * 3. Performance evaluation and scoring
  */
 
-import type { BacktestingEngine } from '../strategy/backtesting';
-import type { BacktestConfig, BacktestResult, Strategy, StrategyPerformance } from '../strategy/types';
+import type { BacktestingEngine } from '../../core/strategies/engine/backtesting';
+import type { BacktestConfig, BacktestResult, Strategy, StrategyPerformance } from '../../core/strategies/engine';
 import type {
   CandidateStrategy,
   EvaluationThresholds,

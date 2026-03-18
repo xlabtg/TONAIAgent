@@ -8,8 +8,8 @@
  * evaluating them, and publishing the best ones to the marketplace.
  */
 
-import { createBacktestingEngine } from '../strategy/backtesting';
-import type { StrategyEventCallback } from '../strategy/types';
+import { createBacktestingEngine } from '../../core/strategies/engine/backtesting';
+import type { StrategyEventCallback } from '../../core/strategies/engine';
 
 import {
   StrategyGenerationEngine,

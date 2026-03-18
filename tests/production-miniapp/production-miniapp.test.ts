@@ -52,7 +52,7 @@ import {
   type SwapRequest,
   type WalletProvider,
   type DexId,
-} from '../../src/production-miniapp/index';
+} from '../../extended/production-miniapp/index';
 
 // ============================================================================
 // Test Fixtures

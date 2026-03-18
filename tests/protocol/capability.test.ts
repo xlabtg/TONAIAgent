@@ -9,8 +9,8 @@ import {
   CapabilityRegistry,
   STANDARD_CAPABILITIES,
   getStandardCapability,
-} from '../../src/protocol/capability';
-import { CapabilityExecutor } from '../../src/protocol/capability/types';
+} from '../../core/protocol/capability';
+import { CapabilityExecutor } from '../../core/protocol/capability/types';
 
 describe('Capability Registry', () => {
   let registry: CapabilityRegistry;

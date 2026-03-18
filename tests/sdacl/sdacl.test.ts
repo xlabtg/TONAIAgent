@@ -24,7 +24,7 @@ import {
   DefaultJurisdictionEnforcementManager,
   DefaultSovereignTransparencyManager,
   SDACLEvent,
-} from '../../src/sdacl';
+} from '../../services/sdacl';
 
 // ============================================================================
 // SDACLService Tests

@@ -61,7 +61,7 @@ import {
   AgentMessage,
   MultiAgentEvent,
   ConflictContext,
-} from '../../src/multi-agent';
+} from '../../core/multi-agent';
 
 // ============================================================================
 // Test Helpers

@@ -19,7 +19,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createTelegramSuperAppManager,
   DefaultTelegramSuperAppManager,
-} from '../../src/superapp/telegram-superapp';
+} from '../../extended/superapp/telegram-superapp';
 
 import {
   type TelegramSuperAppUser,
@@ -29,7 +29,7 @@ import {
   type SuperAppRiskMonitor,
   type WalletIdentityInfo,
   type SuperAppEvent,
-} from '../../src/superapp/types';
+} from '../../extended/superapp/types';
 
 // ============================================================================
 // Setup

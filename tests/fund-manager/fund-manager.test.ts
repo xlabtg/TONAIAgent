@@ -29,12 +29,12 @@ import {
   createInvestorParticipationManager,
   createPerformanceTrackingService,
   createFeeDistributionEngine,
-} from '../../src/fund-manager';
+} from '../../extended/fund-manager';
 
 import type {
   CreateFundInput,
   FundManagerEvent,
-} from '../../src/fund-manager';
+} from '../../extended/fund-manager';
 
 // ============================================================================
 // Test Helpers

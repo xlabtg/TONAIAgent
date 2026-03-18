@@ -24,7 +24,7 @@ import {
   DefaultIntegrationIncentivesManager,
   DefaultFlywheelManager,
   DefaultAIEvaluationManager,
-} from '../../src/ecosystem-fund';
+} from '../../services/ecosystem-fund';
 
 // ============================================================================
 // Treasury Manager Tests

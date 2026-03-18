@@ -21,8 +21,9 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "src/**/*",
     "core/**/*",
+    "apps/**/*",
+    "extended/**/*",
     "research/**/*",
     "examples/investor-demo/**/*",
     "examples/demo-agent/**/*",
@@ -30,5 +31,13 @@
     "services/**/*",
     "connectors/**/*"
   ],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "apps/web-dashboard/**/*",
+    "apps/marketing-website/**/*",
+    "apps/telegram-miniapp/**/*"
+  ]
 }

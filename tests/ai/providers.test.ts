@@ -10,14 +10,14 @@ import {
   CircuitBreaker,
   RateLimiter,
   RetryHandler,
-} from '../../src/ai/providers/base';
-import { createGroqProvider } from '../../src/ai/providers/groq';
-import { createAnthropicProvider } from '../../src/ai/providers/anthropic';
-import { createOpenAIProvider } from '../../src/ai/providers/openai';
-import { createGoogleProvider } from '../../src/ai/providers/google';
-import { createXAIProvider } from '../../src/ai/providers/xai';
-import { createOpenRouterProvider } from '../../src/ai/providers/openrouter';
-import { AIError } from '../../src/ai/types';
+} from '../../core/ai/providers/base';
+import { createGroqProvider } from '../../core/ai/providers/groq';
+import { createAnthropicProvider } from '../../core/ai/providers/anthropic';
+import { createOpenAIProvider } from '../../core/ai/providers/openai';
+import { createGoogleProvider } from '../../core/ai/providers/google';
+import { createXAIProvider } from '../../core/ai/providers/xai';
+import { createOpenRouterProvider } from '../../core/ai/providers/openrouter';
+import { AIError } from '../../core/ai/types';
 
 // ============================================================================
 // Circuit Breaker Tests

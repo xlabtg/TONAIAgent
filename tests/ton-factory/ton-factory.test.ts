@@ -23,7 +23,7 @@ import {
   buildDeploymentTransaction,
   DEFAULT_FACTORY_CONFIG,
   DEFAULT_FEE_CONFIG,
-} from '../../src/ton-factory';
+} from '../../connectors/ton-factory';
 
 // ============================================================================
 // TonFactoryService Integration Tests

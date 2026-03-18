@@ -56,7 +56,7 @@ import {
   RiskContext,
   TransactionHistory,
   CustodyMode,
-} from '../../src/security';
+} from '../../core/security';
 
 // ============================================================================
 // Test Helpers

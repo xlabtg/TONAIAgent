@@ -16,7 +16,7 @@ import {
   KycAmlManager,
   AiGovernanceManager,
   RegulatoryRiskEngine,
-} from '../../src/regulatory';
+} from '../../services/regulatory';
 
 // ============================================================================
 // Jurisdiction Analyzer Tests

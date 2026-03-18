@@ -14,7 +14,7 @@ import {
   createInternalLiquidityPoolManager,
   createDeepLiquidityVaultManager,
   createRiskControlledExecutionManager,
-} from '../../src/liquidity-network/index';
+} from '../../connectors/liquidity-network/index';
 
 // ============================================================================
 // Liquidity Aggregation Tests

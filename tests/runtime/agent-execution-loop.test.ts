@@ -41,7 +41,7 @@ import {
   createAgentManager,
   // Errors
   RuntimeError,
-} from '../../src/runtime';
+} from '../../core/runtime';
 
 // ============================================================================
 // Test Utilities

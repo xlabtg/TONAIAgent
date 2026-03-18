@@ -5,7 +5,7 @@
  * the quality of generated candidates over time.
  */
 
-import type { StrategyRiskLevel } from '../strategy/types';
+import type { StrategyRiskLevel } from '../../core/strategies/engine';
 import type {
   CandidateStrategy,
   GenerationApproach,

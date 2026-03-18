@@ -9,15 +9,15 @@ import {
   createStrategyRegistry,
   createStrategyLoader,
   createStrategyExecutionEngine,
-} from '../strategy-engine';
-import { createMarketDataService } from '../market-data';
-import { createTradingEngine } from '../trading-engine';
-import { createPortfolioAnalyticsDashboard } from '../portfolio-analytics';
-import { createAgentControlApi, createAgentManager, createDemoRegistry } from '../agent-control';
-import { createDemoAgentBundle } from '../demo-agent';
-import type { AnalyticsPeriod } from '../portfolio-analytics';
+} from '../../core/strategies/strategy-engine';
+import { createMarketDataService } from '../../core/market-data/base';
+import { createTradingEngine } from '../../core/trading/engine';
+import { createPortfolioAnalyticsDashboard } from '../../core/portfolio/analytics';
+import { createAgentControlApi, createAgentManager, createDemoRegistry } from '../../core/agents/control';
+import { createDemoAgentBundle } from '../../examples/demo-agent';
+import type { AnalyticsPeriod } from '../../core/portfolio/analytics';
 
-import { BASELINE_PRICES, MVP_ASSETS } from '../market-data';
+import { BASELINE_PRICES, MVP_ASSETS } from '../../core/market-data/base';
 
 import type {
   MVPPlatformConfig,

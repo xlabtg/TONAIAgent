@@ -20,7 +20,7 @@ import {
   DefaultCollateralManager,
   DefaultUnderwritingEngine,
   DefaultStrategyEngine,
-} from '../../src/ai-credit';
+} from '../../services/ai-credit';
 
 // ============================================================================
 // CoinRabbit Adapter Tests

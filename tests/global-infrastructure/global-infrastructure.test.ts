@@ -46,7 +46,7 @@ import {
   GlobalInfrastructureManager,
   createGlobalInfrastructureManager,
   DEFAULT_GLOBAL_INFRA_CONFIG,
-} from '../../src/global-infrastructure';
+} from '../../services/global-infrastructure';
 
 import type {
   EdgeNode,
@@ -56,7 +56,7 @@ import type {
   RoutingRule,
   ComplianceCheckRequest,
   GlobalScheduledJob,
-} from '../../src/global-infrastructure';
+} from '../../services/global-infrastructure';
 
 // ============================================================================
 // Test Helpers

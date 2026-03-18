@@ -20,7 +20,7 @@ import {
   RevenueApi,
   DEFAULT_REVENUE_SPLIT,
   REVENUE_SPLIT_WITH_REFERRER,
-} from '../../src/revenue';
+} from '../../services/revenue';
 
 import type {
   PerformanceFeeInput,
@@ -28,7 +28,7 @@ import type {
   RevenueSplitConfig,
   RevenueSystemEvent,
   FeeType,
-} from '../../src/revenue';
+} from '../../services/revenue';
 
 // ============================================================================
 // Test Helpers

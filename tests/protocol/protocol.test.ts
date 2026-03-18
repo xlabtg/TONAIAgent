@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   OpenAgentProtocol,
   createAgent,
-} from '../../src/protocol';
+} from '../../core/protocol';
 
 describe('OpenAgentProtocol', () => {
   let protocol: OpenAgentProtocol;
@@ -144,7 +144,7 @@ describe('Messaging', () => {
       handler: async (msg) => received.push(msg),
     });
 
-    const { createProtocolMessage } = await import('../../src/protocol/messaging');
+    const { createProtocolMessage } = await import('../../core/protocol/messaging');
 
     const message = createProtocolMessage({
       type: 'capability.request',
@@ -168,7 +168,7 @@ describe('Permissions', () => {
   });
 
   it('should authorize valid operations', async () => {
-    const { createDefaultPermissions } = await import('../../src/protocol/security');
+    const { createDefaultPermissions } = await import('../../core/protocol/security');
 
     const agentId = 'agent_123';
     const permissions = createDefaultPermissions(agentId);
@@ -184,7 +184,7 @@ describe('Permissions', () => {
   });
 
   it('should deny unauthorized operations', async () => {
-    const { createDefaultPermissions } = await import('../../src/protocol/security');
+    const { createDefaultPermissions } = await import('../../core/protocol/security');
 
     const agentId = 'agent_123';
     const permissions = createDefaultPermissions(agentId);
@@ -202,7 +202,7 @@ describe('Permissions', () => {
   });
 
   it('should enforce transaction limits', async () => {
-    const { createDefaultPermissions } = await import('../../src/protocol/security');
+    const { createDefaultPermissions } = await import('../../core/protocol/security');
 
     const agentId = 'agent_123';
     const permissions = createDefaultPermissions(agentId);
@@ -364,7 +364,7 @@ describe('Cross-Chain', () => {
   });
 
   it('should register and lookup assets', async () => {
-    const crossChain = await import('../../src/protocol/cross-chain/index');
+    const crossChain = await import('../../core/protocol/cross-chain/index');
     const { COMMON_ASSETS } = crossChain;
 
     for (const asset of COMMON_ASSETS) {

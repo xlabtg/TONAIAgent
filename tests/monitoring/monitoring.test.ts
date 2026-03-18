@@ -39,7 +39,7 @@ import {
   formatPnl,
   formatRoi,
   formatCurrency,
-} from '../../src/monitoring';
+} from '../../services/monitoring';
 
 import type {
   AgentDashboardSummary,
@@ -51,7 +51,7 @@ import type {
   TradeHistoryResponse,
   RiskIndicators,
   EquityCurveResponse,
-} from '../../src/monitoring';
+} from '../../services/monitoring';
 
 // ============================================================================
 // Test Helpers

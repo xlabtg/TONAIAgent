@@ -17,7 +17,7 @@ import {
   DefaultModelGovernanceManager,
   DefaultMonitoringManager,
   DefaultHumanOversightManager,
-} from '../../src/ai-safety';
+} from '../../core/ai-safety';
 
 // ============================================================================
 // Alignment Manager Tests

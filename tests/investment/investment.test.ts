@@ -28,7 +28,7 @@ import {
   DefaultInstitutionalModeManager,
   DefaultPerformanceAnalyticsEngine,
   DefaultInvestmentLayer,
-} from '../../src/investment';
+} from '../../services/investment';
 
 import type {
   Vault,
@@ -53,7 +53,7 @@ import type {
   PerformanceDashboardData,
   InvestmentLayerHealth,
   InvestmentEvent,
-} from '../../src/investment';
+} from '../../services/investment';
 
 // ============================================================================
 // VaultManager Tests

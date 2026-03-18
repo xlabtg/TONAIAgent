@@ -29,7 +29,7 @@ import {
   DefaultEconomicSimulationModule,
   createCrossAgentPaymentsModule,
   DefaultCrossAgentPaymentsModule,
-} from '../../src/token-utility-economy';
+} from '../../services/token-utility-economy';
 
 import type {
   TokenFeeType,
@@ -37,7 +37,7 @@ import type {
   AgentPublicationRequest,
   TokenUtilityEconomyConfig,
   EconomicSimulationParams,
-} from '../../src/token-utility-economy';
+} from '../../services/token-utility-economy';
 
 // ============================================================================
 // TokenUtilityEconomy (Unified Service)

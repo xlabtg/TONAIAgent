@@ -19,7 +19,7 @@ import {
   DefaultRevenueDistributionEngine,
   DefaultFreemiumManager,
   DefaultMarketplaceService,
-} from '../../src/marketplace';
+} from '../../extended/marketplace';
 
 import type {
   SandboxSession,
@@ -38,7 +38,7 @@ import type {
   UsageLimitCheck,
   TierUpgradeRecommendation,
   StrategyConfig,
-} from '../../src/marketplace';
+} from '../../extended/marketplace';
 
 // ============================================================================
 // Sandbox Manager Tests

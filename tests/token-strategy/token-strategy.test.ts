@@ -17,7 +17,7 @@ import {
   DefaultTokenStrategySimulation,
   LaunchPhase,
   TokenStrategyEvent,
-} from '../../src/token-strategy';
+} from '../../services/token-strategy';
 
 // ============================================================================
 // Token Strategy Manager Tests

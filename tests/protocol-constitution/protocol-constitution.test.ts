@@ -28,7 +28,7 @@ import {
   DefaultEmergencyFrameworkManager,
   DefaultAmendmentProcessManager,
   DefaultProtocolConstitutionLayer,
-} from '../../src/protocol-constitution';
+} from '../../core/protocol-constitution';
 
 import type {
   FoundationalPrinciples,
@@ -41,7 +41,7 @@ import type {
   AmendmentProposal,
   ProtocolConstitutionHealth,
   ConstitutionEvent,
-} from '../../src/protocol-constitution';
+} from '../../core/protocol-constitution';
 
 // ============================================================================
 // 1. Foundational Principles Tests

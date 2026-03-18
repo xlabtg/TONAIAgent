@@ -19,7 +19,7 @@ import {
   DefaultOnboardingManager,
   ONBOARDING_STRATEGIES,
   type OnboardingState,
-} from '../../src/superapp/onboarding';
+} from '../../extended/superapp/onboarding';
 
 // ============================================================================
 // Onboarding Manager Tests

@@ -24,7 +24,7 @@ import {
   DefaultCrossBorderPaymentsManager,
   DefaultPaymentAnalyticsEngine,
   DefaultComplianceSecurityManager,
-} from '../../src/payments';
+} from '../../services/payments';
 
 // ============================================================================
 // Payment Gateway Tests

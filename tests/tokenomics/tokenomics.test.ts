@@ -20,7 +20,7 @@ import {
   DefaultGovernanceEngine,
   DefaultReputationSystem,
   DefaultAntiExploitManager,
-} from '../../src/tokenomics';
+} from '../../extended/tokenomics';
 
 // ============================================================================
 // Token Utility Tests
