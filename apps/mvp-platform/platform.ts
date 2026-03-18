@@ -32,6 +32,8 @@ import type {
   DemoFlowConfig,
   DemoFlowResult,
   MVPStrategyId,
+  TradeExecutionRequest,
+  TradeExecutionResponse,
 } from './types';
 import { DEFAULT_MVP_PLATFORM_CONFIG, DEFAULT_DEMO_FLOW_CONFIG } from './types';
 
@@ -526,6 +528,102 @@ export class MVPPlatform {
     this.emitEvent('demo.completed', agentStatus.agentId, { success, cyclesCompleted: result.cyclesCompleted });
 
     return result;
+  }
+
+  // ============================================================================
+  // End-to-End Trading Flow (Issue #249)
+  // ============================================================================
+
+  /**
+   * Execute a complete end-to-end trade from a Telegram Mini App request.
+   *
+   * This method implements the full pipeline:
+   *   Telegram Mini App → Agent Controller → Strategy Engine → Risk Engine →
+   *   Execution Engine → DEX Connector → Portfolio Update → UI Update
+   *
+   * For `mode: 'demo'`, the trade is fully simulated (no on-chain transaction).
+   * For `mode: 'live'`, the trade routes through the on-chain execution layer.
+   *
+   * @example
+   * ```typescript
+   * const result = await platform.executeTradeRequest({
+   *   userId: '123456789',
+   *   strategy: 'momentum',
+   *   pair: 'TON/USDT',
+   *   amount: 100,
+   *   mode: 'demo',
+   * });
+   * ```
+   */
+  async executeTradeRequest(request: TradeExecutionRequest): Promise<TradeExecutionResponse> {
+    const timestamp = new Date().toISOString();
+
+    try {
+      this.assertRunning();
+      // Normalise strategy name: 'momentum' → 'trend', others pass through
+      const strategyId = this.normaliseStrategyId(request.strategy);
+
+      // Create a per-request agent scoped to this user and strategy
+      const agent = await this.createAgent({
+        userId: request.userId,
+        name: `trade_${request.strategy}_${request.pair.replace('/', '_')}`,
+        strategy: strategyId,
+        budgetTon: request.amount,
+        riskLevel: 'medium',
+      });
+
+      await this.startAgent(agent.agentId);
+
+      // Execute one strategy cycle (fetches market data, runs strategy, processes signal)
+      const cycleResult = await this.executeAgentCycle(agent.agentId);
+
+      // Stop the agent after the single-shot execution
+      await this.stopAgent(agent.agentId);
+
+      return {
+        success: true,
+        agentId: agent.agentId,
+        signal: cycleResult.signal,
+        tradeExecuted: cycleResult.tradeExecuted,
+        portfolioValueBefore: cycleResult.portfolioValueBefore,
+        portfolioValueAfter: cycleResult.portfolioValueAfter,
+        pnlDelta: cycleResult.pnlDelta,
+        pair: request.pair,
+        mode: request.mode,
+        timestamp,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        agentId: '',
+        signal: 'none',
+        tradeExecuted: false,
+        portfolioValueBefore: request.amount,
+        portfolioValueAfter: request.amount,
+        pnlDelta: 0,
+        pair: request.pair,
+        mode: request.mode,
+        timestamp,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  /** Map incoming strategy names to internal MVPStrategyId values. */
+  private normaliseStrategyId(strategy: string): MVPStrategyId {
+    switch (strategy.toLowerCase()) {
+      case 'momentum':
+      case 'trend':
+        return 'trend';
+      case 'arbitrage':
+        return 'arbitrage';
+      case 'mean-reversion':
+      case 'ai-signal':
+      case 'ai_signal':
+        return 'ai-signal';
+      default:
+        return 'trend';
+    }
   }
 
   // ============================================================================

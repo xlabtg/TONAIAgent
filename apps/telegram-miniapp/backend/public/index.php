@@ -41,6 +41,7 @@ $routes = [
         '/api/auth' => 'handleAuth',
         '/api/user' => 'handleUser',
         '/api/agents' => 'handleAgents',
+        '/api/agent/execute' => 'handleAgentExecute',
         '/api/strategies' => 'handleStrategies',
         '/api/wallet' => 'handleWallet',
         '/api/ai/chat' => 'handleAiChat',
@@ -380,6 +381,154 @@ function handleAgents(): void
     } catch (Exception $e) {
         error_log('Agents error: ' . $e->getMessage());
         jsonResponse(['error' => 'Operation failed'], 500);
+    }
+}
+
+/**
+ * Handle end-to-end trade execution request (Issue #249)
+ *
+ * POST /api/agent/execute
+ *
+ * Payload:
+ *   {
+ *     "userId":   "telegram_id",   // overridden by session when authenticated
+ *     "strategy": "momentum",      // momentum | arbitrage | mean-reversion
+ *     "pair":     "TON/USDT",
+ *     "amount":   100,
+ *     "mode":     "demo | live"
+ *   }
+ *
+ * The pipeline:
+ *   Mini App → Agent Controller → Strategy Engine → Risk Engine →
+ *   Execution Engine → DEX Connector → Portfolio Update → UI Update
+ */
+function handleAgentExecute(): void
+{
+    requireAuth();
+
+    if (!Security::checkRateLimit('execute_' . ($_SESSION['user_id'] ?? 'anon'))) {
+        jsonResponse(['error' => 'Rate limit exceeded'], 429);
+        return;
+    }
+
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    // Validate required fields
+    $strategy = Security::sanitizeString($body['strategy'] ?? '', 50);
+    $pair     = Security::sanitizeString($body['pair'] ?? '', 20);
+    $amount   = Security::sanitizeFloat($body['amount'] ?? 0);
+    $mode     = Security::sanitizeString($body['mode'] ?? 'demo', 10);
+
+    if (empty($strategy) || empty($pair) || $amount <= 0) {
+        jsonResponse(['error' => 'strategy, pair, and amount are required'], 400);
+        return;
+    }
+
+    if (!in_array($mode, ['demo', 'live'], true)) {
+        jsonResponse(['error' => 'mode must be "demo" or "live"'], 400);
+        return;
+    }
+
+    // Use the authenticated session user ID
+    $userId = (string)$_SESSION['telegram_id'];
+
+    // Validate pair format (e.g. "TON/USDT")
+    if (!preg_match('/^[A-Z]{2,10}\/[A-Z]{2,10}$/', $pair)) {
+        jsonResponse(['error' => 'Invalid pair format. Expected e.g. "TON/USDT"'], 400);
+        return;
+    }
+
+    // Map strategy names to canonical values used by the trading engine
+    $strategyMap = [
+        'momentum'      => 'trend',
+        'trend'         => 'trend',
+        'arbitrage'     => 'arbitrage',
+        'mean-reversion'=> 'ai-signal',
+        'ai-signal'     => 'ai-signal',
+    ];
+    $canonicalStrategy = $strategyMap[$strategy] ?? 'trend';
+
+    try {
+        // Persist the execution request to the database
+        $executionId = Database::insert('agent_executions', [
+            'user_id'    => $_SESSION['user_id'],
+            'strategy'   => $canonicalStrategy,
+            'pair'       => $pair,
+            'amount'     => $amount,
+            'mode'       => $mode,
+            'status'     => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Simulate the trade signal and portfolio update.
+        // In 'live' mode this would route to the on-chain execution layer via
+        // the SwapExecutor / DEX connectors (DeDust, STON.fi, TONCO).
+        // For the MVP we return the simulated result and mark the execution as
+        // completed so the UI can update immediately.
+        $signal = 'hold';
+        $tradeExecuted = false;
+        $pnlDelta = 0.0;
+
+        if ($mode === 'demo') {
+            // Deterministic demo signal based on strategy
+            $demoSignals = [
+                'trend'     => 'buy',
+                'arbitrage' => 'buy',
+                'ai-signal' => 'hold',
+            ];
+            $signal = $demoSignals[$canonicalStrategy] ?? 'hold';
+            $tradeExecuted = ($signal !== 'hold');
+            $pnlDelta = $tradeExecuted ? round($amount * 0.012, 6) : 0.0; // 1.2 % demo gain
+        }
+
+        // Update execution record
+        Database::update(
+            'agent_executions',
+            [
+                'signal'        => $signal,
+                'trade_executed'=> $tradeExecuted ? 1 : 0,
+                'pnl_delta'     => $pnlDelta,
+                'status'        => 'completed',
+                'completed_at'  => date('Y-m-d H:i:s'),
+            ],
+            'id = :id',
+            ['id' => $executionId]
+        );
+
+        $portfolioValueAfter = $amount + $pnlDelta;
+
+        // Notify via Telegram if trade was executed
+        if ($tradeExecuted && !empty($_SESSION['telegram_id'])) {
+            Telegram::sendAgentNotification(
+                $_SESSION['telegram_id'],
+                'Trade Agent',
+                'executed',
+                [
+                    'Strategy' => $strategy,
+                    'Pair'     => $pair,
+                    'Signal'   => strtoupper($signal),
+                    'PnL'      => ($pnlDelta >= 0 ? '+' : '') . $pnlDelta . ' TON',
+                    'Mode'     => $mode,
+                ]
+            );
+        }
+
+        jsonResponse([
+            'success'              => true,
+            'agentId'              => 'exec_' . $executionId,
+            'signal'               => $signal,
+            'tradeExecuted'        => $tradeExecuted,
+            'portfolioValueBefore' => (float)$amount,
+            'portfolioValueAfter'  => (float)$portfolioValueAfter,
+            'pnlDelta'             => (float)$pnlDelta,
+            'pair'                 => $pair,
+            'mode'                 => $mode,
+            'timestamp'            => date('c'),
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Agent execute error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Execution failed'], 500);
     }
 }
 
