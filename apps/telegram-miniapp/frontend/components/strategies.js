@@ -67,12 +67,18 @@
         const drawdown = parseFloat(s.max_drawdown) || 0;
         const sharpe = parseFloat(s.sharpe_ratio) || 0;
         const isBest = roi === bestRoi;
+        const score = parseFloat(s.optimization_score) || 0;
+        const autoOptimized = !!s.auto_optimized;
+        const scoreBar = score > 0
+          ? `<div class="strategy-score-bar"><div class="strategy-score-fill" style="width:${Math.min(100, score).toFixed(0)}%"></div></div>`
+          : '';
 
         return `
           <div class="strategy-card">
             <div class="strategy-card-header">
               <span class="strategy-card-name">${esc(s.strategy_name)}</span>
               ${isBest ? '<span class="strategy-badge best">Best ROI</span>' : ''}
+              ${autoOptimized ? '<span class="strategy-badge optimized">Auto-Optimized</span>' : ''}
             </div>
             <div class="strategy-metrics-grid">
               <div class="strategy-metric">
@@ -94,6 +100,7 @@
                 <div class="strategy-metric-value negative">-${drawdown.toFixed(1)}%</div>
               </div>
             </div>
+            ${score > 0 ? `<div class="strategy-score-row"><span class="strategy-score-label">Perf. Score</span><span class="strategy-score-value">${score.toFixed(0)}/100</span>${scoreBar}</div>` : ''}
             <div class="strategy-card-footer">
               <span>Sharpe: ${sharpe.toFixed(2)}</span>
               <span>Annualized: ${parseFloat(s.annualized_return || roi * 12).toFixed(1)}%</span>
