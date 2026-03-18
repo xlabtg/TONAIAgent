@@ -1,13 +1,14 @@
 /**
- * TONAIAgent — Analytics Service (Issue #255)
+ * TONAIAgent — Analytics Service (Issue #255, extended in Issue #259)
  *
  * Computes trade history metrics, portfolio performance statistics,
- * and analytics dashboards from execution records.
+ * analytics dashboards, and multi-agent portfolio-level metrics.
  *
  * Architecture:
  *   Execution Engine → Trade Storage (taa_agent_executions)
  *     → Analytics Engine (this service)
  *       → /api/trades  /api/analytics  /api/portfolio/history
+ *       → /api/portfolio/metrics  (portfolio-level, Issue #259)
  */
 
 // ============================================================================
@@ -62,6 +63,59 @@ export interface AnalyticsResult {
   metrics: AnalyticsMetrics;
   byStrategy: TradeDistribution[];
   equityCurve: PortfolioSnapshot[];
+}
+
+// ============================================================================
+// Portfolio-Level Metrics (Issue #259)
+// ============================================================================
+
+/**
+ * Per-agent allocation entry used when computing portfolio-level metrics.
+ */
+export interface AgentAllocationEntry {
+  agentId: string;
+  strategy: string;
+  /** Fraction of total portfolio [0..1]. */
+  allocationFraction: number;
+}
+
+/**
+ * Portfolio-level analytics combining metrics across all agents.
+ *
+ * ```ts
+ * {
+ *   portfolioPnL,        // total PnL across all strategies
+ *   diversificationScore,// 0-100: higher = better diversified
+ *   riskExposure,        // 0-100: higher = more concentrated risk
+ * }
+ * ```
+ */
+export interface PortfolioMetrics {
+  /** Combined PnL across all strategy agents. */
+  portfolioPnL: number;
+  /**
+   * Diversification score [0..100].
+   * Based on the Herfindahl-Hirschman Index (HHI):
+   *   HHI = Σ(allocation_i²) ; score = (1 - HHI) × 100
+   * Score of 100 = perfectly equal allocation; 0 = single strategy.
+   */
+  diversificationScore: number;
+  /**
+   * Risk exposure index [0..100].
+   * Weighted average of per-strategy drawdown, scaled by allocation.
+   * Higher value = more capital allocated to high-drawdown strategies.
+   */
+  riskExposure: number;
+  /** Number of active strategy agents. */
+  activeAgents: number;
+  /** Per-strategy breakdown contributing to these metrics. */
+  byStrategy: Array<{
+    strategy: string;
+    allocationFraction: number;
+    pnl: number;
+    maxDrawdown: number;
+    contribution: number; // allocationFraction * pnl
+  }>;
 }
 
 // ============================================================================
@@ -196,6 +250,84 @@ export class AnalyticsService {
       metrics: this.computeMetrics(trades),
       byStrategy: this.computeByStrategy(trades),
       equityCurve: this.buildEquityCurve(trades, snapshots, initialValue),
+    };
+  }
+
+  // ============================================================================
+  // Portfolio-Level Metrics (Issue #259)
+  // ============================================================================
+
+  /**
+   * Compute portfolio-level metrics across multiple strategy agents.
+   *
+   * @param trades - all trade records across all agents/strategies
+   * @param allocations - current agent allocation fractions
+   * @returns PortfolioMetrics with portfolioPnL, diversificationScore, riskExposure
+   */
+  computePortfolioMetrics(
+    trades: TradeRecord[],
+    allocations: AgentAllocationEntry[],
+  ): PortfolioMetrics {
+    const distributions = this.computeByStrategy(trades);
+
+    // Map strategy → distribution for quick lookup
+    const distByStrategy = new Map(distributions.map(d => [d.strategy, d]));
+
+    // Map strategy → max drawdown
+    const drawdownByStrategy = new Map<string, number>();
+    const tradesByStrategy = new Map<string, TradeRecord[]>();
+    for (const t of trades) {
+      const bucket = tradesByStrategy.get(t.strategy) ?? [];
+      bucket.push(t);
+      tradesByStrategy.set(t.strategy, bucket);
+    }
+    for (const [strategy, group] of tradesByStrategy.entries()) {
+      const pnls = group
+        .filter(t => t.side === 'buy' || t.side === 'sell')
+        .map(t => t.pnl);
+      drawdownByStrategy.set(strategy, this._maxDrawdown(pnls));
+    }
+
+    // Normalise allocations (should already sum to 1, but guard against drift)
+    const totalFraction = allocations.reduce((s, a) => s + a.allocationFraction, 0);
+    const normalised = totalFraction > 0
+      ? allocations.map(a => ({ ...a, allocationFraction: a.allocationFraction / totalFraction }))
+      : allocations;
+
+    // Build per-strategy breakdown
+    const byStrategy = normalised.map(entry => {
+      const dist = distByStrategy.get(entry.strategy);
+      const pnl = dist?.totalPnl ?? 0;
+      const maxDrawdown = drawdownByStrategy.get(entry.strategy) ?? 0;
+      return {
+        strategy: entry.strategy,
+        allocationFraction: entry.allocationFraction,
+        pnl,
+        maxDrawdown,
+        contribution: entry.allocationFraction * pnl,
+      };
+    });
+
+    const portfolioPnL = byStrategy.reduce((s, b) => s + b.pnl, 0);
+
+    // Diversification score via HHI
+    const hhi = normalised.reduce((s, a) => s + Math.pow(a.allocationFraction, 2), 0);
+    const diversificationScore = Math.round((1 - hhi) * 100);
+
+    // Risk exposure: weighted avg drawdown (0-100)
+    const riskExposure = Math.min(
+      100,
+      Math.round(
+        byStrategy.reduce((s, b) => s + b.allocationFraction * b.maxDrawdown, 0),
+      ),
+    );
+
+    return {
+      portfolioPnL,
+      diversificationScore,
+      riskExposure,
+      activeAgents: allocations.length,
+      byStrategy,
     };
   }
 
