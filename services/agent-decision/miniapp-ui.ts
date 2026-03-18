@@ -1,5 +1,5 @@
 /**
- * TONAIAgent — Mini App UI Types (Issue #261, #263)
+ * TONAIAgent — Mini App UI Types (Issue #261, #263, #265)
  *
  * Type definitions for the Telegram Mini App autonomous agent controls:
  *   - Agent goals display
@@ -9,12 +9,15 @@
  *   - Confidence metric display (Issue #263)
  *   - Recent decisions log (Issue #263)
  *   - Memory insights panel (Issue #263)
+ *   - Sentiment indicator and signal strength (Issue #265)
+ *   - Market mood display (Issue #265)
  */
 
 import type { AgentGoal, GoalProgress } from '../../core/agent/goals';
 import type { AgentMode } from './index';
 import type { AgentStrategy } from '../../core/agent/index';
 import type { TrendState, VolatilityLevel, RecentPerformanceSummary } from '../agent-context/index';
+import type { SentimentLevel } from '../signal-aggregator/index';
 
 // ============================================================================
 // Mini App State
@@ -74,6 +77,13 @@ export interface AgentAutonomousUIState {
    * Memory insights for the insights panel.
    */
   memoryInsights: MemoryInsightPanel;
+
+  // --- External Signals & Market Intelligence (Issue #265) ---
+  /**
+   * Current market sentiment panel for the Mini App.
+   * Shows sentiment indicator, market mood, and signal strength.
+   */
+  marketSignals: MarketSignalPanel;
 }
 
 // ============================================================================
@@ -116,6 +126,45 @@ export interface MemoryInsightPanel {
   strategyFailureAlert: boolean;
   /** Number of trades recorded in short-term memory. */
   tradeCount: number;
+}
+
+// ============================================================================
+// Market Signal UI Types (Issue #265)
+// ============================================================================
+
+/**
+ * Market signal panel displayed in the Mini App.
+ *
+ * Shows:
+ *   - Sentiment indicator (positive / neutral / negative)
+ *   - Market mood label (e.g. "Bullish", "Bearish", "Neutral")
+ *   - Signal strength [0..100]
+ *   - Raw external signal score [-1..+1]
+ *   - Number of signal sources contributing
+ */
+export interface MarketSignalPanel {
+  /**
+   * Bucketed sentiment level (Issue #265).
+   */
+  sentimentLevel: SentimentLevel;
+  /**
+   * Human-readable market mood label.
+   */
+  marketMood: string;
+  /**
+   * Signal strength [0..100].
+   * Derived from the absolute value of externalSignalScore × 100.
+   */
+  signalStrength: number;
+  /**
+   * Raw aggregated external signal score [-1..+1].
+   */
+  externalSignalScore: number;
+  /**
+   * Whether external signals are actively influencing decisions.
+   * True when |externalSignalScore| > 0.15.
+   */
+  isSignalActive: boolean;
 }
 
 // ============================================================================
@@ -261,5 +310,64 @@ export function buildMemoryInsightPanel(
     consecutiveLossAlert,
     strategyFailureAlert,
     tradeCount: performance.tradeCount,
+  };
+}
+
+// ============================================================================
+// Market Signal UI Helpers (Issue #265)
+// ============================================================================
+
+/**
+ * Returns a human-readable sentiment level label.
+ */
+export function sentimentLevelLabel(level: SentimentLevel): string {
+  switch (level) {
+    case 'positive': return 'Positive';
+    case 'negative': return 'Negative';
+    case 'neutral':  return 'Neutral';
+  }
+}
+
+/**
+ * Returns a market mood label based on the external signal score.
+ *
+ * Thresholds:
+ *   score > +0.5  → "Strongly Bullish"
+ *   score > +0.15 → "Bullish"
+ *   score < -0.5  → "Strongly Bearish"
+ *   score < -0.15 → "Bearish"
+ *   otherwise     → "Neutral"
+ */
+export function marketMoodLabel(externalSignalScore: number): string {
+  if (externalSignalScore > 0.5)  return 'Strongly Bullish';
+  if (externalSignalScore > 0.15) return 'Bullish';
+  if (externalSignalScore < -0.5) return 'Strongly Bearish';
+  if (externalSignalScore < -0.15) return 'Bearish';
+  return 'Neutral';
+}
+
+/**
+ * Convert an external signal score [-1, +1] to a signal strength [0..100].
+ *
+ * Strength is the absolute magnitude of the score, scaled to 100.
+ */
+export function signalStrengthPercent(externalSignalScore: number): number {
+  return Math.round(Math.abs(Math.max(-1, Math.min(1, externalSignalScore))) * 100);
+}
+
+/**
+ * Build a MarketSignalPanel from aggregated signal data.
+ */
+export function buildMarketSignalPanel(
+  sentimentLevel: SentimentLevel,
+  externalSignalScore: number,
+): MarketSignalPanel {
+  const score = Math.max(-1, Math.min(1, externalSignalScore));
+  return {
+    sentimentLevel,
+    marketMood: marketMoodLabel(score),
+    signalStrength: signalStrengthPercent(score),
+    externalSignalScore: score,
+    isSignalActive: Math.abs(score) > 0.15,
   };
 }
