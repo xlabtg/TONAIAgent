@@ -1,3 +1,4 @@
+/** @mvp Core agents module — required for MVP (agent runtime, orchestrator, control, lifecycle) */
 // Core Agents — consolidated from:
 //   src/agents → core/agents/runtime
 //   src/agent-runtime → core/agents/agent-runtime

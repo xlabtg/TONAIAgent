@@ -1,3 +1,4 @@
+/** @mvp MVP connector — DEX adapters for on-chain trade execution (StonFi, DeDust) */
 // DEX Connectors — stateless adapters for decentralized exchanges
 // DEX connector implementations are in core/market-data/base/connectors/
 // This module re-exports the DEX-specific connectors

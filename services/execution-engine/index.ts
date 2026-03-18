@@ -1,3 +1,4 @@
+/** @mvp MVP service — trade execution engine (DEX, simulated buy/sell) */
 // Execution Engine Service — trade execution and management
 // Trade execution implementations are in core/trading/engine/ and core/trading/live/
 //

@@ -1,3 +1,4 @@
+/** @mvp Core market-data module — required for MVP (price feeds, CoinGecko/Binance providers) */
 // Core Market Data — consolidated from:
 //   src/market-data → core/market-data/base
 //   src/data-platform → core/market-data/data-platform

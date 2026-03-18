@@ -1,5 +1,6 @@
 /**
  * TONAIAgent - Enterprise SDK & Developer Platform
+ * @mvp MVP package — developer SDK for building and deploying agents
  *
  * Comprehensive developer platform and enterprise-grade SDK enabling developers,
  * institutions, and partners to build, extend, and integrate autonomous agents

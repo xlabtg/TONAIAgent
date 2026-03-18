@@ -1,5 +1,6 @@
 /**
  * TONAIAgent - AI Layer
+ * @mvp Core AI module — required for MVP (multi-provider routing, Groq-first)
  *
  * Multi-provider AI abstraction layer with Groq as primary provider.
  *

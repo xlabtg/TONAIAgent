@@ -1,3 +1,4 @@
+/** @mvp Core trading module — required for MVP (trading base, engine, live trading) */
 // Core Trading — consolidated from:
 //   src/trading → core/trading/base
 //   src/trading-engine → core/trading/engine

@@ -1,3 +1,4 @@
+/** @mvp Core portfolio module — required for MVP (portfolio tracking, analytics) */
 // Core Portfolio — consolidated from:
 //   src/portfolio → core/portfolio/base
 //   src/portfolio-analytics → core/portfolio/analytics

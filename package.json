@@ -356,6 +356,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "backtest": "npx ts-node infrastructure/scripts/backtest.ts",
+    "validate:mvp": "npx ts-node infrastructure/scripts/validate-mvp-deps.ts",
     "lint": "eslint core apps extended services connectors packages --ext .ts",
     "lint:fix": "eslint core apps extended services connectors packages --ext .ts --fix",
     "typecheck": "tsc --noEmit",
