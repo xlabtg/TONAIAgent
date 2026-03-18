@@ -26,7 +26,7 @@ import {
   AdminDashboardManager,
   RevenueManager,
   premiumTiers,
-} from '../../apps/mvp';
+} from '../../extended/mvp';
 
 import type {
   MVPEvent,
@@ -38,7 +38,7 @@ import type {
   RiskAlert,
   PremiumSubscription,
   AgentDataForRanking,
-} from '../../apps/mvp';
+} from '../../extended/mvp';
 
 // ============================================================================
 // Telegram Mini App Tests

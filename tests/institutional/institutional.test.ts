@@ -49,7 +49,7 @@ import {
   // Unified Manager
   createInstitutionalManager,
   DefaultInstitutionalManager,
-} from '../../services/institutional';
+} from '../../extended/institutional';
 
 // ============================================================================
 // Account Management Tests

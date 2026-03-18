@@ -15,7 +15,7 @@ import {
   createMonitoringManager,
   DEFAULT_ROLE_PERMISSIONS,
   LaunchpadEvent,
-} from '../../apps/launchpad';
+} from '../../extended/launchpad';
 
 // ============================================================================
 // Launchpad Service Tests

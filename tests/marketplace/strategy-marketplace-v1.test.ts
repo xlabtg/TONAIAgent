@@ -15,7 +15,7 @@ import {
   DefaultStrategyRegistry,
   createMarketplaceAPI,
   DefaultMarketplaceAPI,
-} from '../../apps/marketplace';
+} from '../../extended/marketplace';
 
 import type {
   RegisterStrategyInput,
@@ -23,7 +23,7 @@ import type {
   RegistryFilter,
   DeployStrategyInput,
   AllocateCapitalInput,
-} from '../../apps/marketplace';
+} from '../../extended/marketplace';
 
 // ============================================================================
 // Test Helpers

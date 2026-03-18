@@ -28,13 +28,13 @@ import {
   DefaultStabilityLinkedIncentiveSystem,
   DefaultMonetaryGovernanceLayer,
   DefaultMonetaryPolicyLayer,
-} from '../../services/monetary-policy/index';
+} from '../../extended/monetary-policy/index';
 
 import type {
   MonetaryPolicyInputs,
   MonetaryPolicyEvent,
   StabilityFactors,
-} from '../../services/monetary-policy/index';
+} from '../../extended/monetary-policy/index';
 
 // ============================================================================
 // Helper: sample policy inputs

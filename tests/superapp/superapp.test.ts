@@ -29,7 +29,7 @@ import {
   DefaultGamificationManager,
   DefaultAIAssistantManager,
   DefaultSuperAppMonetizationManager,
-} from '../../apps/superapp';
+} from '../../extended/superapp';
 
 // ============================================================================
 // Super App Service Tests

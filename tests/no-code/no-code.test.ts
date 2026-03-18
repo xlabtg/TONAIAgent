@@ -22,7 +22,7 @@ import {
   Block,
   Connection,
   SimulationConfig,
-} from '../../apps/no-code';
+} from '../../extended/no-code';
 
 // ============================================================================
 // Block Registry Tests

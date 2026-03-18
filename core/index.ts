@@ -88,34 +88,34 @@
  *   agent plugin system integration for arbitrage, analytics, and liquidity scanning)
  */
 
-export * from './core/ai';
+export * from './ai';
 
 // Re-export ai-safety with namespace to avoid conflicts with AI types
 // (both modules define types like FraudPattern, PolicyCondition, RiskContext, etc.)
-export * as AISafety from './core/ai-safety';
-export * from './core/security';
-export * from './services/tokenomics';
+export * as AISafety from './ai-safety';
+export * from './security';
+export * from '../extended/tokenomics';
 
 // Re-export plugins with namespace to avoid naming conflicts with AI types
-export * as Plugins from './core/plugins';
+export * as Plugins from './plugins';
 
 // Re-export strategy with namespace to avoid naming conflicts with multi-agent and tokenomics types
 // (multiple modules define types like CapitalAllocation, ActionResult, and StrategyPerformance)
-export * as Strategy from './core/strategies/engine';
+export * as Strategy from './strategies/engine';
 
 // Re-export multi-agent with namespace to avoid naming conflicts with tokenomics types
 // (both modules define GovernanceConfig, DelegationRequest, CapitalPool, GovernanceStats)
-export * as MultiAgent from './core/multi-agent';
+export * as MultiAgent from './multi-agent';
 
 // No-code module is available as separate import: '@tonaiagent/core/no-code'
 
 // Autonomous Strategy Discovery Engine — available as separate import:
 // '@tonaiagent/core/autonomous-discovery'
-export * as AutonomousDiscovery from './services/autonomous-discovery';
+export * as AutonomousDiscovery from '../services/autonomous-discovery';
 
 // Cross-Chain Liquidity Integration Layer — available as separate import:
 // '@tonaiagent/core/cross-chain-liquidity'
-export * as CrossChainLiquidity from './connectors/cross-chain-liquidity';
+export * as CrossChainLiquidity from '../connectors/cross-chain-liquidity';
 
 // Marketplace exports (with explicit exports to avoid conflicts)
 export {
@@ -140,14 +140,14 @@ export {
   // Risk transparency
   createRiskTransparencyManager,
   DefaultRiskTransparencyManager,
-} from './apps/marketplace';
+} from '../extended/marketplace';
 
 // Re-export marketplace types with namespace to avoid conflicts
-export type * as MarketplaceTypes from './apps/marketplace/types';
+export type * as MarketplaceTypes from '../extended/marketplace/types';
 
 // Strategy Marketplace v1 — unified module namespace
 // Exposes: Strategy Registry, Marketplace API, and all v1 marketplace components
-export * as StrategyMarketplaceModule from './apps/marketplace';
+export * as StrategyMarketplaceModule from '../extended/marketplace';
 export {
   // Strategy Registry
   createStrategyRegistry,
@@ -155,11 +155,11 @@ export {
   // Marketplace API
   createMarketplaceAPI,
   DefaultMarketplaceAPI,
-} from './apps/marketplace';
+} from '../extended/marketplace';
 
 // Re-export omnichain with namespace to avoid naming conflicts
 // (omnichain defines its own ActionResult, ChainId, and other common types)
-export * as Omnichain from './services/omnichain';
+export * as Omnichain from '../services/omnichain';
 
 // Note: Import institutional module separately from '@tonaiagent/core/institutional'
 // to avoid naming conflicts with existing exports
@@ -169,18 +169,18 @@ export * as Omnichain from './services/omnichain';
 
 // Re-export launchpad with namespace to avoid naming conflicts
 // (launchpad has its own GovernanceConfig, CapitalPool, and similar types)
-export * as Launchpad from './apps/launchpad';
+export * as Launchpad from '../extended/launchpad';
 
 // Re-export hedgefund with namespace to avoid naming conflicts
 // (hedgefund module defines StrategyAllocation, PortfolioPerformance, etc.)
-export * as HedgeFund from './services/hedgefund';
+export * as HedgeFund from '../extended/hedgefund';
 
 // Note: Import hedgefund module separately from '@tonaiagent/core/hedgefund'
 // for direct access to hedge fund types and managers
 
 // Re-export data-platform with namespace to avoid naming conflicts
 // (data-platform defines MarketDataService which could conflict with other modules)
-export * as DataPlatform from './core/market-data/data-platform';
+export * as DataPlatform from './market-data/data-platform';
 
 // Growth Engine exports (referral, social trading, gamification, viral loops, analytics, anti-abuse)
 export {
@@ -205,10 +205,10 @@ export {
   // Anti-abuse
   createAntiAbuseSystem,
   DefaultAntiAbuseSystem,
-} from './apps/growth';
+} from '../extended/growth';
 
 // Re-export growth types with namespace to avoid conflicts
-export type * as GrowthTypes from './apps/growth/types';
+export type * as GrowthTypes from '../extended/growth/types';
 
 // Note: Import ecosystem fund module separately from '@tonaiagent/core/ecosystem-fund'
 // to avoid naming conflicts with existing exports (governance, treasury, etc.)
@@ -224,7 +224,7 @@ export type * as GrowthTypes from './apps/growth/types';
 
 // Open Agent Protocol - Universal standard for autonomous agents
 // Provides identity, capabilities, messaging, security, reputation, plugins, cross-chain, and governance
-export * as Protocol from './core/protocol';
+export * as Protocol from './protocol';
 export {
   // Main protocol class
   OpenAgentProtocol,
@@ -234,7 +234,7 @@ export {
   type CreateAgentInput,
   type ProtocolAgent,
   type ProtocolEventHandler,
-} from './core/protocol';
+} from './protocol';
 
 // Note: Import protocol module separately from '@tonaiagent/core/protocol'
 // for full access to all protocol features (identity, capabilities, messaging, etc.)
@@ -250,7 +250,7 @@ export {
 
 // Global Regulatory Strategy & Jurisdictional Framework
 // Provides comprehensive compliance infrastructure for AI-native autonomous finance
-export * as Regulatory from './services/regulatory';
+export * as Regulatory from '../services/regulatory';
 export {
   // Main regulatory manager
   RegulatoryManager,
@@ -274,7 +274,7 @@ export {
   type KycResult,
   type RiskLevel,
   type AiSystemClassification,
-} from './services/regulatory';
+} from '../services/regulatory';
 
 // Note: Import regulatory module separately from '@tonaiagent/core/regulatory'
 // for full access to all regulatory features (jurisdiction analysis, KYC/AML, AI governance, risk engine)
@@ -292,7 +292,7 @@ export {
 // with deterministic address generation, version control, and upgrade patterns.
 // Note: Import ton-factory module separately from '@tonaiagent/core/ton-factory'
 // for full access (factory contract, agent wallets, strategy executor, registry, fee manager)
-export * as TonFactory from './connectors/ton-factory';
+export * as TonFactory from '../connectors/ton-factory';
 export {
   // Main service
   createTonFactoryService,
@@ -326,13 +326,13 @@ export {
   type AgentWallet,
   type AgentRegistryEntry,
   type FeeRecord,
-} from './connectors/ton-factory';
+} from '../connectors/ton-factory';
 
 // Investor-Ready End-to-End Demo Flow (Issue #90)
 // Orchestrates all 7 demo steps: Landing, Agent Creation, Telegram Integration,
 // TON Wallet Creation, Strategy Activation, Live Dashboard, Social & Viral.
 // Note: Import separately from '@tonaiagent/core/investor-demo' for full access.
-export * as InvestorDemo from './examples/investor-demo';
+export * as InvestorDemo from '../examples/investor-demo';
 export {
   InvestorDemoManager,
   createInvestorDemoManager,
@@ -345,7 +345,7 @@ export {
   type InvestorDemoService,
   type InvestorDemoEvent,
   type InvestorDemoEventCallback,
-} from './examples/investor-demo';
+} from '../examples/investor-demo';
 
 // One-Click Agent Creation Orchestrator (Issue #91)
 // Single orchestration layer that transforms the platform from a collection of
@@ -353,7 +353,7 @@ export {
 // Telegram bot, strategy, persistence, and security.
 // Note: Import separately from '@tonaiagent/core/agent-orchestrator' for full access.
 // Note: Namespace is exported as AgentOrchestratorModule to avoid conflict with the AgentOrchestrator class.
-export * as AgentOrchestratorModule from './core/agents/orchestrator';
+export * as AgentOrchestratorModule from './agents/orchestrator';
 export {
   // Orchestrator
   AgentOrchestrator,
@@ -385,7 +385,7 @@ export {
   type OrchestratorApiRequest,
   type OrchestratorApiResponse,
   type AgentOrchestratorErrorCode,
-} from './core/agents/orchestrator';
+} from './agents/orchestrator';
 
 // Agent Lifecycle Cloud Orchestrator (Issue #92)
 // Cloud-native orchestration layer that manages the full lifecycle of autonomous
@@ -396,7 +396,7 @@ export {
 // auto-shutdown, admin control interface with governance, audit trails, and
 // migration support for cloud provider/runtime/wallet/multi-chain migrations.
 // Note: Import separately from '@tonaiagent/core/lifecycle-orchestrator' for full access.
-export * as LifecycleOrchestratorModule from './core/agents/lifecycle';
+export * as LifecycleOrchestratorModule from './agents/lifecycle';
 export {
   // Orchestrator
   LifecycleOrchestrator,
@@ -448,13 +448,13 @@ export {
   type LifecycleApiRequest,
   type LifecycleApiResponse,
   type LifecycleOrchestratorErrorCode,
-} from './core/agents/lifecycle';
+} from './agents/lifecycle';
 
 // Secure Multi-Tenant Agent Infrastructure & Isolation Layer (Issue #99)
 // Enterprise-grade tenant isolation with RBAC, sandbox runtime, secret vault,
 // and per-agent wallet isolation for thousands of concurrent tenants.
 // Note: Import separately from '@tonaiagent/core/multi-tenant' for full access.
-export * as MultiTenantModule from './services/multi-tenant';
+export * as MultiTenantModule from '../services/multi-tenant';
 export {
   // Manager
   MultiTenantManager,
@@ -513,14 +513,14 @@ export {
   type MultiTenantEventType,
   type MultiTenantEventCallback,
   type TenantIsolationReport,
-} from './services/multi-tenant';
+} from '../services/multi-tenant';
 
 // Distributed Scheduler & Event Engine (Issue #93)
 // Fault-tolerant distributed cron engine with event-driven execution,
 // on-chain TON blockchain event listeners, worker pool, and retry/DLQ engine.
 // Architecture: EventBus → Scheduler → TaskQueue → WorkerPool → RetryEngine → DeadLetterQueue
 // Note: Import separately from '@tonaiagent/core/distributed-scheduler' for full access.
-export * as DistributedSchedulerModule from './services/distributed-scheduler';
+export * as DistributedSchedulerModule from '../services/distributed-scheduler';
 export {
   // Scheduler
   DistributedScheduler,
@@ -576,7 +576,7 @@ export {
   type SchedulerApiRequest,
   type SchedulerApiResponse,
   type SystemEventTopic,
-} from './services/distributed-scheduler';
+} from '../services/distributed-scheduler';
 
 // Global Infrastructure & Edge Deployment (Issue #100)
 // Production-grade global infrastructure with edge runtime, geo-distributed orchestration,
@@ -584,7 +584,7 @@ export {
 // Architecture: EdgeNodeRegistry → GeoRouter → ComplianceEngine → GlobalScheduler →
 //               CostOptimizer → GlobalMonitor → EdgeIntelligenceLayer
 // Note: Import separately from '@tonaiagent/core/global-infrastructure' for full access.
-export * as GlobalInfrastructureModule from './services/global-infrastructure';
+export * as GlobalInfrastructureModule from '../services/global-infrastructure';
 export {
   // Manager
   GlobalInfrastructureManager,
@@ -649,7 +649,7 @@ export {
   type GlobalInfraEvent,
   type GlobalInfraEventCallback,
   type GlobalInfrastructureConfig,
-} from './services/global-infrastructure';
+} from '../services/global-infrastructure';
 
 // Autonomous AI Investment Layer (Issue #102)
 // Programmable, AI-native financial layer on TON for managing capital through
@@ -658,7 +658,7 @@ export {
 // Architecture: User/Institution → Investment Vault → Capital Allocation Engine
 //               → AI Strategy Agents → TON Smart Contracts
 // Note: Import separately from '@tonaiagent/core/investment' for full access.
-export * as InvestmentLayerModule from './services/investment';
+export * as InvestmentLayerModule from '../services/investment';
 export {
   // Unified layer
   DefaultInvestmentLayer,
@@ -732,7 +732,7 @@ export {
   type InvestmentEvent,
   type InvestmentEventType,
   type InvestmentEventCallback,
-} from './services/investment';
+} from '../services/investment';
 
 // AI Prime Brokerage (Issue #108)
 // Institutional-grade prime brokerage infrastructure for autonomous AI funds and agents on TON.
@@ -740,7 +740,7 @@ export {
 // capital efficiency, institutional reporting, securities lending, and cross-chain prime brokerage.
 // Architecture: Investors → Tokenized Fund → Prime Brokerage Layer → AI Risk Engine → Agent Strategies → Execution
 // Note: Import separately from '@tonaiagent/core/prime-brokerage' for full access.
-export * as PrimeBrokerage from './services/prime-brokerage';
+export * as PrimeBrokerage from '../services/prime-brokerage';
 
 // AI-native Clearing House (Issue #120)
 // Institutional-grade clearing and settlement infrastructure for autonomous AI funds and agents on TON.
@@ -748,7 +748,7 @@ export * as PrimeBrokerage from './services/prime-brokerage';
 // default resolution framework, real-time settlement, and clearing audit & transparency.
 // Architecture: Agents / Funds → Prime Brokerage → Liquidity Network → Clearing House → Settlement Finality
 // Note: Import separately from '@tonaiagent/core/clearing-house' for full access.
-export * as ClearingHouse from './services/clearing-house';
+export * as ClearingHouse from '../services/clearing-house';
 export {
   // Unified manager
   DefaultClearingHouseManager,
@@ -777,7 +777,7 @@ export {
   type ClearingHouseConfig,
   type ClearingHouseEvent,
   type ClearingHouseEventCallback,
-} from './services/clearing-house';
+} from '../services/clearing-house';
 export {
   // Unified manager
   DefaultPrimeBrokerageManager,
@@ -810,7 +810,7 @@ export {
   type PrimeBrokerageConfig,
   type PrimeBrokerageEvent,
   type PrimeBrokerageEventCallback,
-} from './services/prime-brokerage';
+} from '../services/prime-brokerage';
 
 // Institutional Liquidity Network (Issue #119)
 // Deep liquidity infrastructure layer for institutional capital routing on TON.
@@ -818,7 +818,7 @@ export {
 // deep liquidity sourcing, and risk-controlled execution built on The Open Network.
 // Architecture: Agents/Funds → Prime Brokerage → Liquidity Network → DEX / OTC / Cross-chain
 // Note: Import separately from '@tonaiagent/core/liquidity-network' for full access.
-export * as LiquidityNetwork from './connectors/liquidity-network';
+export * as LiquidityNetwork from '../connectors/liquidity-network';
 export {
   // Unified manager
   DefaultLiquidityNetworkManager,
@@ -844,7 +844,7 @@ export {
   type LiquidityNetworkConfig,
   type LiquidityNetworkEvent,
   type LiquidityNetworkEventCallback,
-} from './connectors/liquidity-network';
+} from '../connectors/liquidity-network';
 
 // DAO Governance & Treasury Layer (Issue #103)
 // Self-governing AI financial protocol with on-chain treasury management,
@@ -853,7 +853,7 @@ export {
 // Architecture: Token Holders → Governance Layer → Treasury Policies
 //               → AI Treasury Manager → AI Investment Agents → Execution Layer
 // Note: Import separately from '@tonaiagent/core/dao-governance' for full access.
-export * as DaoGovernanceModule from './services/dao-governance';
+export * as DaoGovernanceModule from '../extended/dao-governance';
 export {
   // Unified layer
   DefaultDaoGovernanceLayer,
@@ -936,7 +936,7 @@ export {
   type DaoEvent,
   type DaoEventType,
   type DaoEventCallback,
-} from './services/dao-governance';
+} from '../extended/dao-governance';
 
 // Systemic Risk & Stability Framework (Issue #122)
 // System-wide risk containment and stability controls analogous to BIS/Federal Reserve
@@ -946,7 +946,7 @@ export {
 // Architecture: Agents/Funds → Prime Brokerage → Clearing House
 //               → Systemic Risk Engine → Leverage Governor → Stability Fund
 // Note: Import separately from '@tonaiagent/core/systemic-risk' for full access.
-export * as SystemicRisk from './services/systemic-risk';
+export * as SystemicRisk from '../services/systemic-risk';
 export {
   // Unified manager
   DefaultSystemicRiskManager,
@@ -980,7 +980,7 @@ export {
   type CircuitBreakerState as SystemicRiskCircuitBreakerState,
   // Note: exported as SystemicRiskCircuitBreakerEvent to avoid conflict with investment module
   type CircuitBreakerEvent as SystemicRiskCircuitBreakerEvent,
-} from './services/systemic-risk';
+} from '../services/systemic-risk';
 
 // Inter-Protocol Liquidity Standard (Issue #124)
 // Standardized framework for cross-protocol liquidity routing, risk-aware capital
@@ -989,7 +989,7 @@ export {
 // LiquidityConsumer with full on-chain trust guarantees.
 // Architecture: GAAMP → Liquidity Network → IPLS Layer → External Protocols → Cross-chain Liquidity
 // Note: Import separately from '@tonaiagent/core/ipls' for full access.
-export * as IPLSModule from './connectors/ipls';
+export * as IPLSModule from '../connectors/ipls';
 export {
   // Unified manager
   DefaultIPLSManager,
@@ -1035,7 +1035,7 @@ export {
   type LiquidityPassportManager,
   type AdapterLayerManager,
   type ProtocolApiManager,
-} from './connectors/ipls';
+} from '../connectors/ipls';
 
 // Autonomous Capital Markets Stack (ACMS) — Issue #125
 // Vertically integrated, AI-native capital markets infrastructure on TON.
@@ -1043,7 +1043,7 @@ export {
 // Clearing/Settlement → Risk/Stability → Monetary/Treasury → Inter-Protocol → Governance
 // Replaces BlackRock, Goldman Sachs, NASDAQ, DTCC, Federal Reserve with AI-coordinated stack.
 // Note: Import separately from '@tonaiagent/core/acms' for full access to all 9 layers.
-export * as ACMS from './research/acms';
+export * as ACMS from '../research/acms';
 export {
   // Unified manager
   DefaultACMSManager,
@@ -1082,7 +1082,7 @@ export {
   type ACMSStackStatus,
   type ACMSEvent,
   type ACMSEventCallback,
-} from './research/acms';
+} from '../research/acms';
 
 // AI-native Global Financial Infrastructure (AGFI)
 // Six interconnected pillars forming institutional-grade global capital coordination:
@@ -1094,7 +1094,7 @@ export {
 // 6. Interoperability & Global Integration - Cross-chain messaging, bank connectors
 // Note: Import AGFI module separately from '@tonaiagent/core/agfi'
 // for full access to all AGFI types, managers, and factory functions
-export * as AGFI from './research/agfi';
+export * as AGFI from '../research/agfi';
 
 // Global Regulatory Integration Framework (GRIF)
 // Six components enabling regulation-compatible infrastructure:
@@ -1106,7 +1106,7 @@ export * as AGFI from './research/agfi';
 // 6. Regulatory Dialogue Framework - Whitepaper disclosures, regulator engagement tracking
 // Note: Import GRIF module separately from '@tonaiagent/core/grif'
 // for full access to all GRIF types, managers, and factory functions
-export * as GRIF from './research/grif';
+export * as GRIF from '../research/grif';
 export {
   // Main GRIF manager
   GRIFManager,
@@ -1142,7 +1142,7 @@ export {
   type TransparencyPortalData,
   type GRIFEvent,
   type GRIFEventCallback,
-} from './research/grif';
+} from '../research/grif';
 
 // AI-native Financial Operating System (AIFOS)
 // A programmable, modular, AI-coordinated financial OS for capital markets & global finance.
@@ -1155,7 +1155,7 @@ export {
 // 6. Interoperability Layer - Cross-chain abstraction, external APIs, protocol bridges
 // Note: Import AIFOS module separately from '@tonaiagent/core/aifos'
 // for full access to all AIFOS types, managers, and factory functions
-export * as AIFOS from './research/aifos';
+export * as AIFOS from '../research/aifos';
 export {
   // Main AIFOS manager
   DefaultAIFOSManager,
@@ -1203,7 +1203,7 @@ export {
   type KernelParameters,
   type AIFOSEvent,
   type AIFOSEventCallback,
-} from './research/aifos';
+} from '../research/aifos';
 
 // Sovereign Digital Asset Coordination Layer (SDACL)
 // Five components enabling sovereign digital asset coordination:
@@ -1214,7 +1214,7 @@ export {
 // 5. Sovereign Transparency Dashboard - Exposure metrics, compliance reporting, alerts
 // Note: Import SDACL module separately from '@tonaiagent/core/sdacl'
 // for full access to all SDACL types, managers, and factory functions
-export * as SDACL from './services/sdacl';
+export * as SDACL from '../services/sdacl';
 export {
   // Main SDACL manager
   DefaultSDACLService,
@@ -1251,7 +1251,7 @@ export {
   type ComplianceReport,
   type DashboardSnapshot,
   type DashboardAlert,
-} from './services/sdacl';
+} from '../services/sdacl';
 
 // Production Agent Runtime (Issue #149)
 // Core execution environment for autonomous financial agents on TON.
@@ -1259,7 +1259,7 @@ export {
 // risk controls, observability, and event system.
 // Architecture: Agent Applications → Agent Runtime API → Execution Engine → Event Bus → State Store → Financial Infrastructure
 // Note: Import separately from '@tonaiagent/core/agent-runtime' for full access.
-export * as AgentRuntimeModule from './core/agents/agent-runtime';
+export * as AgentRuntimeModule from './agents/agent-runtime';
 export {
   // Orchestrator
   AgentRuntimeOrchestrator,
@@ -1290,7 +1290,7 @@ export {
   type RuntimeEventHandler,
   type RuntimeUnsubscribe,
   type AgentRuntimeErrorCode,
-} from './core/agents/agent-runtime';
+} from './agents/agent-runtime';
 
 // Live Trading Infrastructure (Issue #151)
 // Enables AI agents to execute real trades through integrated liquidity venues.
@@ -1304,7 +1304,7 @@ export {
 //   6. Secure Key Management    — encrypted credentials, never exposed to agent logic
 // Note: Import live-trading module separately from '@tonaiagent/core/live-trading'
 // for full access to all types and factory functions.
-export * as LiveTrading from './core/trading/live';
+export * as LiveTrading from './trading/live';
 export {
   // Main infrastructure factory
   createLiveTradingInfrastructure,
@@ -1340,7 +1340,7 @@ export {
   type PortfolioSummary,
   type RiskProfile,
   type RiskCheckResult as LiveTradingRiskCheckResult,
-} from './core/trading/live';
+} from './trading/live';
 
 // AI Fund Manager (Issue #152)
 // Enables creation and management of AI-driven investment funds that allocate
@@ -1349,7 +1349,7 @@ export {
 // and distribute fees to fund creators, strategy developers, and the platform.
 // Architecture: Investors → AI Fund Manager → Allocation Engine → Strategy Agents → Live Trading
 // Note: Import separately from '@tonaiagent/core/fund-manager' for full access.
-export * as FundManager from './services/fund-manager';
+export * as FundManager from '../extended/fund-manager';
 export {
   // Main fund manager factory
   createAIFundManager,
@@ -1393,7 +1393,7 @@ export {
   type FundManagerEventHandler,
   type FundManagerUnsubscribe,
   type FundManagerErrorCode,
-} from './services/fund-manager';
+} from '../extended/fund-manager';
 
 // Agent Developer SDK (Issue #158)
 // Standardized framework for building, testing, and deploying autonomous agents.
@@ -1406,7 +1406,7 @@ export {
 //   4. Backtesting Compatibility Layer — simulate, analyze, validate agents over historical data
 // Architecture: Developer → Agent SDK → Agent Runtime API → Production Agent Runtime → Trading Infrastructure
 // Note: Import separately from '@tonaiagent/core/sdk' for full access.
-export * as AgentDeveloperSDK from './packages/sdk';
+export * as AgentDeveloperSDK from '../packages/sdk';
 export {
   // Agent Framework
   AgentDeveloperFramework,
@@ -1466,7 +1466,7 @@ export {
   type BacktestTrade,
   type BacktestValidationRequirements,
   type BacktestValidationResult,
-} from './packages/sdk';
+} from '../packages/sdk';
 
 // Strategy Marketplace MVP (Issue #201)
 // Unified integration layer connecting Strategy Engine, Marketplace, and Agent Runtime.
@@ -1474,7 +1474,7 @@ export {
 // strategy deployment to agents, and performance tracking integration.
 // Enables: strategy discovery, deployment, reputation, and sharing.
 // Note: Import separately from '@tonaiagent/core/strategy-marketplace' for full access.
-export * as StrategyMarketplaceMVP from './core/strategies/marketplace';
+export * as StrategyMarketplaceMVP from './strategies/marketplace';
 export {
   // Marketplace
   DefaultStrategyMarketplace,
@@ -1503,7 +1503,7 @@ export {
   type BacktestComparisonResult,
   type MarketplaceBacktester,
   type CLIBacktestConfig,
-} from './core/strategies/marketplace';
+} from './strategies/marketplace';
 
 // Portfolio Engine (Issue #214)
 // Persistent portfolio tracking for AI trading agents including:
@@ -1515,7 +1515,7 @@ export {
 //   6. Portfolio API          — REST endpoints for portfolio data
 // Architecture: Agent Runtime → Trade Execution → Portfolio Engine → Database Storage → Analytics/Dashboard
 // Note: Import separately from '@tonaiagent/core/portfolio' for full access.
-export * as PortfolioEngine from './core/portfolio/base';
+export * as PortfolioEngine from './portfolio/base';
 export {
   // Storage
   PortfolioStorage,
@@ -1556,7 +1556,7 @@ export {
   type PositionsResponse,
   type ExecuteTradeRequest,
   type ExecuteTradeResult,
-} from './core/portfolio/base';
+} from './portfolio/base';
 
 // Agent Monitoring Dashboard (Issue #215)
 // Real-time monitoring dashboard for AI trading agents providing:
@@ -1570,7 +1570,7 @@ export {
 //   8. Dashboard UI Components   — text/HTML renderers for Telegram Mini App
 // Architecture: Agent Runtime → Portfolio Engine → Monitoring API → Dashboard UI
 // Note: Import separately from '@tonaiagent/core/monitoring' for full access.
-export * as Monitoring from './services/monitoring';
+export * as Monitoring from '../services/monitoring';
 export {
   // Metrics Service
   MonitoringMetricsService,
@@ -1619,14 +1619,14 @@ export {
   type MonitoringErrorCode,
   type MonitoringApiRequest,
   type MonitoringApiResponse,
-} from './services/monitoring';
+} from '../services/monitoring';
 
 // Strategy Reputation & Ranking Engine (Issue #218)
 // Ranking system that evaluates strategies using performance, risk, usage, and community metrics.
 // Provides: reputation scoring, tier classification, badges, and leaderboards.
 // Determines: strategy order in marketplace, trust level, and visibility.
 // Note: Import separately from '@tonaiagent/core/reputation' for full access.
-export * as Reputation from './services/reputation';
+export * as Reputation from '../services/reputation';
 export {
   // Metrics aggregator
   DefaultMetricsAggregator,
@@ -1664,7 +1664,7 @@ export {
   type ReputationApiRequest,
   type ReputationApiResponse,
   type ReputationApiErrorCode,
-} from './services/reputation';
+} from '../services/reputation';
 
 // Strategy Revenue Sharing System (Issue #219)
 // Developer monetization layer enabling strategy creators to earn revenue:
@@ -1674,7 +1674,7 @@ export {
 // Revenue is automatically distributed between developer, platform, and referrer.
 // Architecture: Agent Profit → Fee Calculator → Revenue Distribution → Developer/Platform Wallets
 // Note: Import separately from '@tonaiagent/core/revenue' for full access.
-export * as Revenue from './services/revenue';
+export * as Revenue from '../services/revenue';
 export {
   // Fee calculator
   DefaultFeeCalculator,
@@ -1717,4 +1717,4 @@ export {
   type RevenueApiRequest,
   type RevenueApiResponse,
   type RevenueApiErrorCode,
-} from './services/revenue';
+} from '../services/revenue';

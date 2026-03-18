@@ -31,7 +31,7 @@ import {
   DefaultMarketplaceGovernanceManager,
   DefaultDelegatedGovernanceManager,
   DefaultDaoGovernanceLayer,
-} from '../../services/dao-governance';
+} from '../../extended/dao-governance';
 
 import type {
   DaoProposal,
@@ -51,7 +51,7 @@ import type {
   InstitutionalDelegate,
   DaoGovernanceHealth,
   DaoEvent,
-} from '../../services/dao-governance';
+} from '../../extended/dao-governance';
 
 // ============================================================================
 // 1. Governance Engine Tests

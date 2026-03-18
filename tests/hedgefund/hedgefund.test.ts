@@ -37,7 +37,7 @@ import {
   StrategyType,
   OrderType,
   RiskAlertType,
-} from '../../services/hedgefund';
+} from '../../extended/hedgefund';
 
 // ============================================================================
 // Portfolio Agent Tests
