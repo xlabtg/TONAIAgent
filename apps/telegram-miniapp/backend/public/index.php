@@ -37,6 +37,9 @@ $routes = [
         '/app' => 'handleApp',
         '/health' => 'handleHealth',
         '/api/prices' => 'handlePrices',
+        '/api/trades' => 'handleTrades',
+        '/api/analytics' => 'handleAnalytics',
+        '/api/portfolio/history' => 'handlePortfolioHistory',
     ],
     'POST' => [
         '/api/auth' => 'handleAuth',
@@ -717,6 +720,309 @@ function handleAiChat(): void
     } catch (Exception $e) {
         error_log('AI error: ' . $e->getMessage());
         jsonResponse(['error' => 'AI service unavailable'], 503);
+    }
+}
+
+/**
+ * GET /api/trades
+ *
+ * Returns paginated trade history from taa_agent_executions for the
+ * authenticated user.
+ *
+ * Query params:
+ *   page      (int, default 1)
+ *   per_page  (int, default 20, max 100)
+ *   sort      "desc" | "asc"  (default "desc")
+ *   action    "BUY" | "SELL"  (optional filter)
+ *   pair      e.g. "TON/USDT" (optional filter)
+ * (Issue #255 — Trade History, Analytics & Performance Tracking)
+ */
+function handleTrades(): void
+{
+    requireAuth();
+
+    $userId = (int)$_SESSION['user_id'];
+
+    $page    = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 20)));
+    $sort    = in_array($_GET['sort'] ?? 'desc', ['asc', 'desc'], true) ? $_GET['sort'] : 'desc';
+    $action  = Security::sanitizeString($_GET['action'] ?? '', 10);
+    $pair    = Security::sanitizeString($_GET['pair'] ?? '', 20);
+
+    $where  = 'user_id = :uid AND status = "completed"';
+    $params = ['uid' => $userId];
+
+    if ($action === 'BUY') {
+        $where .= ' AND signal = "buy"';
+    } elseif ($action === 'SELL') {
+        $where .= ' AND signal = "sell"';
+    }
+
+    if (!empty($pair)) {
+        $where .= ' AND pair = :pair';
+        $params['pair'] = $pair;
+    }
+
+    try {
+        $total = (int)Database::fetchOne(
+            'SELECT COUNT(*) AS cnt FROM ' . Database::table('agent_executions') . ' WHERE ' . $where,
+            $params
+        )['cnt'];
+
+        $offset = ($page - 1) * $perPage;
+        $rows = Database::fetchAll(
+            'SELECT id, strategy, pair, amount, mode, signal, trade_executed,
+                    pnl_delta, execution_price, slippage_bps, dex, status,
+                    created_at, completed_at
+             FROM ' . Database::table('agent_executions') . '
+             WHERE ' . $where . '
+             ORDER BY created_at ' . strtoupper($sort) . '
+             LIMIT :limit OFFSET :offset',
+            array_merge($params, ['limit' => $perPage, 'offset' => $offset])
+        );
+
+        $trades = array_map(function ($r) {
+            $action = $r['signal'] === 'buy' ? 'BUY' : ($r['signal'] === 'sell' ? 'SELL' : 'HOLD');
+            $pair   = $r['pair'];
+            $asset  = explode('/', $pair)[0] ?? $pair;
+            return [
+                'id'              => (int)$r['id'],
+                'asset'           => $asset,
+                'pair'            => $pair,
+                'action'          => $action,
+                'amount'          => (float)$r['amount'],
+                'price'           => $r['execution_price'] !== null ? (float)$r['execution_price'] : null,
+                'value'           => (float)$r['amount'],
+                'pnl'             => (float)$r['pnl_delta'],
+                'slippage_bps'    => $r['slippage_bps'] !== null ? (int)$r['slippage_bps'] : null,
+                'dex'             => $r['dex'],
+                'strategy_name'   => $r['strategy'],
+                'mode'            => $r['mode'],
+                'status'          => $r['status'],
+                'timestamp'       => $r['created_at'],
+            ];
+        }, $rows);
+
+        jsonResponse([
+            'success' => true,
+            'trades'  => $trades,
+            'pagination' => [
+                'page'     => $page,
+                'per_page' => $perPage,
+                'total'    => $total,
+                'pages'    => (int)ceil($total / $perPage),
+            ],
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Trades fetch error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Failed to fetch trades'], 500);
+    }
+}
+
+/**
+ * GET /api/analytics
+ *
+ * Returns aggregated performance analytics for the authenticated user
+ * computed from taa_agent_executions records.
+ *
+ * Query params:
+ *   period  "7d" | "30d" | "90d" | "all"  (default "30d")
+ * (Issue #255 — Trade History, Analytics & Performance Tracking)
+ */
+function handleAnalytics(): void
+{
+    requireAuth();
+
+    $userId = (int)$_SESSION['user_id'];
+    $period = Security::sanitizeString($_GET['period'] ?? '30d', 5);
+
+    $since = match ($period) {
+        '7d'  => date('Y-m-d H:i:s', strtotime('-7 days')),
+        '90d' => date('Y-m-d H:i:s', strtotime('-90 days')),
+        'all' => '2000-01-01 00:00:00',
+        default => date('Y-m-d H:i:s', strtotime('-30 days')),
+    };
+
+    try {
+        $rows = Database::fetchAll(
+            'SELECT signal, trade_executed, pnl_delta, strategy, created_at
+             FROM ' . Database::table('agent_executions') . '
+             WHERE user_id = :uid AND status = "completed" AND created_at >= :since',
+            ['uid' => $userId, 'since' => $since]
+        );
+
+        $totalTrades    = count($rows);
+        $executed       = array_filter($rows, fn($r) => (int)$r['trade_executed'] === 1);
+        $pnlValues      = array_column(array_values($executed), 'pnl_delta');
+        $winners        = array_filter($pnlValues, fn($p) => (float)$p > 0);
+        $losers         = array_filter($pnlValues, fn($p) => (float)$p < 0);
+
+        $totalPnL   = array_sum(array_map('floatval', $pnlValues));
+        $execCount  = count($executed);
+        $avgPnL     = $execCount > 0 ? $totalPnL / $execCount : 0;
+        $bestTrade  = $execCount > 0 ? (float)max(array_map('floatval', $pnlValues)) : 0;
+        $worstTrade = $execCount > 0 ? (float)min(array_map('floatval', $pnlValues)) : 0;
+        $winRate    = $execCount > 0 ? (count($winners) / $execCount) * 100 : 0;
+
+        $grossProfit = array_sum(array_map('floatval', $winners));
+        $grossLoss   = abs(array_sum(array_map('floatval', $losers)));
+        $profitFactor = $grossLoss > 0 ? $grossProfit / $grossLoss : ($grossProfit > 0 ? 999 : 0);
+
+        // Basic Sharpe ratio (mean/stddev of PnL)
+        $sharpe = 0.0;
+        if (count($pnlValues) >= 2) {
+            $mean = $totalPnL / count($pnlValues);
+            $variance = array_sum(array_map(fn($p) => pow((float)$p - $mean, 2), $pnlValues))
+                        / (count($pnlValues) - 1);
+            $stdDev = sqrt($variance);
+            $sharpe = $stdDev > 0 ? $mean / $stdDev : 0;
+        }
+
+        // Max drawdown
+        $maxDD = 0.0;
+        $peak  = 0.0;
+        $cum   = 0.0;
+        foreach ($pnlValues as $p) {
+            $cum += (float)$p;
+            if ($cum > $peak) $peak = $cum;
+            $dd = $peak > 0 ? (($peak - $cum) / $peak) * 100 : 0;
+            if ($dd > $maxDD) $maxDD = $dd;
+        }
+
+        // Per-strategy breakdown
+        $strategyMap = [];
+        foreach ($executed as $r) {
+            $s = $r['strategy'];
+            if (!isset($strategyMap[$s])) {
+                $strategyMap[$s] = ['count' => 0, 'totalPnl' => 0, 'wins' => 0];
+            }
+            $strategyMap[$s]['count']++;
+            $strategyMap[$s]['totalPnl'] += (float)$r['pnl_delta'];
+            if ((float)$r['pnl_delta'] > 0) $strategyMap[$s]['wins']++;
+        }
+
+        $byStrategy = [];
+        foreach ($strategyMap as $name => $data) {
+            $byStrategy[] = [
+                'strategy'  => $name,
+                'count'     => $data['count'],
+                'totalPnl'  => round($data['totalPnl'], 8),
+                'winRate'   => $data['count'] > 0 ? round($data['wins'] / $data['count'] * 100, 2) : 0,
+            ];
+        }
+        usort($byStrategy, fn($a, $b) => $b['totalPnl'] <=> $a['totalPnl']);
+
+        jsonResponse([
+            'success' => true,
+            'period'  => $period,
+            'metrics' => [
+                'totalTrades'    => $totalTrades,
+                'executedTrades' => $execCount,
+                'winRate'        => round($winRate, 2),
+                'totalPnL'       => round($totalPnL, 8),
+                'avgPnL'         => round($avgPnL, 8),
+                'bestTrade'      => round($bestTrade, 8),
+                'worstTrade'     => round($worstTrade, 8),
+                'sharpeRatio'    => round($sharpe, 4),
+                'maxDrawdown'    => round($maxDD, 2),
+                'profitFactor'   => round($profitFactor, 4),
+            ],
+            'byStrategy' => $byStrategy,
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Analytics error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Failed to compute analytics'], 500);
+    }
+}
+
+/**
+ * GET /api/portfolio/history
+ *
+ * Returns daily portfolio value snapshots for the equity curve.
+ * Falls back to deriving the curve from execution PnL when no explicit
+ * snapshots exist in taa_portfolio_history.
+ *
+ * Query params:
+ *   period  "7d" | "30d" | "90d" | "all"  (default "30d")
+ * (Issue #255 — Trade History, Analytics & Performance Tracking)
+ */
+function handlePortfolioHistory(): void
+{
+    requireAuth();
+
+    $userId = (int)$_SESSION['user_id'];
+    $period = Security::sanitizeString($_GET['period'] ?? '30d', 5);
+
+    $since = match ($period) {
+        '7d'  => date('Y-m-d', strtotime('-7 days')),
+        '90d' => date('Y-m-d', strtotime('-90 days')),
+        'all' => '2000-01-01',
+        default => date('Y-m-d', strtotime('-30 days')),
+    };
+
+    try {
+        // Try stored snapshots first
+        $snapshots = Database::fetchAll(
+            'SELECT snapshot_date, portfolio_value, realized_pnl, unrealized_pnl, total_pnl
+             FROM ' . Database::table('portfolio_history') . '
+             WHERE user_id = :uid AND snapshot_date >= :since
+             ORDER BY snapshot_date ASC',
+            ['uid' => $userId, 'since' => $since]
+        );
+
+        if (!empty($snapshots)) {
+            $history = array_map(fn($r) => [
+                'date'            => $r['snapshot_date'],
+                'portfolio_value' => (float)$r['portfolio_value'],
+                'realized_pnl'    => (float)$r['realized_pnl'],
+                'unrealized_pnl'  => (float)$r['unrealized_pnl'],
+                'total_pnl'       => (float)$r['total_pnl'],
+            ], $snapshots);
+
+            jsonResponse(['success' => true, 'period' => $period, 'history' => $history]);
+            return;
+        }
+
+        // Derive curve from daily execution PnL sums
+        $rows = Database::fetchAll(
+            'SELECT DATE(created_at) AS day, SUM(pnl_delta) AS day_pnl
+             FROM ' . Database::table('agent_executions') . '
+             WHERE user_id = :uid AND status = "completed" AND trade_executed = 1
+               AND DATE(created_at) >= :since
+             GROUP BY DATE(created_at)
+             ORDER BY DATE(created_at) ASC',
+            ['uid' => $userId, 'since' => $since]
+        );
+
+        // Get approximate initial portfolio value
+        $userRow = Database::fetchOne(
+            'SELECT COALESCE(SUM(initial_investment), 0) AS init
+             FROM ' . Database::table('agents') . '
+             WHERE user_id = :uid',
+            ['uid' => $userId]
+        );
+        $initialValue = (float)($userRow['init'] ?? 0);
+
+        $history = [];
+        $cumPnl  = 0.0;
+        foreach ($rows as $r) {
+            $cumPnl += (float)$r['day_pnl'];
+            $history[] = [
+                'date'            => $r['day'],
+                'portfolio_value' => round($initialValue + $cumPnl, 8),
+                'realized_pnl'    => round($cumPnl, 8),
+                'unrealized_pnl'  => 0.0,
+                'total_pnl'       => round($cumPnl, 8),
+            ];
+        }
+
+        jsonResponse(['success' => true, 'period' => $period, 'history' => $history]);
+
+    } catch (Exception $e) {
+        error_log('Portfolio history error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Failed to fetch portfolio history'], 500);
     }
 }
 

@@ -269,6 +269,32 @@
       };
     },
 
+    analytics(period = '30d') {
+      const factor = period === '7d' ? 0.25 : period === '90d' ? 3 : period === 'all' ? 12 : 1;
+      return {
+        success: true,
+        period,
+        metrics: {
+          totalTrades:    Math.round(87 * factor),
+          executedTrades: Math.round(72 * factor),
+          winRate:        68.4,
+          totalPnL:       parseFloat((2450.5 * factor).toFixed(2)),
+          avgPnL:         28.17,
+          bestTrade:      142.5,
+          worstTrade:     -38.2,
+          sharpeRatio:    1.82,
+          maxDrawdown:    5.8,
+          profitFactor:   2.1,
+        },
+        byStrategy: this.strategies(period).map(s => ({
+          strategy: s.strategy_name,
+          count:    s.total_trades,
+          totalPnl: parseFloat((s.roi * 80).toFixed(2)),
+          winRate:  s.win_rate,
+        })),
+      };
+    },
+
     marketplace() {
       return [
         {
@@ -416,6 +442,7 @@
     tradePage: 1,
     tradePerPage: 20,
     strategyPeriod: '30d',
+    analyticsPeriod: '7d',
     selectedAgentId: null,
   };
 
@@ -445,6 +472,7 @@
       case 'trades':    Trades.refresh(); break;
       case 'marketplace': if (window.Marketplace) { Marketplace.refresh(); } break;
       case 'growth':    if (window.Growth) { Growth.init(); Growth.render(); } break;
+      case 'analytics': if (window.Analytics) { Analytics.refresh(); } break;
     }
   }
 

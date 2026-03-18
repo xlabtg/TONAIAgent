@@ -274,6 +274,9 @@ CREATE TABLE IF NOT EXISTS `taa_agent_executions` (
     `signal` ENUM('buy', 'sell', 'hold', 'none') DEFAULT NULL,
     `trade_executed` TINYINT(1) DEFAULT 0,
     `pnl_delta` DECIMAL(20, 8) DEFAULT 0,
+    `execution_price` DECIMAL(20, 8) DEFAULT NULL,
+    `slippage_bps` SMALLINT UNSIGNED DEFAULT NULL,
+    `dex` VARCHAR(20) DEFAULT NULL,
     `status` ENUM('pending', 'completed', 'failed') NOT NULL DEFAULT 'pending',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `completed_at` DATETIME DEFAULT NULL,
@@ -286,6 +289,36 @@ CREATE TABLE IF NOT EXISTS `taa_agent_executions` (
     INDEX `idx_created_at` (`created_at`),
     FOREIGN KEY (`user_id`) REFERENCES `taa_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- Table: Portfolio History (Issue #255 — Trade History & Analytics)
+-- Daily snapshots of each user's portfolio value for equity curve
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `taa_portfolio_history` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `snapshot_date` DATE NOT NULL,
+    `portfolio_value` DECIMAL(20, 8) NOT NULL DEFAULT 0,
+    `realized_pnl` DECIMAL(20, 8) NOT NULL DEFAULT 0,
+    `unrealized_pnl` DECIMAL(20, 8) NOT NULL DEFAULT 0,
+    `total_pnl` DECIMAL(20, 8) NOT NULL DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_date` (`user_id`, `snapshot_date`),
+    INDEX `idx_user` (`user_id`),
+    INDEX `idx_snapshot_date` (`snapshot_date`),
+    FOREIGN KEY (`user_id`) REFERENCES `taa_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- Migration: Trade History & Analytics (Issue #255)
+-- Add execution_price, slippage, dex fields to agent executions
+-- Run on existing installations:
+-- ALTER TABLE `taa_agent_executions`
+--     ADD COLUMN IF NOT EXISTS `execution_price` DECIMAL(20, 8) DEFAULT NULL AFTER `pnl_delta`,
+--     ADD COLUMN IF NOT EXISTS `slippage_bps` SMALLINT UNSIGNED DEFAULT NULL AFTER `execution_price`,
+--     ADD COLUMN IF NOT EXISTS `dex` VARCHAR(20) DEFAULT NULL AFTER `slippage_bps`;
+-- -----------------------------------------------------
 
 -- -----------------------------------------------------
 -- Migration: TON Wallet Integration (Issue #233)

@@ -73,6 +73,14 @@
           </svg>
           <span>Growth</span>
         </button>
+        <button class="nav-item" data-page="analytics">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span>Analytics</span>
+        </button>
       </nav>
 
       <!-- ============================== -->
@@ -491,6 +499,89 @@
       </section>
 
       <!-- ============================== -->
+      <!-- PAGE: Analytics Dashboard     -->
+      <!-- (Issue #255)                  -->
+      <!-- ============================== -->
+      <section id="page-analytics" class="page hidden">
+        <header class="page-header">
+          <div class="page-title">Analytics</div>
+          <div class="period-tabs" id="analytics-period-tabs">
+            <button class="period-btn active" data-period="7d">7d</button>
+            <button class="period-btn" data-period="30d">30d</button>
+            <button class="period-btn" data-period="90d">90d</button>
+            <button class="period-btn" data-period="all">All</button>
+          </div>
+        </header>
+
+        <!-- Performance Summary -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total P&amp;L</div>
+            <div class="stat-value" id="an-total-pnl">$0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value" id="an-win-rate">0%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Trades</div>
+            <div class="stat-value" id="an-total-trades">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sharpe Ratio</div>
+            <div class="stat-value" id="an-sharpe">0.00</div>
+          </div>
+        </div>
+
+        <!-- Performance Details -->
+        <div class="section-card">
+          <div class="section-title">Performance Summary</div>
+          <div class="pnl-grid">
+            <div class="pnl-item">
+              <div class="pnl-item-label">Best Trade</div>
+              <div class="pnl-item-value positive" id="an-best-trade">$0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Worst Trade</div>
+              <div class="pnl-item-value negative" id="an-worst-trade">$0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Avg P&amp;L / Trade</div>
+              <div class="pnl-item-value" id="an-avg-pnl">$0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Max Drawdown</div>
+              <div class="pnl-item-value negative" id="an-max-drawdown">0%</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Profit Factor</div>
+              <div class="pnl-item-value" id="an-profit-factor">0.00</div>
+            </div>
+            <div class="pnl-item">
+              <div class="pnl-item-label">Executed Trades</div>
+              <div class="pnl-item-value" id="an-exec-trades">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strategy Breakdown -->
+        <div class="section-card">
+          <div class="section-title">By Strategy</div>
+          <div id="an-strategy-breakdown" class="analytics-strategy-list">
+            <div class="empty-hint">No data yet</div>
+          </div>
+        </div>
+
+        <!-- Equity Curve (text-based) -->
+        <div class="section-card">
+          <div class="section-title">Portfolio History</div>
+          <div id="an-equity-curve" class="equity-curve-list">
+            <div class="empty-hint">No history yet</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== -->
       <!-- Agent Detail Modal             -->
       <!-- ============================== -->
       <div id="agent-modal" class="modal hidden">
@@ -859,6 +950,7 @@
   </div>
 
   <!-- Scripts -->
+  <!-- app.js must be first (exports window.App) -->
   <script src="app.js"></script>
   <script src="components/portfolio.js"></script>
   <script src="components/agents.js"></script>
@@ -869,6 +961,7 @@
   <script src="components/growth.js"></script>
   <script src="components/marketplace.js"></script>
   <script src="components/backtesting.js"></script>
+  <script src="components/analytics.js"></script>
   <!-- Production extensions: i18n, wallet, safe-area, demo/live mode -->
   <script src="production.js"></script>
 </body>
