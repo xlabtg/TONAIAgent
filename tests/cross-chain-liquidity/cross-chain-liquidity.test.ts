@@ -55,7 +55,7 @@ import {
   type ConnectorConfig,
   type TradeRequest,
   type CrossChainLiquidityEvent,
-} from '../../src/cross-chain-liquidity';
+} from '../../connectors/cross-chain-liquidity';
 
 // ============================================================================
 // Test Helpers
@@ -864,7 +864,7 @@ describe('CrossChainPluginLayer', () => {
   });
 
   it('should allow registering custom plugins', () => {
-    const customPlugin: import('../../src/cross-chain-liquidity').CrossChainPlugin = {
+    const customPlugin: import('../../connectors/cross-chain-liquidity').CrossChainPlugin = {
       manifest: {
         id: 'custom-test-plugin',
         name: 'Custom Test Plugin',

@@ -32,7 +32,7 @@ import {
   type GenerationApproach,
   type LearningInsights,
   type DiscoveryEvent,
-} from '../../src/autonomous-discovery';
+} from '../../services/autonomous-discovery';
 
 import { createBacktestingEngine } from '../../core/strategies/engine';
 import type { StrategyPerformance } from '../../core/strategies/engine';

@@ -18,7 +18,7 @@ import {
   DEFAULT_JURISDICTION_RULES,
   KNOWN_RWA_PROTOCOLS,
   KNOWN_BRIDGES,
-} from '../../src/rwa/index';
+} from '../../services/rwa/index';
 
 // ============================================================================
 // Tokenization Manager Tests

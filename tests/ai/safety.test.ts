@@ -11,8 +11,8 @@ import {
   OutputValidator,
   ContentFilter,
   RiskValidator,
-} from '../../src/ai/safety';
-import { SafetyConfig, CompletionRequest, CompletionResponse } from '../../src/ai/types';
+} from '../../core/ai/safety';
+import { SafetyConfig, CompletionRequest, CompletionResponse } from '../../core/ai/types';
 
 // ============================================================================
 // Input Validator Tests

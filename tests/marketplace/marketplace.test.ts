@@ -22,7 +22,7 @@ import {
   DefaultMonetizationManager,
   DefaultRiskTransparencyManager,
   DefaultMarketplaceService,
-} from '../../src/marketplace';
+} from '../../apps/marketplace';
 
 import type {
   Strategy,
@@ -33,7 +33,7 @@ import type {
   PerformanceSnapshot,
   FeeStructure,
   MarketplaceEvent,
-} from '../../src/marketplace';
+} from '../../apps/marketplace';
 
 // ============================================================================
 // Strategy Manager Tests

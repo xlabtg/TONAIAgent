@@ -40,7 +40,7 @@ import {
   ChainId,
   CrossChainStrategyType,
   OmnichainEvent,
-} from '../../src/omnichain';
+} from '../../services/omnichain';
 
 // ============================================================================
 // Omnichain Service Tests

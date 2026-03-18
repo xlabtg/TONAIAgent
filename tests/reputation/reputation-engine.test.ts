@@ -18,13 +18,13 @@ import {
   DefaultMetricsAggregator,
   DefaultStrategyRankingEngine,
   ReputationApi,
-} from '../../src/reputation';
+} from '../../services/reputation';
 
 import type {
   ReputationEvent,
   StrategyMetricsInput,
   TradeRecord,
-} from '../../src/reputation';
+} from '../../services/reputation';
 
 // ============================================================================
 // Test Helpers

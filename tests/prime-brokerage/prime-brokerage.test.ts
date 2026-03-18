@@ -18,7 +18,7 @@ import {
   createSecuritiesLendingManager,
   createCrossChainPrimeBrokerageManager,
   DEFAULT_STRESS_SCENARIOS,
-} from '../../src/prime-brokerage/index';
+} from '../../services/prime-brokerage/index';
 
 // ============================================================================
 // Custody & Clearing Tests

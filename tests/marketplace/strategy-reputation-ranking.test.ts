@@ -20,14 +20,14 @@ import {
   DefaultUserFeedbackManager,
   DefaultPerformanceHistoryManager,
   DefaultMarketplaceService,
-} from '../../src/marketplace';
+} from '../../apps/marketplace';
 
 import type {
   StrategyRankingInput,
   SubmitFeedbackInput,
   RecordMonthlyReturnInput,
   MarketplaceEvent,
-} from '../../src/marketplace';
+} from '../../apps/marketplace';
 
 // ============================================================================
 // Test Helpers

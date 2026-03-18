@@ -22,7 +22,7 @@ import {
   DefaultGrowthAnalyticsEngine,
   DefaultAntiAbuseSystem,
   DefaultGrowthEngine,
-} from '../../src/growth';
+} from '../../apps/growth';
 
 import type {
   Referral,
@@ -38,7 +38,7 @@ import type {
   GrowthMetrics,
   AbuseDetection,
   GrowthEvent,
-} from '../../src/growth';
+} from '../../apps/growth';
 
 // ============================================================================
 // Referral System Tests
@@ -1270,7 +1270,7 @@ import {
   type GroupIntegration,
   type AgentChallenge,
   type ChallengeParticipant,
-} from '../../src/growth';
+} from '../../apps/growth';
 
 describe('TelegramViralEngine', () => {
   let telegramViral: DefaultTelegramViralEngine;

@@ -19,14 +19,14 @@ import {
   createPortfolioProtection,
   createRiskMetricsAPI,
   createStrategyRiskEvaluator,
-} from '../../src/risk-engine';
+} from '../../core/risk-engine';
 
 import type {
   TradeValidationRequest,
   Position,
   RiskEngineEvent,
   StrategyRiskInput,
-} from '../../src/risk-engine';
+} from '../../core/risk-engine';
 
 // ============================================================================
 // Helper Factories

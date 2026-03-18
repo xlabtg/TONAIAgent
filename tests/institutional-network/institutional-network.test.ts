@@ -26,7 +26,7 @@ import {
   DefaultAIAdvantageManager,
   DefaultInstitutionalGovernanceManager,
   DefaultInstitutionalNetworkManager,
-} from '../../src/institutional-network';
+} from '../../services/institutional-network';
 
 // ============================================================================
 // Partner Registry Tests

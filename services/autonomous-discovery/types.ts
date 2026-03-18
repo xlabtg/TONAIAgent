@@ -10,7 +10,7 @@ import type {
   StrategyRiskLevel,
   BacktestResult,
   StrategyPerformance,
-} from '../strategy/types';
+} from '../../core/strategies/engine';
 
 // ============================================================================
 // Discovery Engine Core Types

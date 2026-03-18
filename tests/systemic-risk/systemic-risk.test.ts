@@ -29,7 +29,7 @@ import {
   // Unified Manager
   DefaultSystemicRiskManager,
   createSystemicRiskManager,
-} from '../../src/systemic-risk';
+} from '../../services/systemic-risk';
 
 // ─── Global Exposure Monitor ──────────────────────────────────────────────────
 

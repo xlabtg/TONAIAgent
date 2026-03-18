@@ -5,11 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TaskAnalyzer, ModelScorer, createAIRouter } from '../../src/ai/routing';
-import { ProviderRegistry } from '../../src/ai/providers/base';
-import { createGroqProvider } from '../../src/ai/providers/groq';
-import { createAnthropicProvider } from '../../src/ai/providers/anthropic';
-import { CompletionRequest } from '../../src/ai/types';
+import { TaskAnalyzer, ModelScorer, createAIRouter } from '../../core/ai/routing';
+import { ProviderRegistry } from '../../core/ai/providers/base';
+import { createGroqProvider } from '../../core/ai/providers/groq';
+import { createAnthropicProvider } from '../../core/ai/providers/anthropic';
+import { CompletionRequest } from '../../core/ai/types';
 
 // ============================================================================
 // Task Analyzer Tests

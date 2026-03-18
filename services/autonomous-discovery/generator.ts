@@ -6,7 +6,7 @@
  * and template mutation.
  */
 
-import type { StrategySpec, StrategyRiskLevel, RiskControl } from '../strategy/types';
+import type { StrategySpec, StrategyRiskLevel, RiskControl } from '../../core/strategies/engine';
 import type {
   CandidateStrategy,
   GenerationApproach,

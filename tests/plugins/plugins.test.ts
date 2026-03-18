@@ -25,14 +25,14 @@ import {
   CORE_PLUGIN_MANIFESTS,
   CORE_PLUGIN_HANDLERS,
   getCoreTools,
-} from '../../src/plugins';
+} from '../../core/plugins';
 import type {
   PluginManifest,
   PluginId,
   ToolHandler,
   ToolExecutionRequest,
   AIToolContext,
-} from '../../src/plugins';
+} from '../../core/plugins';
 
 // ============================================================================
 // Test Helpers

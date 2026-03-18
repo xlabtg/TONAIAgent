@@ -7,7 +7,7 @@ import {
   createIdentityManager,
   DefaultIdentityManager,
   IdentityManager,
-} from '../../src/protocol/identity';
+} from '../../core/protocol/identity';
 
 describe('Identity Manager', () => {
   let identityManager: IdentityManager;

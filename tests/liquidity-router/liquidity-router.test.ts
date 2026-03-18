@@ -22,7 +22,7 @@ import {
   type DexQuote,
   type LiquidityPool,
   type PriceComparison,
-} from '../../src/liquidity-router/index';
+} from '../../connectors/liquidity-router/index';
 
 // ============================================================================
 // Test Fixtures

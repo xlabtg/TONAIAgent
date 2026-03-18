@@ -24,14 +24,14 @@ import {
   createRiskDashboard,
   buildDrawdownAlert,
   buildLeverageAlert,
-} from '../../src/risk-engine';
+} from '../../core/risk-engine';
 
 import type {
   StrategyRiskInput,
   RiskEngineEvent,
   ExposureUpdateInput,
   RiskLimitsCheckInput,
-} from '../../src/risk-engine';
+} from '../../core/risk-engine';
 
 // ============================================================================
 // Helper Factories

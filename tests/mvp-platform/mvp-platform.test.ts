@@ -66,7 +66,7 @@ import {
   MVPPlatform,
   DEFAULT_MVP_PLATFORM_CONFIG,
   DEFAULT_DEMO_FLOW_CONFIG,
-} from '../../src/mvp-platform';
+} from '../../apps/mvp-platform';
 
 import type {
   MVPPlatformConfig,
@@ -74,7 +74,7 @@ import type {
   MVPAgentStatus,
   MVPStrategyId,
   MVPPlatformEvent,
-} from '../../src/mvp-platform';
+} from '../../apps/mvp-platform';
 
 // ============================================================================
 // Test Helpers

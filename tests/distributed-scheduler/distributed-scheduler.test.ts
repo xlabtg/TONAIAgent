@@ -35,14 +35,14 @@ import {
   DEFAULT_SCHEDULER_CONFIG,
   DEFAULT_WORKER_POOL_CONFIG,
   DEFAULT_RETRY_POLICY,
-} from '../../src/distributed-scheduler';
+} from '../../services/distributed-scheduler';
 
 import type {
   CreateJobInput,
   BusEvent,
   ExecutionRecord,
   SchedulerEvent,
-} from '../../src/distributed-scheduler';
+} from '../../services/distributed-scheduler';
 
 // ============================================================================
 // Test Helpers
@@ -1190,7 +1190,7 @@ function makeExecutionRecord(jobId: string, success: boolean, attempt = 0): Exec
   };
 }
 
-function makeJobStub(jobId: string): Partial<import('../../src/distributed-scheduler').ScheduledJob> {
+function makeJobStub(jobId: string): Partial<import('../../services/distributed-scheduler').ScheduledJob> {
   return {
     jobId,
     name: 'Test Job',
