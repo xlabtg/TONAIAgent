@@ -12,350 +12,356 @@
       "require": "./dist/index.js"
     },
     "./ai": {
-      "types": "./dist/ai/index.d.ts",
-      "import": "./dist/ai/index.mjs",
-      "require": "./dist/ai/index.js"
+      "types": "./dist/core/ai/index.d.ts",
+      "import": "./dist/core/ai/index.mjs",
+      "require": "./dist/core/ai/index.js"
     },
     "./security": {
-      "types": "./dist/security/index.d.ts",
-      "import": "./dist/security/index.mjs",
-      "require": "./dist/security/index.js"
+      "types": "./dist/core/security/index.d.ts",
+      "import": "./dist/core/security/index.mjs",
+      "require": "./dist/core/security/index.js"
     },
     "./plugins": {
-      "types": "./dist/plugins/index.d.ts",
-      "import": "./dist/plugins/index.mjs",
-      "require": "./dist/plugins/index.js"
+      "types": "./dist/core/plugins/index.d.ts",
+      "import": "./dist/core/plugins/index.mjs",
+      "require": "./dist/core/plugins/index.js"
     },
     "./multi-agent": {
-      "types": "./dist/multi-agent/index.d.ts",
-      "import": "./dist/multi-agent/index.mjs",
-      "require": "./dist/multi-agent/index.js"
+      "types": "./dist/core/multi-agent/index.d.ts",
+      "import": "./dist/core/multi-agent/index.mjs",
+      "require": "./dist/core/multi-agent/index.js"
     },
     "./strategy": {
-      "types": "./dist/strategy/index.d.ts",
-      "import": "./dist/strategy/index.mjs",
-      "require": "./dist/strategy/index.js"
+      "types": "./dist/core/strategies/engine/index.d.ts",
+      "import": "./dist/core/strategies/engine/index.mjs",
+      "require": "./dist/core/strategies/engine/index.js"
     },
     "./no-code": {
-      "types": "./dist/no-code/index.d.ts",
-      "import": "./dist/no-code/index.mjs",
-      "require": "./dist/no-code/index.js"
+      "types": "./dist/apps/no-code/index.d.ts",
+      "import": "./dist/apps/no-code/index.mjs",
+      "require": "./dist/apps/no-code/index.js"
     },
     "./marketplace": {
-      "types": "./dist/marketplace/index.d.ts",
-      "import": "./dist/marketplace/index.mjs",
-      "require": "./dist/marketplace/index.js"
+      "types": "./dist/apps/marketplace/index.d.ts",
+      "import": "./dist/apps/marketplace/index.mjs",
+      "require": "./dist/apps/marketplace/index.js"
     },
     "./tokenomics": {
-      "types": "./dist/tokenomics/index.d.ts",
-      "import": "./dist/tokenomics/index.mjs",
-      "require": "./dist/tokenomics/index.js"
+      "types": "./dist/services/tokenomics/index.d.ts",
+      "import": "./dist/services/tokenomics/index.mjs",
+      "require": "./dist/services/tokenomics/index.js"
     },
     "./institutional": {
-      "types": "./dist/institutional/index.d.ts",
-      "import": "./dist/institutional/index.mjs",
-      "require": "./dist/institutional/index.js"
+      "types": "./dist/services/institutional/index.d.ts",
+      "import": "./dist/services/institutional/index.mjs",
+      "require": "./dist/services/institutional/index.js"
     },
     "./omnichain": {
-      "types": "./dist/omnichain/index.d.ts",
-      "import": "./dist/omnichain/index.mjs",
-      "require": "./dist/omnichain/index.js"
+      "types": "./dist/services/omnichain/index.d.ts",
+      "import": "./dist/services/omnichain/index.mjs",
+      "require": "./dist/services/omnichain/index.js"
     },
     "./launchpad": {
-      "types": "./dist/launchpad/index.d.ts",
-      "import": "./dist/launchpad/index.mjs",
-      "require": "./dist/launchpad/index.js"
+      "types": "./dist/apps/launchpad/index.d.ts",
+      "import": "./dist/apps/launchpad/index.mjs",
+      "require": "./dist/apps/launchpad/index.js"
     },
     "./hedgefund": {
-      "types": "./dist/hedgefund/index.d.ts",
-      "import": "./dist/hedgefund/index.mjs",
-      "require": "./dist/hedgefund/index.js"
+      "types": "./dist/services/hedgefund/index.d.ts",
+      "import": "./dist/services/hedgefund/index.mjs",
+      "require": "./dist/services/hedgefund/index.js"
     },
     "./data-platform": {
-      "types": "./dist/data-platform/index.d.ts",
-      "import": "./dist/data-platform/index.mjs",
-      "require": "./dist/data-platform/index.js"
+      "types": "./dist/core/market-data/data-platform/index.d.ts",
+      "import": "./dist/core/market-data/data-platform/index.mjs",
+      "require": "./dist/core/market-data/data-platform/index.js"
     },
     "./growth": {
-      "types": "./dist/growth/index.d.ts",
-      "import": "./dist/growth/index.mjs",
-      "require": "./dist/growth/index.js"
+      "types": "./dist/apps/growth/index.d.ts",
+      "import": "./dist/apps/growth/index.mjs",
+      "require": "./dist/apps/growth/index.js"
     },
     "./ai-safety": {
-      "types": "./dist/ai-safety/index.d.ts",
-      "import": "./dist/ai-safety/index.mjs",
-      "require": "./dist/ai-safety/index.js"
+      "types": "./dist/core/ai-safety/index.d.ts",
+      "import": "./dist/core/ai-safety/index.mjs",
+      "require": "./dist/core/ai-safety/index.js"
     },
     "./ecosystem-fund": {
-      "types": "./dist/ecosystem-fund/index.d.ts",
-      "import": "./dist/ecosystem-fund/index.mjs",
-      "require": "./dist/ecosystem-fund/index.js"
+      "types": "./dist/services/ecosystem-fund/index.d.ts",
+      "import": "./dist/services/ecosystem-fund/index.mjs",
+      "require": "./dist/services/ecosystem-fund/index.js"
     },
     "./superapp": {
-      "types": "./dist/superapp/index.d.ts",
-      "import": "./dist/superapp/index.mjs",
-      "require": "./dist/superapp/index.js"
+      "types": "./dist/apps/superapp/index.d.ts",
+      "import": "./dist/apps/superapp/index.mjs",
+      "require": "./dist/apps/superapp/index.js"
     },
     "./mobile-ux": {
-      "types": "./dist/mobile-ux/index.d.ts",
-      "import": "./dist/mobile-ux/index.mjs",
-      "require": "./dist/mobile-ux/index.js"
+      "types": "./dist/apps/mobile-ux/index.d.ts",
+      "import": "./dist/apps/mobile-ux/index.mjs",
+      "require": "./dist/apps/mobile-ux/index.js"
     },
     "./personal-finance": {
-      "types": "./dist/personal-finance/index.d.ts",
-      "import": "./dist/personal-finance/index.mjs",
-      "require": "./dist/personal-finance/index.js"
+      "types": "./dist/apps/personal-finance/index.d.ts",
+      "import": "./dist/apps/personal-finance/index.mjs",
+      "require": "./dist/apps/personal-finance/index.js"
     },
     "./protocol": {
-      "types": "./dist/protocol/index.d.ts",
-      "import": "./dist/protocol/index.mjs",
-      "require": "./dist/protocol/index.js"
+      "types": "./dist/core/protocol/index.d.ts",
+      "import": "./dist/core/protocol/index.mjs",
+      "require": "./dist/core/protocol/index.js"
     },
     "./sdk": {
-      "types": "./dist/sdk/index.d.ts",
-      "import": "./dist/sdk/index.mjs",
-      "require": "./dist/sdk/index.js"
+      "types": "./dist/packages/sdk/index.d.ts",
+      "import": "./dist/packages/sdk/index.mjs",
+      "require": "./dist/packages/sdk/index.js"
     },
     "./token-strategy": {
-      "types": "./dist/token-strategy/index.d.ts",
-      "import": "./dist/token-strategy/index.mjs",
-      "require": "./dist/token-strategy/index.js"
+      "types": "./dist/services/token-strategy/index.d.ts",
+      "import": "./dist/services/token-strategy/index.mjs",
+      "require": "./dist/services/token-strategy/index.js"
     },
     "./payments": {
-      "types": "./dist/payments/index.d.ts",
-      "import": "./dist/payments/index.mjs",
-      "require": "./dist/payments/index.js"
+      "types": "./dist/services/payments/index.d.ts",
+      "import": "./dist/services/payments/index.mjs",
+      "require": "./dist/services/payments/index.js"
     },
     "./regulatory": {
-      "types": "./dist/regulatory/index.d.ts",
-      "import": "./dist/regulatory/index.mjs",
-      "require": "./dist/regulatory/index.js"
+      "types": "./dist/services/regulatory/index.d.ts",
+      "import": "./dist/services/regulatory/index.mjs",
+      "require": "./dist/services/regulatory/index.js"
     },
     "./institutional-network": {
-      "types": "./dist/institutional-network/index.d.ts",
-      "import": "./dist/institutional-network/index.mjs",
-      "require": "./dist/institutional-network/index.js"
+      "types": "./dist/services/institutional-network/index.d.ts",
+      "import": "./dist/services/institutional-network/index.mjs",
+      "require": "./dist/services/institutional-network/index.js"
     },
     "./ai-credit": {
-      "types": "./dist/ai-credit/index.d.ts",
-      "import": "./dist/ai-credit/index.mjs",
-      "require": "./dist/ai-credit/index.js"
+      "types": "./dist/services/ai-credit/index.d.ts",
+      "import": "./dist/services/ai-credit/index.mjs",
+      "require": "./dist/services/ai-credit/index.js"
     },
     "./mvp": {
-      "types": "./dist/mvp/index.d.ts",
-      "import": "./dist/mvp/index.mjs",
-      "require": "./dist/mvp/index.js"
+      "types": "./dist/apps/mvp/index.d.ts",
+      "import": "./dist/apps/mvp/index.mjs",
+      "require": "./dist/apps/mvp/index.js"
     },
     "./ton-factory": {
-      "types": "./dist/ton-factory/index.d.ts",
-      "import": "./dist/ton-factory/index.mjs",
-      "require": "./dist/ton-factory/index.js"
+      "types": "./dist/connectors/ton-factory/index.d.ts",
+      "import": "./dist/connectors/ton-factory/index.mjs",
+      "require": "./dist/connectors/ton-factory/index.js"
     },
     "./demo-agent": {
-      "types": "./dist/demo-agent/index.d.ts",
-      "import": "./dist/demo-agent/index.mjs",
-      "require": "./dist/demo-agent/index.js"
+      "types": "./dist/examples/demo-agent/index.d.ts",
+      "import": "./dist/examples/demo-agent/index.mjs",
+      "require": "./dist/examples/demo-agent/index.js"
     },
     "./agent-runtime": {
-      "types": "./dist/agent-runtime/index.d.ts",
-      "import": "./dist/agent-runtime/index.mjs",
-      "require": "./dist/agent-runtime/index.js"
+      "types": "./dist/core/agents/agent-runtime/index.d.ts",
+      "import": "./dist/core/agents/agent-runtime/index.mjs",
+      "require": "./dist/core/agents/agent-runtime/index.js"
     },
     "./investor-demo": {
-      "types": "./dist/investor-demo/index.d.ts",
-      "import": "./dist/investor-demo/index.mjs",
-      "require": "./dist/investor-demo/index.js"
+      "types": "./dist/examples/investor-demo/index.d.ts",
+      "import": "./dist/examples/investor-demo/index.mjs",
+      "require": "./dist/examples/investor-demo/index.js"
     },
     "./agent-orchestrator": {
-      "types": "./dist/agent-orchestrator/index.d.ts",
-      "import": "./dist/agent-orchestrator/index.mjs",
-      "require": "./dist/agent-orchestrator/index.js"
+      "types": "./dist/core/agents/orchestrator/index.d.ts",
+      "import": "./dist/core/agents/orchestrator/index.mjs",
+      "require": "./dist/core/agents/orchestrator/index.js"
     },
     "./lifecycle-orchestrator": {
-      "types": "./dist/lifecycle-orchestrator/index.d.ts",
-      "import": "./dist/lifecycle-orchestrator/index.mjs",
-      "require": "./dist/lifecycle-orchestrator/index.js"
+      "types": "./dist/core/agents/lifecycle/index.d.ts",
+      "import": "./dist/core/agents/lifecycle/index.mjs",
+      "require": "./dist/core/agents/lifecycle/index.js"
     },
     "./distributed-scheduler": {
-      "types": "./dist/distributed-scheduler/index.d.ts",
-      "import": "./dist/distributed-scheduler/index.mjs",
-      "require": "./dist/distributed-scheduler/index.js"
+      "types": "./dist/services/distributed-scheduler/index.d.ts",
+      "import": "./dist/services/distributed-scheduler/index.mjs",
+      "require": "./dist/services/distributed-scheduler/index.js"
     },
     "./multi-tenant": {
-      "types": "./dist/multi-tenant/index.d.ts",
-      "import": "./dist/multi-tenant/index.mjs",
-      "require": "./dist/multi-tenant/index.js"
+      "types": "./dist/services/multi-tenant/index.d.ts",
+      "import": "./dist/services/multi-tenant/index.mjs",
+      "require": "./dist/services/multi-tenant/index.js"
     },
     "./global-infrastructure": {
-      "types": "./dist/global-infrastructure/index.d.ts",
-      "import": "./dist/global-infrastructure/index.mjs",
-      "require": "./dist/global-infrastructure/index.js"
+      "types": "./dist/services/global-infrastructure/index.d.ts",
+      "import": "./dist/services/global-infrastructure/index.mjs",
+      "require": "./dist/services/global-infrastructure/index.js"
     },
     "./investment": {
-      "types": "./dist/investment/index.d.ts",
-      "import": "./dist/investment/index.mjs",
-      "require": "./dist/investment/index.js"
+      "types": "./dist/services/investment/index.d.ts",
+      "import": "./dist/services/investment/index.mjs",
+      "require": "./dist/services/investment/index.js"
     },
     "./token-utility-economy": {
-      "types": "./dist/token-utility-economy/index.d.ts",
-      "import": "./dist/token-utility-economy/index.mjs",
-      "require": "./dist/token-utility-economy/index.js"
+      "types": "./dist/services/token-utility-economy/index.d.ts",
+      "import": "./dist/services/token-utility-economy/index.mjs",
+      "require": "./dist/services/token-utility-economy/index.js"
     },
     "./rwa": {
-      "types": "./dist/rwa/index.d.ts",
-      "import": "./dist/rwa/index.mjs",
-      "require": "./dist/rwa/index.js"
+      "types": "./dist/services/rwa/index.d.ts",
+      "import": "./dist/services/rwa/index.mjs",
+      "require": "./dist/services/rwa/index.js"
     },
     "./prime-brokerage": {
-      "types": "./dist/prime-brokerage/index.d.ts",
-      "import": "./dist/prime-brokerage/index.mjs",
-      "require": "./dist/prime-brokerage/index.js"
+      "types": "./dist/services/prime-brokerage/index.d.ts",
+      "import": "./dist/services/prime-brokerage/index.mjs",
+      "require": "./dist/services/prime-brokerage/index.js"
     },
     "./agfi": {
-      "types": "./dist/agfi/index.d.ts",
-      "import": "./dist/agfi/index.mjs",
-      "require": "./dist/agfi/index.js"
+      "types": "./dist/research/agfi/index.d.ts",
+      "import": "./dist/research/agfi/index.mjs",
+      "require": "./dist/research/agfi/index.js"
     },
     "./gaei": {
-      "types": "./dist/gaei/index.d.ts",
-      "import": "./dist/gaei/index.mjs",
-      "require": "./dist/gaei/index.js"
+      "types": "./dist/research/gaei/index.d.ts",
+      "import": "./dist/research/gaei/index.mjs",
+      "require": "./dist/research/gaei/index.js"
     },
     "./liquidity-network": {
-      "types": "./dist/liquidity-network/index.d.ts",
-      "import": "./dist/liquidity-network/index.mjs",
-      "require": "./dist/liquidity-network/index.js"
+      "types": "./dist/connectors/liquidity-network/index.d.ts",
+      "import": "./dist/connectors/liquidity-network/index.mjs",
+      "require": "./dist/connectors/liquidity-network/index.js"
     },
     "./clearing-house": {
-      "types": "./dist/clearing-house/index.d.ts",
-      "import": "./dist/clearing-house/index.mjs",
-      "require": "./dist/clearing-house/index.js"
+      "types": "./dist/services/clearing-house/index.d.ts",
+      "import": "./dist/services/clearing-house/index.mjs",
+      "require": "./dist/services/clearing-house/index.js"
     },
     "./monetary-policy": {
-      "types": "./dist/monetary-policy/index.d.ts",
-      "import": "./dist/monetary-policy/index.mjs",
-      "require": "./dist/monetary-policy/index.js"
+      "types": "./dist/services/monetary-policy/index.d.ts",
+      "import": "./dist/services/monetary-policy/index.mjs",
+      "require": "./dist/services/monetary-policy/index.js"
     },
     "./acms": {
-      "types": "./dist/acms/index.d.ts",
-      "import": "./dist/acms/index.mjs",
-      "require": "./dist/acms/index.js"
+      "types": "./dist/research/acms/index.d.ts",
+      "import": "./dist/research/acms/index.mjs",
+      "require": "./dist/research/acms/index.js"
     },
     "./protocol-constitution": {
-      "types": "./dist/protocol-constitution/index.d.ts",
-      "import": "./dist/protocol-constitution/index.mjs",
-      "require": "./dist/protocol-constitution/index.js"
+      "types": "./dist/core/protocol-constitution/index.d.ts",
+      "import": "./dist/core/protocol-constitution/index.mjs",
+      "require": "./dist/core/protocol-constitution/index.js"
     },
     "./agfn": {
-      "types": "./dist/agfn/index.d.ts",
-      "import": "./dist/agfn/index.mjs",
-      "require": "./dist/agfn/index.js"
+      "types": "./dist/research/agfn/index.d.ts",
+      "import": "./dist/research/agfn/index.mjs",
+      "require": "./dist/research/agfn/index.js"
     },
     "./live-trading": {
-      "types": "./dist/live-trading/index.d.ts",
-      "import": "./dist/live-trading/index.mjs",
-      "require": "./dist/live-trading/index.js"
+      "types": "./dist/core/trading/live/index.d.ts",
+      "import": "./dist/core/trading/live/index.mjs",
+      "require": "./dist/core/trading/live/index.js"
     },
     "./risk-engine": {
-      "types": "./dist/risk-engine/index.d.ts",
-      "import": "./dist/risk-engine/index.mjs",
-      "require": "./dist/risk-engine/index.js"
+      "types": "./dist/core/risk-engine/index.d.ts",
+      "import": "./dist/core/risk-engine/index.mjs",
+      "require": "./dist/core/risk-engine/index.js"
     },
     "./autonomous-discovery": {
-      "types": "./dist/autonomous-discovery/index.d.ts",
-      "import": "./dist/autonomous-discovery/index.mjs",
-      "require": "./dist/autonomous-discovery/index.js"
+      "types": "./dist/services/autonomous-discovery/index.d.ts",
+      "import": "./dist/services/autonomous-discovery/index.mjs",
+      "require": "./dist/services/autonomous-discovery/index.js"
     },
     "./fund-manager": {
-      "types": "./dist/fund-manager/index.d.ts",
-      "import": "./dist/fund-manager/index.mjs",
-      "require": "./dist/fund-manager/index.js"
+      "types": "./dist/services/fund-manager/index.d.ts",
+      "import": "./dist/services/fund-manager/index.mjs",
+      "require": "./dist/services/fund-manager/index.js"
     },
     "./backtesting": {
-      "types": "./dist/backtesting/index.d.ts",
-      "import": "./dist/backtesting/index.mjs",
-      "require": "./dist/backtesting/index.js"
+      "types": "./dist/core/strategies/backtesting/index.d.ts",
+      "import": "./dist/core/strategies/backtesting/index.mjs",
+      "require": "./dist/core/strategies/backtesting/index.js"
     },
     "./cross-chain-liquidity": {
-      "types": "./dist/cross-chain-liquidity/index.d.ts",
-      "import": "./dist/cross-chain-liquidity/index.mjs",
-      "require": "./dist/cross-chain-liquidity/index.js"
+      "types": "./dist/connectors/cross-chain-liquidity/index.d.ts",
+      "import": "./dist/connectors/cross-chain-liquidity/index.mjs",
+      "require": "./dist/connectors/cross-chain-liquidity/index.js"
     },
     "./strategy-engine": {
-      "types": "./dist/strategy-engine/index.d.ts",
-      "import": "./dist/strategy-engine/index.mjs",
-      "require": "./dist/strategy-engine/index.js"
+      "types": "./dist/core/strategies/strategy-engine/index.d.ts",
+      "import": "./dist/core/strategies/strategy-engine/index.mjs",
+      "require": "./dist/core/strategies/strategy-engine/index.js"
     },
     "./market-data": {
-      "types": "./dist/market-data/index.d.ts",
-      "import": "./dist/market-data/index.mjs",
-      "require": "./dist/market-data/index.js"
+      "types": "./dist/core/market-data/base/index.d.ts",
+      "import": "./dist/core/market-data/base/index.mjs",
+      "require": "./dist/core/market-data/base/index.js"
     },
     "./trading-engine": {
-      "types": "./dist/trading-engine/index.d.ts",
-      "import": "./dist/trading-engine/index.mjs",
-      "require": "./dist/trading-engine/index.js"
+      "types": "./dist/core/trading/engine/index.d.ts",
+      "import": "./dist/core/trading/engine/index.mjs",
+      "require": "./dist/core/trading/engine/index.js"
     },
     "./portfolio-analytics": {
-      "types": "./dist/portfolio-analytics/index.d.ts",
-      "import": "./dist/portfolio-analytics/index.mjs",
-      "require": "./dist/portfolio-analytics/index.js"
+      "types": "./dist/core/portfolio/analytics/index.d.ts",
+      "import": "./dist/core/portfolio/analytics/index.mjs",
+      "require": "./dist/core/portfolio/analytics/index.js"
     },
     "./mvp-platform": {
-      "types": "./dist/mvp-platform/index.d.ts",
-      "import": "./dist/mvp-platform/index.mjs",
-      "require": "./dist/mvp-platform/index.js"
+      "types": "./dist/apps/mvp-platform/index.d.ts",
+      "import": "./dist/apps/mvp-platform/index.mjs",
+      "require": "./dist/apps/mvp-platform/index.js"
     },
     "./runtime": {
-      "types": "./dist/runtime/index.d.ts",
-      "import": "./dist/runtime/index.mjs",
-      "require": "./dist/runtime/index.js"
+      "types": "./dist/core/runtime/index.d.ts",
+      "import": "./dist/core/runtime/index.mjs",
+      "require": "./dist/core/runtime/index.js"
     },
     "./agents": {
-      "types": "./dist/agents/index.d.ts",
-      "import": "./dist/agents/index.mjs",
-      "require": "./dist/agents/index.js"
+      "types": "./dist/core/agents/runtime/index.d.ts",
+      "import": "./dist/core/agents/runtime/index.mjs",
+      "require": "./dist/core/agents/runtime/index.js"
     },
     "./reputation": {
-      "types": "./dist/reputation/index.d.ts",
-      "import": "./dist/reputation/index.mjs",
-      "require": "./dist/reputation/index.js"
+      "types": "./dist/services/reputation/index.d.ts",
+      "import": "./dist/services/reputation/index.mjs",
+      "require": "./dist/services/reputation/index.js"
     },
     "./trading": {
-      "types": "./dist/trading/index.d.ts",
-      "import": "./dist/trading/index.mjs",
-      "require": "./dist/trading/index.js"
+      "types": "./dist/core/trading/base/index.d.ts",
+      "import": "./dist/core/trading/base/index.mjs",
+      "require": "./dist/core/trading/base/index.js"
     },
     "./liquidity-router": {
-      "types": "./dist/liquidity-router/index.d.ts",
-      "import": "./dist/liquidity-router/index.mjs",
-      "require": "./dist/liquidity-router/index.js"
+      "types": "./dist/connectors/liquidity-router/index.d.ts",
+      "import": "./dist/connectors/liquidity-router/index.mjs",
+      "require": "./dist/connectors/liquidity-router/index.js"
     },
     "./production-miniapp": {
-      "types": "./dist/production-miniapp/index.d.ts",
-      "import": "./dist/production-miniapp/index.mjs",
-      "require": "./dist/production-miniapp/index.js"
+      "types": "./dist/apps/production-miniapp/index.d.ts",
+      "import": "./dist/apps/production-miniapp/index.mjs",
+      "require": "./dist/apps/production-miniapp/index.js"
     }
   },
   "files": [
     "dist",
-    "src"
+    "index.ts",
+    "core",
+    "apps",
+    "services",
+    "connectors",
+    "packages",
+    "research"
   ],
   "scripts": {
     "build": "npm run build:runtime",
-    "build:runtime": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/regulatory/index.ts src/institutional-network/index.ts src/ai-credit/index.ts src/mvp/index.ts src/ton-factory/index.ts src/demo-agent/index.ts src/agent-runtime/index.ts src/investor-demo/index.ts src/agent-orchestrator/index.ts src/lifecycle-orchestrator/index.ts src/distributed-scheduler/index.ts src/multi-tenant/index.ts src/global-infrastructure/index.ts src/investment/index.ts src/token-utility-economy/index.ts src/rwa/index.ts src/prime-brokerage/index.ts src/liquidity-network/index.ts src/clearing-house/index.ts src/monetary-policy/index.ts src/acms/index.ts src/protocol-constitution/index.ts src/agfi/index.ts src/agfn/index.ts src/gaei/index.ts src/live-trading/index.ts src/risk-engine/index.ts src/autonomous-discovery/index.ts src/fund-manager/index.ts src/backtesting/index.ts src/cross-chain-liquidity/index.ts src/strategy-engine/index.ts src/market-data/index.ts src/trading-engine/index.ts src/portfolio-analytics/index.ts src/mvp-platform/index.ts src/runtime/index.ts src/agents/index.ts src/reputation/index.ts src/trading/index.ts src/liquidity-router/index.ts src/production-miniapp/index.ts --format cjs,esm --clean",
-    "build:sdk": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/regulatory/index.ts src/institutional-network/index.ts src/ai-credit/index.ts src/mvp/index.ts src/ton-factory/index.ts src/demo-agent/index.ts src/agent-runtime/index.ts src/investor-demo/index.ts src/agent-orchestrator/index.ts src/lifecycle-orchestrator/index.ts src/distributed-scheduler/index.ts src/multi-tenant/index.ts src/global-infrastructure/index.ts src/investment/index.ts src/token-utility-economy/index.ts src/rwa/index.ts src/prime-brokerage/index.ts src/liquidity-network/index.ts src/clearing-house/index.ts src/monetary-policy/index.ts src/acms/index.ts src/protocol-constitution/index.ts src/agfi/index.ts src/agfn/index.ts src/gaei/index.ts src/live-trading/index.ts src/risk-engine/index.ts src/autonomous-discovery/index.ts src/fund-manager/index.ts src/backtesting/index.ts src/cross-chain-liquidity/index.ts src/strategy-engine/index.ts src/market-data/index.ts src/trading-engine/index.ts src/portfolio-analytics/index.ts src/mvp-platform/index.ts src/runtime/index.ts src/agents/index.ts src/reputation/index.ts src/trading/index.ts src/liquidity-router/index.ts src/production-miniapp/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/ai/index.ts src/security/index.ts src/plugins/index.ts src/multi-agent/index.ts src/strategy/index.ts src/no-code/index.ts src/marketplace/index.ts src/tokenomics/index.ts src/institutional/index.ts src/omnichain/index.ts src/launchpad/index.ts src/hedgefund/index.ts src/data-platform/index.ts src/growth/index.ts src/ai-safety/index.ts src/ecosystem-fund/index.ts src/superapp/index.ts src/mobile-ux/index.ts src/personal-finance/index.ts src/protocol/index.ts src/sdk/index.ts src/token-strategy/index.ts src/payments/index.ts src/regulatory/index.ts src/institutional-network/index.ts src/ai-credit/index.ts src/mvp/index.ts src/ton-factory/index.ts src/demo-agent/index.ts src/agent-runtime/index.ts src/investor-demo/index.ts src/agent-orchestrator/index.ts src/lifecycle-orchestrator/index.ts src/distributed-scheduler/index.ts src/multi-tenant/index.ts src/global-infrastructure/index.ts src/investment/index.ts src/token-utility-economy/index.ts src/rwa/index.ts src/prime-brokerage/index.ts src/liquidity-network/index.ts src/clearing-house/index.ts src/monetary-policy/index.ts src/acms/index.ts src/protocol-constitution/index.ts src/agfi/index.ts src/agfn/index.ts src/gaei/index.ts src/live-trading/index.ts src/risk-engine/index.ts src/autonomous-discovery/index.ts src/fund-manager/index.ts src/backtesting/index.ts src/cross-chain-liquidity/index.ts src/strategy-engine/index.ts src/market-data/index.ts src/trading-engine/index.ts src/portfolio-analytics/index.ts src/mvp-platform/index.ts src/runtime/index.ts src/agents/index.ts src/reputation/index.ts src/trading/index.ts src/liquidity-router/index.ts src/production-miniapp/index.ts --format cjs,esm --dts --watch",
+    "build:runtime": "tsup index.ts core/ai/index.ts core/ai-safety/index.ts core/security/index.ts core/plugins/index.ts core/strategies/engine/index.ts core/strategies/strategy-engine/index.ts core/multi-agent/index.ts core/protocol/index.ts core/protocol-constitution/index.ts core/risk-engine/index.ts core/runtime/index.ts core/agents/runtime/index.ts core/agents/agent-runtime/index.ts core/agents/orchestrator/index.ts core/agents/lifecycle/index.ts core/strategies/marketplace/index.ts core/strategies/backtesting/index.ts core/market-data/base/index.ts core/market-data/data-platform/index.ts core/portfolio/base/index.ts core/portfolio/analytics/index.ts core/trading/base/index.ts core/trading/engine/index.ts core/trading/live/index.ts apps/marketplace/index.ts apps/no-code/index.ts apps/mobile-ux/index.ts apps/superapp/index.ts apps/personal-finance/index.ts apps/growth/index.ts apps/launchpad/index.ts apps/mvp/index.ts apps/mvp-platform/index.ts apps/production-miniapp/index.ts services/tokenomics/index.ts services/institutional/index.ts services/institutional-network/index.ts services/omnichain/index.ts services/hedgefund/index.ts services/ecosystem-fund/index.ts services/token-strategy/index.ts services/payments/index.ts services/regulatory/index.ts services/ai-credit/index.ts connectors/ton-factory/index.ts services/distributed-scheduler/index.ts services/multi-tenant/index.ts services/global-infrastructure/index.ts services/investment/index.ts services/token-utility-economy/index.ts services/rwa/index.ts services/prime-brokerage/index.ts connectors/liquidity-network/index.ts services/clearing-house/index.ts services/monetary-policy/index.ts services/autonomous-discovery/index.ts services/fund-manager/index.ts connectors/liquidity-router/index.ts services/reputation/index.ts services/monitoring/index.ts connectors/cross-chain-liquidity/index.ts connectors/ipls/index.ts research/acms/index.ts research/agfi/index.ts research/agfn/index.ts research/gaamp/index.ts research/gaei/index.ts research/grif/index.ts research/sgia/index.ts research/aifos/index.ts packages/sdk/index.ts --format cjs,esm --clean",
+    "build:sdk": "tsup index.ts core/ai/index.ts core/ai-safety/index.ts core/security/index.ts core/plugins/index.ts core/strategies/engine/index.ts core/strategies/strategy-engine/index.ts core/multi-agent/index.ts core/protocol/index.ts core/protocol-constitution/index.ts core/risk-engine/index.ts core/runtime/index.ts core/agents/runtime/index.ts core/agents/agent-runtime/index.ts core/agents/orchestrator/index.ts core/agents/lifecycle/index.ts core/strategies/marketplace/index.ts core/strategies/backtesting/index.ts core/market-data/base/index.ts core/market-data/data-platform/index.ts core/portfolio/base/index.ts core/portfolio/analytics/index.ts core/trading/base/index.ts core/trading/engine/index.ts core/trading/live/index.ts apps/marketplace/index.ts apps/no-code/index.ts apps/mobile-ux/index.ts apps/superapp/index.ts apps/personal-finance/index.ts apps/growth/index.ts apps/launchpad/index.ts apps/mvp/index.ts apps/mvp-platform/index.ts apps/production-miniapp/index.ts services/tokenomics/index.ts services/institutional/index.ts services/institutional-network/index.ts services/omnichain/index.ts services/hedgefund/index.ts services/ecosystem-fund/index.ts services/token-strategy/index.ts services/payments/index.ts services/regulatory/index.ts services/ai-credit/index.ts connectors/ton-factory/index.ts services/distributed-scheduler/index.ts services/multi-tenant/index.ts services/global-infrastructure/index.ts services/investment/index.ts services/token-utility-economy/index.ts services/rwa/index.ts services/prime-brokerage/index.ts connectors/liquidity-network/index.ts services/clearing-house/index.ts services/monetary-policy/index.ts services/autonomous-discovery/index.ts services/fund-manager/index.ts connectors/liquidity-router/index.ts services/reputation/index.ts services/monitoring/index.ts connectors/cross-chain-liquidity/index.ts connectors/ipls/index.ts research/acms/index.ts research/agfi/index.ts research/agfn/index.ts research/gaamp/index.ts research/gaei/index.ts research/grif/index.ts research/sgia/index.ts research/aifos/index.ts packages/sdk/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup index.ts core/ai/index.ts core/ai-safety/index.ts core/security/index.ts core/plugins/index.ts core/strategies/engine/index.ts core/strategies/strategy-engine/index.ts core/multi-agent/index.ts core/protocol/index.ts core/protocol-constitution/index.ts core/risk-engine/index.ts core/runtime/index.ts core/agents/runtime/index.ts core/agents/agent-runtime/index.ts core/agents/orchestrator/index.ts core/agents/lifecycle/index.ts core/strategies/marketplace/index.ts core/strategies/backtesting/index.ts core/market-data/base/index.ts core/market-data/data-platform/index.ts core/portfolio/base/index.ts core/portfolio/analytics/index.ts core/trading/base/index.ts core/trading/engine/index.ts core/trading/live/index.ts apps/marketplace/index.ts apps/no-code/index.ts apps/mobile-ux/index.ts apps/superapp/index.ts apps/personal-finance/index.ts apps/growth/index.ts apps/launchpad/index.ts apps/mvp/index.ts apps/mvp-platform/index.ts apps/production-miniapp/index.ts services/tokenomics/index.ts services/institutional/index.ts services/institutional-network/index.ts services/omnichain/index.ts services/hedgefund/index.ts services/ecosystem-fund/index.ts services/token-strategy/index.ts services/payments/index.ts services/regulatory/index.ts services/ai-credit/index.ts connectors/ton-factory/index.ts services/distributed-scheduler/index.ts services/multi-tenant/index.ts services/global-infrastructure/index.ts services/investment/index.ts services/token-utility-economy/index.ts services/rwa/index.ts services/prime-brokerage/index.ts connectors/liquidity-network/index.ts services/clearing-house/index.ts services/monetary-policy/index.ts services/autonomous-discovery/index.ts services/fund-manager/index.ts connectors/liquidity-router/index.ts services/reputation/index.ts services/monitoring/index.ts connectors/cross-chain-liquidity/index.ts connectors/ipls/index.ts research/acms/index.ts research/agfi/index.ts research/agfn/index.ts research/gaamp/index.ts research/gaei/index.ts research/grif/index.ts research/sgia/index.ts research/aifos/index.ts packages/sdk/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "backtest": "npx ts-node infrastructure/scripts/backtest.ts",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint core apps services connectors packages --ext .ts",
+    "lint:fix": "eslint core apps services connectors packages --ext .ts --fix",
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit --project tsconfig.strict.json",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
+    "format": "prettier --write \"core/**/*.ts\" \"apps/**/*.ts\" \"services/**/*.ts\" \"connectors/**/*.ts\" \"packages/**/*.ts\"",
+    "format:check": "prettier --check \"core/**/*.ts\" \"apps/**/*.ts\" \"services/**/*.ts\" \"connectors/**/*.ts\" \"packages/**/*.ts\"",
     "prepublishOnly": "npm run build:sdk"
   },
   "keywords": [

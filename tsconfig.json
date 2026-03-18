@@ -21,8 +21,9 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "src/**/*",
+    "index.ts",
     "core/**/*",
+    "apps/**/*",
     "research/**/*",
     "examples/investor-demo/**/*",
     "examples/demo-agent/**/*",
