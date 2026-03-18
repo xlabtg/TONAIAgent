@@ -1,16 +1,20 @@
 /**
- * TONAIAgent — Mini App UI Types (Issue #261)
+ * TONAIAgent — Mini App UI Types (Issue #261, #263)
  *
  * Type definitions for the Telegram Mini App autonomous agent controls:
  *   - Agent goals display
  *   - Mode selector
  *   - Progress bar data
  *   - "Autonomous" toggle
+ *   - Confidence metric display (Issue #263)
+ *   - Recent decisions log (Issue #263)
+ *   - Memory insights panel (Issue #263)
  */
 
 import type { AgentGoal, GoalProgress } from '../../core/agent/goals';
 import type { AgentMode } from './index';
 import type { AgentStrategy } from '../../core/agent/index';
+import type { TrendState, VolatilityLevel, RecentPerformanceSummary } from '../agent-context/index';
 
 // ============================================================================
 // Mini App State
@@ -55,6 +59,63 @@ export interface AgentAutonomousUIState {
    * Human-readable status message (e.g. reason for pause, current action).
    */
   statusMessage: string;
+
+  // --- Memory & Context (Issue #263) ---
+  /**
+   * Agent confidence score [0..1] derived from memory and context.
+   * Displayed as a percentage gauge in the Mini App.
+   */
+  confidenceScore: number;
+  /**
+   * Recent decision log entries for the decisions panel.
+   */
+  recentDecisions: DecisionLogEntry[];
+  /**
+   * Memory insights for the insights panel.
+   */
+  memoryInsights: MemoryInsightPanel;
+}
+
+// ============================================================================
+// Memory UI Types (Issue #263)
+// ============================================================================
+
+/**
+ * A single entry in the recent decisions log panel.
+ */
+export interface DecisionLogEntry {
+  /** ISO timestamp. */
+  decidedAt: string;
+  /** Strategy that was selected. */
+  strategy: AgentStrategy;
+  /** Whether the decision resulted in execution. */
+  executed: boolean;
+  /** Short reason string. */
+  reason: string;
+  /** Confidence score at decision time [0..1]. */
+  confidence: number;
+}
+
+/**
+ * Aggregated memory insights shown in the Mini App insights panel.
+ */
+export interface MemoryInsightPanel {
+  /** Win rate across recent trades [0..1]. */
+  winRate: number;
+  /** Average PnL per trade. */
+  avgPnlPerTrade: number;
+  /** Current streak (positive = wins, negative = losses). */
+  streak: number;
+  /** Current trend direction. */
+  trendState: TrendState;
+  /** Volatility level. */
+  volatilityLevel: VolatilityLevel;
+  /** Whether the pattern detector flagged consecutive losses. */
+  consecutiveLossAlert: boolean;
+  /** Whether a strategy failure pattern was detected. */
+  strategyFailureAlert: boolean;
+  /** Number of trades recorded in short-term memory. */
+  tradeCount: number;
 }
 
 // ============================================================================
@@ -132,4 +193,73 @@ export function modeLabel(mode: AgentMode): string {
     case 'balanced':     return 'Balanced ⚖️';
     case 'aggressive':   return 'Aggressive 🚀';
   }
+}
+
+// ============================================================================
+// Memory/Context UI Helpers (Issue #263)
+// ============================================================================
+
+/**
+ * Converts a confidence score [0..1] to a percentage [0..100].
+ */
+export function confidencePercent(score: number): number {
+  return Math.round(Math.max(0, Math.min(1, score)) * 100);
+}
+
+/**
+ * Returns a human-readable label for a confidence score.
+ *
+ * - 0..33  → Low
+ * - 34..66 → Moderate
+ * - 67..100 → High
+ */
+export function confidenceLabel(score: number): string {
+  const pct = confidencePercent(score);
+  if (pct <= 33) return 'Low';
+  if (pct <= 66) return 'Moderate';
+  return 'High';
+}
+
+/**
+ * Returns a human-readable label for a trend state.
+ */
+export function trendStateLabel(trend: TrendState): string {
+  switch (trend) {
+    case 'rising':  return 'Rising ↑';
+    case 'falling': return 'Falling ↓';
+    case 'neutral': return 'Neutral →';
+  }
+}
+
+/**
+ * Returns a human-readable label for a volatility level.
+ */
+export function volatilityLabel(volatility: VolatilityLevel): string {
+  switch (volatility) {
+    case 'low':    return 'Low';
+    case 'medium': return 'Medium';
+    case 'high':   return 'High ⚠️';
+  }
+}
+
+/**
+ * Build a MemoryInsightPanel from context and performance data.
+ */
+export function buildMemoryInsightPanel(
+  performance: RecentPerformanceSummary,
+  trendState: TrendState,
+  volatilityLevel: VolatilityLevel,
+  consecutiveLossAlert: boolean,
+  strategyFailureAlert: boolean,
+): MemoryInsightPanel {
+  return {
+    winRate: performance.winRate,
+    avgPnlPerTrade: performance.avgPnlPerTrade,
+    streak: performance.streak,
+    trendState,
+    volatilityLevel,
+    consecutiveLossAlert,
+    strategyFailureAlert,
+    tradeCount: performance.tradeCount,
+  };
 }
