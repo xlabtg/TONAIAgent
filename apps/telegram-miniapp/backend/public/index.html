@@ -53,6 +53,43 @@
         </button>
       </header>
 
+      <!-- Live Price Ticker (Issue #251 — Real-Time Market Data) -->
+      <section class="live-prices-section" aria-label="Live market prices">
+        <div class="live-prices-header">
+          <span class="live-badge">
+            <span class="live-dot" aria-hidden="true"></span>LIVE
+          </span>
+          <span class="live-prices-title">Market Prices</span>
+        </div>
+        <div class="live-prices-scroll" role="list">
+          <div class="price-chip" role="listitem">
+            <span class="price-chip-symbol">TON</span>
+            <span class="price-chip-price" data-live-price="TON">$5.25</span>
+            <span class="price-chip-change positive" data-live-change="TON">+0.00%</span>
+          </div>
+          <div class="price-chip" role="listitem">
+            <span class="price-chip-symbol">BTC</span>
+            <span class="price-chip-price" data-live-price="BTC">$65,000</span>
+            <span class="price-chip-change positive" data-live-change="BTC">+0.00%</span>
+          </div>
+          <div class="price-chip" role="listitem">
+            <span class="price-chip-symbol">ETH</span>
+            <span class="price-chip-price" data-live-price="ETH">$3,500</span>
+            <span class="price-chip-change positive" data-live-change="ETH">+0.00%</span>
+          </div>
+          <div class="price-chip" role="listitem">
+            <span class="price-chip-symbol">SOL</span>
+            <span class="price-chip-price" data-live-price="SOL">$175</span>
+            <span class="price-chip-change positive" data-live-change="SOL">+0.00%</span>
+          </div>
+          <div class="price-chip" role="listitem">
+            <span class="price-chip-symbol">USDT</span>
+            <span class="price-chip-price" data-live-price="USDT">$1.00</span>
+            <span class="price-chip-change positive" data-live-change="USDT">+0.00%</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Portfolio Overview -->
       <section class="portfolio-section">
         <div class="portfolio-card">
@@ -349,6 +386,16 @@
   <!-- Scripts -->
   <script src="js/telegram-webapp.js"></script>
   <script src="js/ton-connect.js"></script>
+  <!-- Live price stream (Issue #251) — must load before app.js -->
+  <script src="js/live-prices.js"></script>
   <script src="js/app.js"></script>
+  <!-- Start live price stream after page load -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof LivePrices !== 'undefined') {
+        LivePrices.start();
+      }
+    });
+  </script>
 </body>
 </html>

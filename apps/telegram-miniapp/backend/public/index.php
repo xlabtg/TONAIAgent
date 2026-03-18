@@ -36,6 +36,7 @@ $routes = [
         '/' => 'handleIndex',
         '/app' => 'handleApp',
         '/health' => 'handleHealth',
+        '/api/prices' => 'handlePrices',
     ],
     'POST' => [
         '/api/auth' => 'handleAuth',
@@ -98,6 +99,105 @@ function handleApp(): void
 
     header('Content-Type: text/html; charset=utf-8');
     readfile($htmlFile);
+}
+
+/**
+ * Live market prices endpoint (Issue #251 — Real-Time Market Data)
+ *
+ * GET /api/prices
+ *
+ * Returns the latest prices for all MVP assets, sourced from CoinGecko/Binance
+ * with a simulation fallback. This endpoint is polled by live-prices.js
+ * at 1-second intervals to power the streaming price ticker in the UI.
+ *
+ * Response shape:
+ * {
+ *   "success": true,
+ *   "prices": {
+ *     "TON":  { "price": 5.25, "change24h": 1.23, "source": "coingecko", "timestamp": "..." },
+ *     "BTC":  { "price": 65000, ... },
+ *     ...
+ *   },
+ *   "source": "coingecko",
+ *   "timestamp": "2026-03-18T12:00:00Z"
+ * }
+ */
+function handlePrices(): void
+{
+    // Cache-control: short TTL so browsers don't over-cache
+    header('Cache-Control: no-store, max-age=0');
+    header('Access-Control-Allow-Origin: *');
+
+    // Baseline prices (used when live APIs are unavailable)
+    $baseline = [
+        'TON'  => ['price' => 5.25,   'change24h' => 0.0],
+        'BTC'  => ['price' => 65000,  'change24h' => 0.0],
+        'ETH'  => ['price' => 3500,   'change24h' => 0.0],
+        'SOL'  => ['price' => 175,    'change24h' => 0.0],
+        'USDT' => ['price' => 1.00,   'change24h' => 0.0],
+    ];
+
+    $prices = [];
+    $source = 'baseline';
+
+    // Attempt to fetch live prices from CoinGecko free tier (no API key required)
+    $coinGeckoIds = [
+        'TON'  => 'the-open-network',
+        'BTC'  => 'bitcoin',
+        'ETH'  => 'ethereum',
+        'SOL'  => 'solana',
+        'USDT' => 'tether',
+    ];
+    $ids = implode(',', array_values($coinGeckoIds));
+    $cgUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=' . $ids
+           . '&vs_currencies=usd&include_24hr_change=true';
+
+    $ctx = stream_context_create([
+        'http' => [
+            'method'  => 'GET',
+            'timeout' => 3,
+            'header'  => "User-Agent: TONAIAgent/1.0\r\n",
+        ],
+    ]);
+
+    $raw = @file_get_contents($cgUrl, false, $ctx);
+    if ($raw !== false) {
+        $data = json_decode($raw, true);
+        if (is_array($data)) {
+            foreach ($coinGeckoIds as $symbol => $cgId) {
+                if (isset($data[$cgId]['usd'])) {
+                    $prices[$symbol] = [
+                        'price'     => (float) $data[$cgId]['usd'],
+                        'change24h' => (float) ($data[$cgId]['usd_24h_change'] ?? 0),
+                        'source'    => 'coingecko',
+                        'timestamp' => date('c'),
+                    ];
+                }
+            }
+            if (!empty($prices)) {
+                $source = 'coingecko';
+            }
+        }
+    }
+
+    // Fill any missing assets from baseline
+    foreach ($baseline as $symbol => $base) {
+        if (!isset($prices[$symbol])) {
+            $prices[$symbol] = [
+                'price'     => $base['price'],
+                'change24h' => $base['change24h'],
+                'source'    => 'baseline',
+                'timestamp' => date('c'),
+            ];
+        }
+    }
+
+    jsonResponse([
+        'success'   => true,
+        'prices'    => $prices,
+        'source'    => $source,
+        'timestamp' => date('c'),
+    ]);
 }
 
 /**

@@ -11,6 +11,8 @@ import {
   createStrategyExecutionEngine,
 } from '../../core/strategies/strategy-engine';
 import { createMarketDataService } from '../../core/market-data/base';
+import { createMarketDataStreamService } from '../../services/market-data-stream';
+import type { PriceTick, StreamUnsubscribe } from '../../services/market-data-stream';
 import { createTradingEngine } from '../../core/trading/engine';
 import { createPortfolioAnalyticsDashboard } from '../../core/portfolio/analytics';
 import { createAgentControlApi, createAgentManager, createDemoRegistry } from '../../core/agents/control';
@@ -98,6 +100,8 @@ export class MVPPlatform {
   private readonly strategyLoader = createStrategyLoader(this.strategyRegistry);
   private readonly strategyEngine = createStrategyExecutionEngine(this.strategyRegistry);
   private readonly marketData = createMarketDataService();
+  /** Real-time market data stream (Issue #251) */
+  private readonly marketDataStream = createMarketDataStreamService({ simulation: true });
   private readonly tradingEngine = createTradingEngine();
   private readonly portfolioAnalytics = createPortfolioAnalyticsDashboard();
   private readonly controlRegistry = createDemoRegistry();
@@ -133,6 +137,9 @@ export class MVPPlatform {
     // Initialize market data
     this.marketData.start();
 
+    // Initialize real-time market data stream (Issue #251)
+    this.marketDataStream.start();
+
     // Initialize trading engine
     this.tradingEngine.start();
 
@@ -146,7 +153,54 @@ export class MVPPlatform {
   stop(): void {
     if (!this.running) return;
     this.running = false;
+    this.marketDataStream.stop();
     this.emitEvent('platform.stopped');
+  }
+
+  // ============================================================================
+  // Real-Time Market Data Stream (Issue #251)
+  // ============================================================================
+
+  /**
+   * Subscribe to live price updates for a trading pair.
+   *
+   * @param pair - Trading pair in "BASE/QUOTE" format (e.g., "TON/USDT")
+   * @param handler - Callback called on every price tick
+   * @returns Unsubscribe function
+   *
+   * @example
+   * ```typescript
+   * const unsub = platform.subscribeToPrice('TON/USDT', (tick) => {
+   *   console.log(`TON: $${tick.price}`);
+   * });
+   * // Later:
+   * unsub();
+   * ```
+   */
+  subscribeToPrice(pair: string, handler: (tick: PriceTick) => void): StreamUnsubscribe {
+    return this.marketDataStream.subscribe(pair, handler);
+  }
+
+  /**
+   * Get the latest cached price for an asset.
+   * Returns undefined if the stream has not yet received a tick for this asset.
+   */
+  getStreamPrice(asset: string): PriceTick | undefined {
+    return this.marketDataStream.getPrice(asset);
+  }
+
+  /**
+   * Get all latest streaming prices (instant read, no async required).
+   */
+  getAllStreamPrices(): Record<string, PriceTick> {
+    return this.marketDataStream.getAllPrices();
+  }
+
+  /**
+   * Get stream metrics (subscription counts, tick counts, uptime).
+   */
+  getStreamMetrics() {
+    return this.marketDataStream.getMetrics();
   }
 
   // ============================================================================
@@ -642,6 +696,7 @@ export class MVPPlatform {
       agentRuntime: this.running,
       strategyEngine: strategyMetrics.totalStrategiesRegistered >= 0,
       marketData: this.marketData.isRunning(),
+      marketDataStream: this.marketDataStream.isRunning(),
       tradingEngine: tradingMetrics.totalSignalsProcessed >= 0,
       portfolioAnalytics: analyticsHealth.overall !== 'unhealthy',
       agentControl: true,

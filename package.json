@@ -176,6 +176,11 @@
       "import": "./dist/core/agents/lifecycle/index.mjs",
       "require": "./dist/core/agents/lifecycle/index.js"
     },
+    "./market-data-stream": {
+      "types": "./dist/services/market-data-stream/index.d.ts",
+      "import": "./dist/services/market-data-stream/index.mjs",
+      "require": "./dist/services/market-data-stream/index.js"
+    },
     "./distributed-scheduler": {
       "types": "./dist/services/distributed-scheduler/index.d.ts",
       "import": "./dist/services/distributed-scheduler/index.mjs",

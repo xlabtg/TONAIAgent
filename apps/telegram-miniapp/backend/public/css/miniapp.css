@@ -1445,3 +1445,108 @@ body {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
+
+/* ============================================================================
+   Live Price Ticker (Issue #251 — Real-Time Market Data)
+   ============================================================================ */
+
+.live-prices-section {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-secondary, #1C1C1E);
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+
+.live-prices-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 6px);
+  margin-bottom: var(--spacing-xs, 6px);
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #34C759;
+  text-transform: uppercase;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34C759;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+.live-prices-title {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, rgba(255,255,255,0.6));
+}
+
+.live-prices-scroll {
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.live-prices-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.price-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--spacing-xs, 6px) var(--spacing-sm, 8px);
+  background: var(--bg-card, rgba(255,255,255,0.05));
+  border-radius: var(--border-radius-sm, 8px);
+  min-width: 72px;
+}
+
+.price-chip-symbol {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary, rgba(255,255,255,0.6));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.price-chip-price {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--text-primary, #FFFFFF);
+  transition: color 0.3s ease;
+}
+
+.price-chip-change {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.price-chip-change.positive { color: #34C759; }
+.price-chip-change.negative { color: #FF3B30; }
+
+/* Flash animations on price change */
+.price-up {
+  color: #34C759 !important;
+  transition: color 0.1s ease;
+}
+
+.price-down {
+  color: #FF3B30 !important;
+  transition: color 0.1s ease;
+}
