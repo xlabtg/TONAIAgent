@@ -232,3 +232,23 @@ export {
   createMarketDataAggregator,
   DEFAULT_AGGREGATOR_CONFIG,
 } from './connectors';
+
+// ============================================================================
+// Real-Time Market Data Streaming (Issue #251)
+// ============================================================================
+
+export {
+  MarketDataStream,
+  createMarketDataStream,
+  DEFAULT_STREAM_CONFIG,
+} from './streaming';
+
+export type {
+  PriceTick,
+  PriceTickHandler,
+  StreamUnsubscribe,
+  MarketDataStreamConfig,
+  MarketDataStreamEvent,
+  MarketDataStreamEventHandler,
+  MarketDataStreamEventType,
+} from './streaming';
