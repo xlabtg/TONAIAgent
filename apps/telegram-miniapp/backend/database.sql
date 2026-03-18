@@ -261,6 +261,33 @@ INSERT INTO `taa_strategies` (`name`, `description`, `category`, `risk_level`, `
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- -----------------------------------------------------
+-- Table: Agent Executions (Issue #249 — End-to-End Trading Flow)
+-- Records every call to POST /api/agent/execute
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `taa_agent_executions` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `strategy` VARCHAR(50) NOT NULL,
+    `pair` VARCHAR(20) NOT NULL,
+    `amount` DECIMAL(20, 8) NOT NULL,
+    `mode` ENUM('demo', 'live') NOT NULL DEFAULT 'demo',
+    `signal` ENUM('buy', 'sell', 'hold', 'none') DEFAULT NULL,
+    `trade_executed` TINYINT(1) DEFAULT 0,
+    `pnl_delta` DECIMAL(20, 8) DEFAULT 0,
+    `status` ENUM('pending', 'completed', 'failed') NOT NULL DEFAULT 'pending',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at` DATETIME DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `idx_user` (`user_id`),
+    INDEX `idx_strategy` (`strategy`),
+    INDEX `idx_pair` (`pair`),
+    INDEX `idx_mode` (`mode`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `taa_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
 -- Migration: TON Wallet Integration (Issue #233)
 -- Run these statements on existing installations to add
 -- the wallet-related columns without rebuilding the schema.

@@ -174,3 +174,53 @@ export interface MVPPlatformEvent {
 }
 
 export type MVPPlatformEventHandler = (event: MVPPlatformEvent) => void;
+
+// ============================================================================
+// Trade Execution Request/Response (Issue #249 — End-to-End Trading Flow)
+// ============================================================================
+
+/**
+ * Incoming trade execution request from the Telegram Mini App.
+ *
+ * Sent via: POST /api/agent/execute
+ */
+export interface TradeExecutionRequest {
+  /** Telegram user ID */
+  userId: string;
+  /** Strategy to use: momentum maps to 'trend', others are passed through */
+  strategy: string;
+  /** Trading pair, e.g. "TON/USDT" */
+  pair: string;
+  /** Amount in TON to allocate */
+  amount: number;
+  /** Execution mode: demo (simulation) or live (on-chain) */
+  mode: 'demo' | 'live';
+}
+
+/**
+ * Result returned from POST /api/agent/execute.
+ */
+export interface TradeExecutionResponse {
+  /** Whether the trade request was accepted and processed */
+  success: boolean;
+  /** The agent ID that was created/used for this execution */
+  agentId: string;
+  /** Signal produced by the strategy */
+  signal: 'buy' | 'sell' | 'hold' | 'none';
+  /** Whether a trade was actually executed */
+  tradeExecuted: boolean;
+  /** Portfolio value before execution (in TON) */
+  portfolioValueBefore: number;
+  /** Portfolio value after execution (in TON) */
+  portfolioValueAfter: number;
+  /** PnL delta from this cycle (in TON) */
+  pnlDelta: number;
+  /** The trading pair used */
+  pair: string;
+  /** The execution mode */
+  mode: 'demo' | 'live';
+  /** ISO timestamp of execution */
+  timestamp: string;
+  /** Error message if success is false */
+  error?: string;
+}
