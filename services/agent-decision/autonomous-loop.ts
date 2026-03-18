@@ -1,8 +1,14 @@
 /**
- * TONAIAgent — Autonomous Agent Loop (Issue #261)
+ * TONAIAgent — Autonomous Agent Loop (Issue #261, #263)
  *
  * Each agent runs a continuous cycle:
- *   analyze → decide → execute → evaluate → repeat
+ *   analyze → decide → execute → store → update memory → next decision
+ *
+ * Issue #263 additions:
+ *   - AgentMemoryStore integration (short-term + long-term memory)
+ *   - AgentContextBuilder integration (builds context each cycle)
+ *   - Memory-aware decisions (context passed to DecisionEngine)
+ *   - Trade + decision recording after each cycle
  *
  * This module is intentionally runtime-agnostic: the `execute` and `fetchMetrics`
  * callbacks are supplied by the caller so the loop can be used in Node.js,
@@ -14,6 +20,17 @@ import type { AgentStrategy } from '../../core/agent/index';
 import type { AgentMetrics, DecisionResult } from './index';
 import { AgentDecisionEngine } from './index';
 import type { AgentMode, SafeguardConfig } from './index';
+import {
+  AgentMemoryStore,
+  createDecisionRecord,
+  createMetricSnapshot,
+  createTrade,
+} from '../../core/agent/memory';
+import type { Trade, AgentMemoryConfig } from '../../core/agent/memory';
+import {
+  AgentContextBuilder,
+} from '../agent-context/index';
+import type { AgentContext } from '../agent-context/index';
 
 // ============================================================================
 // Cycle Callbacks
@@ -27,13 +44,17 @@ export type FetchMetricsFn = (agentId: string) => AgentMetrics | Promise<AgentMe
 
 /**
  * Executes a trading cycle using the selected strategy and params.
- * Returns `true` on success, `false` if the execution was skipped/failed.
+ * Returns a Trade record when execution produced a trade, or `false`
+ * if the execution was skipped/failed.
+ *
+ * Callers that do not need trade-level memory can return `true` (treated
+ * as a trade-less successful execution — no trade is recorded).
  */
 export type ExecuteFn = (
   agentId: string,
   strategy: AgentStrategy,
   params: Record<string, number | string | boolean>,
-) => boolean | Promise<boolean>;
+) => boolean | Trade | Promise<boolean | Trade>;
 
 /**
  * Optional callback invoked after each full cycle for observability.
@@ -68,6 +89,16 @@ export interface AutonomousLoopConfig {
    * Undefined = run indefinitely until `stop()` is called.
    */
   maxCycles?: number;
+  /**
+   * Memory configuration for the agent's AgentMemoryStore (Issue #263).
+   * Defaults to the AgentMemoryStore defaults (50 trades, 50 decisions, 200 snapshots).
+   */
+  memoryConfig?: Partial<AgentMemoryConfig>;
+  /**
+   * Number of recent performance snapshots used by the context builder
+   * to detect trend direction.  Default: 10.
+   */
+  contextTrendWindow?: number;
 }
 
 // ============================================================================
@@ -81,6 +112,10 @@ export interface LoopSummary {
   finalStrategy: AgentStrategy;
   finalGoalProgress: GoalProgress | null;
   stoppedAt: string;
+  /** Final confidence score from the last decision cycle (Issue #263). */
+  finalConfidenceScore: number;
+  /** Final agent context from the last decision cycle (Issue #263). */
+  finalContext: AgentContext | null;
 }
 
 // ============================================================================
@@ -106,6 +141,10 @@ export class AutonomousLoop {
   private readonly execute: ExecuteFn;
   private readonly onCycleComplete?: OnCycleCompleteFn;
   private readonly engine: AgentDecisionEngine;
+  /** In-memory store for agent memory (Issue #263). */
+  private readonly memoryStore: AgentMemoryStore;
+  /** Context builder for memory-aware decisions (Issue #263). */
+  private readonly contextBuilder: AgentContextBuilder;
 
   private running = false;
   /** Set to true by stop() to break out of an infinite loop early. */
@@ -113,6 +152,8 @@ export class AutonomousLoop {
   private cycleIndex = 0;
   private currentStrategy: AgentStrategy;
   private lastDecision: DecisionResult | null = null;
+  /** Last built context (used for LoopSummary). */
+  private lastContext: AgentContext | null = null;
   /** Promise that resolves when _runLoop() finishes. */
   private loopDone: Promise<void> | null = null;
 
@@ -131,6 +172,8 @@ export class AutonomousLoop {
       safeguards: config.safeguards ?? {},
       intervalMs: config.intervalMs ?? 5000,
       maxCycles: config.maxCycles ?? Infinity,
+      memoryConfig: config.memoryConfig ?? {},
+      contextTrendWindow: config.contextTrendWindow ?? 10,
     };
     this.fetchMetrics = fetchMetrics;
     this.execute = execute;
@@ -139,6 +182,10 @@ export class AutonomousLoop {
     this.engine = new AgentDecisionEngine({
       mode: this.config.mode,
       safeguards: this.config.safeguards,
+    });
+    this.memoryStore = new AgentMemoryStore(this.config.memoryConfig);
+    this.contextBuilder = new AgentContextBuilder({
+      trendWindow: this.config.contextTrendWindow,
     });
   }
 
@@ -199,6 +246,22 @@ export class AutonomousLoop {
     return this.lastDecision;
   }
 
+  /**
+   * Access the agent's memory store (Issue #263).
+   * Allows callers to inspect accumulated trades, decisions, and snapshots.
+   */
+  getMemoryStore(): AgentMemoryStore {
+    return this.memoryStore;
+  }
+
+  /**
+   * The most recently built AgentContext (Issue #263).
+   * Null before the first cycle completes.
+   */
+  getLastContext(): AgentContext | null {
+    return this.lastContext;
+  }
+
   // --------------------------------------------------------------------------
   // Core Loop
   // --------------------------------------------------------------------------
@@ -220,21 +283,55 @@ export class AutonomousLoop {
     // Step 1 — Analyze: fetch current metrics
     const metrics = await this.fetchMetrics(this.agentId);
 
-    // Step 2 — Decide: run the decision engine
+    // Step 1b — Build context from memory (Issue #263)
+    const memory = this.memoryStore.getMemory(this.agentId);
+    const patterns = this.memoryStore.detectPatterns(this.agentId);
+    const context = this.contextBuilder.build(memory, patterns, metrics);
+    this.lastContext = context;
+
+    // Step 2 — Decide: run the context-aware decision engine (Issue #263)
     const decision = this.engine.decide(
       this.agentId,
       this.config.goal,
       metrics,
       this.currentStrategy,
+      context,
     );
     this.lastDecision = decision;
 
     // Step 3 — Execute: run strategy if not blocked by safeguards
+    let executeResult: boolean | Trade = false;
     if (decision.shouldExecute) {
-      await this.execute(this.agentId, decision.strategy, decision.params);
+      executeResult = await this.execute(this.agentId, decision.strategy, decision.params);
     }
 
-    // Step 4 — Evaluate: update current strategy for next cycle
+    // Step 4 — Store: update memory with results (Issue #263)
+    //   execute → store → update memory → next decision
+    if (typeof executeResult === 'object' && executeResult !== null) {
+      // Caller returned a full Trade record
+      this.memoryStore.recordTrade(this.agentId, executeResult);
+    }
+    // Always record the decision and current metric snapshot
+    this.memoryStore.recordDecision(
+      this.agentId,
+      createDecisionRecord(
+        decision.strategy,
+        decision.shouldExecute,
+        decision.reason,
+        decision.confidenceScore,
+      ),
+    );
+    this.memoryStore.recordSnapshot(
+      this.agentId,
+      createMetricSnapshot(
+        metrics.currentBalance,
+        metrics.pnl,
+        metrics.currentDrawdown,
+        metrics.strategyScore,
+      ),
+    );
+
+    // Step 5 — Evaluate: update current strategy for next cycle
     this.currentStrategy = decision.strategy;
 
     // Notify observers
@@ -260,6 +357,8 @@ export class AutonomousLoop {
       finalStrategy: this.currentStrategy,
       finalGoalProgress: this.lastDecision?.goalProgress ?? null,
       stoppedAt: new Date().toISOString(),
+      finalConfidenceScore: this.lastDecision?.confidenceScore ?? 0,
+      finalContext: this.lastContext,
     };
   }
 }

@@ -1,8 +1,8 @@
 /**
- * TONAIAgent — Agent Decision Service (Issue #261)
+ * TONAIAgent — Agent Decision Service (Issue #261, #263)
  *
  * Implements the autonomous agent decision layer:
- *   goal + metrics → choose strategy + params
+ *   goal + metrics + context + memory → choose strategy + params
  *
  * Architecture:
  *   Goal Engine
@@ -20,12 +20,14 @@
  *   Step 5 — Behavior Modes        (conservative | balanced | aggressive)
  *   Step 6 — Goal Evaluation       (progressToGoal)
  *   Step 7 — Safeguards            (overtrading, unstable switching, risk spikes)
+ *   Step 8 — Context-aware decisions (Issue #263)
  */
 
 import type { AgentGoal } from '../../core/agent/goals';
 import type { AgentStrategy } from '../../core/agent/index';
 import { computeGoalProgress } from '../../core/agent/goals';
 import type { GoalProgress } from '../../core/agent/goals';
+import type { AgentContext } from '../agent-context/index';
 
 // ============================================================================
 // Behavior Modes
@@ -99,6 +101,12 @@ export interface DecisionResult {
   goalProgress: GoalProgress;
   /** Active behavior mode used for this decision. */
   mode: AgentMode;
+  /**
+   * Agent confidence score [0..1] at the time of this decision.
+   * Sourced from AgentContext when context is provided, otherwise
+   * derived from strategyScore alone.
+   */
+  confidenceScore: number;
 }
 
 // ============================================================================
@@ -191,7 +199,7 @@ export class AgentDecisionEngine {
    *
    * Cycle steps:
    *   1. Analyze  — evaluate goal progress and current metrics
-   *   2. Decide   — select optimal strategy for goal + mode
+   *   2. Decide   — select optimal strategy for goal + mode + context
    *   3. Safeguard check — block execution if any limit is breached
    *   4. Evaluate — detect switching opportunity; update internal state
    *
@@ -199,19 +207,21 @@ export class AgentDecisionEngine {
    * @param goal            - agent's current goal
    * @param metrics         - real-time performance metrics
    * @param currentStrategy - strategy the agent is currently running
+   * @param context         - optional context built from memory (Issue #263)
    */
   decide(
     agentId: string,
     goal: AgentGoal,
     metrics: AgentMetrics,
     currentStrategy: AgentStrategy,
+    context?: AgentContext,
   ): DecisionResult {
     // --- Step 1: Analyze — compute goal progress --------------------------
     const goalMetricValue = this._goalMetric(goal, metrics);
     const goalProgress = computeGoalProgress(goal, goalMetricValue, metrics.initialBalance);
 
-    // --- Step 2: Decide — select strategy ---------------------------------
-    const selectedStrategy = this._selectStrategy(goal, metrics, currentStrategy);
+    // --- Step 2: Decide — select strategy (context-aware) -----------------
+    const selectedStrategy = this._selectStrategy(goal, metrics, currentStrategy, context);
 
     // --- Step 3: Safeguard check ------------------------------------------
     const safeguardResult = this._checkSafeguards(agentId, metrics, selectedStrategy, currentStrategy);
@@ -219,16 +229,22 @@ export class AgentDecisionEngine {
     // --- Step 4: Evaluate — update per-agent state ------------------------
     this._updateState(agentId, selectedStrategy, currentStrategy);
 
-    // Build strategy params tuned for mode and goal
-    const params = this._buildParams(selectedStrategy, goal, metrics);
+    // Build strategy params tuned for mode, goal, and context
+    const params = this._buildParams(selectedStrategy, goal, metrics, context);
+
+    // Confidence score: use context value when available, else derive from strategyScore
+    const confidenceScore = context !== undefined
+      ? context.confidenceScore
+      : Math.max(0, Math.min(1, metrics.strategyScore / 100));
 
     return {
       strategy: safeguardResult.blocked ? currentStrategy : selectedStrategy,
       params: safeguardResult.blocked ? {} : params,
       shouldExecute: !safeguardResult.blocked,
-      reason: safeguardResult.blocked ? safeguardResult.reason : this._buildReason(goal, selectedStrategy, currentStrategy),
+      reason: safeguardResult.blocked ? safeguardResult.reason : this._buildReason(goal, selectedStrategy, currentStrategy, context),
       goalProgress,
       mode: this.mode,
+      confidenceScore,
     };
   }
 
@@ -251,7 +267,7 @@ export class AgentDecisionEngine {
   // --------------------------------------------------------------------------
 
   /**
-   * Map goal + metrics + mode → best strategy.
+   * Map goal + metrics + mode + context → best strategy.
    *
    * Strategy switching table:
    * ┌─────────────────┬───────────────┬────────────────────────────────────────┐
@@ -270,12 +286,46 @@ export class AgentDecisionEngine {
    * - If strategy score < 40 AND mode != conservative → switch to next best
    * - If drawdown > 0.10 → switch to ai-signal (defensive)
    * - If drawdown > safeguards.maxDrawdown → pause (handled by safeguards)
+   *
+   * Memory-driven overrides (Issue #263):
+   * - If 3+ consecutive losses detected → force defensive ai-signal
+   * - If current strategy has repeated failure pattern → opportunistic switch
+   * - If trend is falling AND mode is not conservative → defensive ai-signal
    */
   private _selectStrategy(
     goal: AgentGoal,
     metrics: AgentMetrics,
     currentStrategy: AgentStrategy,
+    context?: AgentContext,
   ): AgentStrategy {
+    // ── Memory-driven overrides (Issue #263) ─────────────────────────────
+    if (context !== undefined) {
+      // 3+ consecutive losses → reduce risk; switch to defensive ai-signal
+      if (context.patterns.consecutiveLosses) {
+        return 'ai-signal';
+      }
+
+      // Current strategy has been repeatedly failing → rotate away
+      if (
+        context.patterns.repeatedStrategyFailure &&
+        context.patterns.failingStrategy === currentStrategy &&
+        this.mode !== 'conservative'
+      ) {
+        return this._opportunisticSwitch(currentStrategy);
+      }
+
+      // Falling trend + low confidence + non-conservative → defensive
+      if (
+        context.trendState === 'falling' &&
+        context.confidenceScore < 0.35 &&
+        this.mode !== 'conservative'
+      ) {
+        return 'ai-signal';
+      }
+    }
+
+    // ── Metric-driven switching (Issue #261) ─────────────────────────────
+
     // High drawdown → switch to defensive ai-signal
     if (metrics.currentDrawdown > 0.10 && metrics.currentDrawdown <= this.safeguards.maxDrawdown) {
       return 'ai-signal';
@@ -286,7 +336,8 @@ export class AgentDecisionEngine {
       return this._opportunisticSwitch(currentStrategy);
     }
 
-    // Goal-driven primary selection
+    // ── Goal-driven primary selection ─────────────────────────────────────
+
     if (goal.type === 'minimize_risk') {
       return 'ai-signal';
     }
@@ -401,21 +452,38 @@ export class AgentDecisionEngine {
   // --------------------------------------------------------------------------
 
   /**
-   * Build strategy parameters adjusted for mode and goal.
+   * Build strategy parameters adjusted for mode, goal, and context.
    *
    * Mode effects:
    * - conservative: smaller lookback, tighter RSI bands, smaller position multiplier
    * - aggressive:   larger lookback, wider RSI bands, larger position multiplier
+   *
+   * Context effects (Issue #263):
+   * - low confidence → reduce position multiplier by 20%
+   * - high volatility → tighten RSI bands / increase min spread
    */
   private _buildParams(
     strategy: AgentStrategy,
     goal: AgentGoal,
     _metrics: AgentMetrics,
+    context?: AgentContext,
   ): Record<string, number | string | boolean> {
-    const positionMultiplier =
+    let positionMultiplier =
       this.mode === 'conservative' ? 0.5
       : this.mode === 'aggressive' ? 1.5
       : 1.0;
+
+    // Context adjustments
+    if (context !== undefined) {
+      // Low confidence → reduce position size
+      if (context.confidenceScore < 0.4) {
+        positionMultiplier *= 0.8;
+      }
+      // High volatility → further reduce size
+      if (context.volatilityLevel === 'high') {
+        positionMultiplier *= 0.9;
+      }
+    }
 
     if (strategy === 'trend') {
       return {
@@ -426,8 +494,10 @@ export class AgentDecisionEngine {
     }
 
     if (strategy === 'arbitrage') {
+      // High volatility → require wider spread before entering
+      const volatilitySpreadAdj = context?.volatilityLevel === 'high' ? 10 : 0;
       return {
-        minSpreadBps: this.mode === 'conservative' ? 30 : this.mode === 'aggressive' ? 10 : 20,
+        minSpreadBps: (this.mode === 'conservative' ? 30 : this.mode === 'aggressive' ? 10 : 20) + volatilitySpreadAdj,
         positionMultiplier,
         goalType: goal.type,
       };
@@ -465,13 +535,20 @@ export class AgentDecisionEngine {
     goal: AgentGoal,
     selectedStrategy: AgentStrategy,
     currentStrategy: AgentStrategy,
+    context?: AgentContext,
   ): string {
     const switched = selectedStrategy !== currentStrategy;
     const modeLabel = this.mode;
     if (switched) {
-      return `Strategy switched from ${currentStrategy} → ${selectedStrategy} (goal: ${goal.type}, mode: ${modeLabel})`;
+      const contextSuffix = context !== undefined
+        ? `, confidence: ${(context.confidenceScore * 100).toFixed(0)}%, trend: ${context.trendState}`
+        : '';
+      return `Strategy switched from ${currentStrategy} → ${selectedStrategy} (goal: ${goal.type}, mode: ${modeLabel}${contextSuffix})`;
     }
-    return `Continuing ${selectedStrategy} (goal: ${goal.type}, mode: ${modeLabel})`;
+    const contextSuffix = context !== undefined
+      ? ` [confidence: ${(context.confidenceScore * 100).toFixed(0)}%, trend: ${context.trendState}]`
+      : '';
+    return `Continuing ${selectedStrategy} (goal: ${goal.type}, mode: ${modeLabel})${contextSuffix}`;
   }
 }
 
