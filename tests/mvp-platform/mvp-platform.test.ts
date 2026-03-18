@@ -18,8 +18,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // Mock the market data module to avoid real HTTP calls in tests.
 // The platform falls back to BASELINE_PRICES when providers fail,
 // but mocking here ensures instant test execution without network timeouts.
-vi.mock('../../src/market-data', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../src/market-data')>();
+vi.mock('../../core/market-data/base', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../core/market-data/base')>();
 
   const MOCK_PRICES = {
     BTC: 65_000,
