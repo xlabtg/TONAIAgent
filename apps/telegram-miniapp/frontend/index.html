@@ -237,7 +237,106 @@
       <section id="page-trades" class="page hidden">
         <header class="page-header">
           <div class="page-title">Trade History</div>
+          <button class="icon-btn" id="new-trade-btn" aria-label="New Trade" title="New Trade">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
         </header>
+
+        <!-- ============================== -->
+        <!-- Execution Panel (Step 7 UI)   -->
+        <!-- ============================== -->
+        <div id="execution-panel" class="section-card hidden">
+          <div class="section-title">New Trade</div>
+
+          <!-- Pair + Action -->
+          <div class="exec-row">
+            <select class="filter-select exec-input" id="exec-pair">
+              <option value="TON/USDT">TON / USDT</option>
+              <option value="TON/NOT">TON / NOT</option>
+              <option value="TON/DOGS">TON / DOGS</option>
+            </select>
+            <div class="exec-action-tabs" id="exec-action-tabs">
+              <button class="exec-action-btn active" data-action="BUY">BUY</button>
+              <button class="exec-action-btn" data-action="SELL">SELL</button>
+            </div>
+          </div>
+
+          <!-- Amount -->
+          <div class="exec-field">
+            <label class="exec-label" for="exec-amount">Amount</label>
+            <input type="number" class="exec-input" id="exec-amount" placeholder="0.00" min="0" step="any" />
+          </div>
+
+          <!-- Execution Mode -->
+          <div class="exec-field">
+            <label class="exec-label" for="exec-mode">Execution Mode</label>
+            <select class="filter-select exec-input" id="exec-mode">
+              <option value="market">Market</option>
+              <option value="limit">Limit</option>
+              <option value="twap">TWAP</option>
+            </select>
+          </div>
+
+          <!-- Slippage Tolerance Selector -->
+          <div class="exec-field">
+            <label class="exec-label">Slippage Tolerance</label>
+            <div class="slippage-selector" id="slippage-selector">
+              <button class="slippage-btn" data-bps="10">0.1%</button>
+              <button class="slippage-btn active" data-bps="50">0.5%</button>
+              <button class="slippage-btn" data-bps="100">1%</button>
+              <button class="slippage-btn" data-bps="custom">Custom</button>
+            </div>
+            <div class="slippage-custom hidden" id="slippage-custom">
+              <input type="number" id="slippage-custom-input" class="exec-input"
+                     placeholder="e.g. 0.3" min="0.01" max="50" step="0.01" />
+              <span class="exec-label">%</span>
+            </div>
+          </div>
+
+          <!-- Execution Preview -->
+          <div id="exec-preview" class="exec-preview hidden">
+            <div class="exec-preview-title">Execution Preview</div>
+            <div class="exec-preview-grid">
+              <div class="exec-preview-row">
+                <span class="exec-preview-label">Best DEX</span>
+                <span class="exec-preview-value" id="prev-dex">—</span>
+              </div>
+              <div class="exec-preview-row">
+                <span class="exec-preview-label">Expected Out</span>
+                <span class="exec-preview-value" id="prev-expected-out">—</span>
+              </div>
+              <div class="exec-preview-row">
+                <span class="exec-preview-label">Est. Slippage</span>
+                <span class="exec-preview-value" id="prev-slippage">—</span>
+              </div>
+              <div class="exec-preview-row">
+                <span class="exec-preview-label">Price Impact</span>
+                <span class="exec-preview-value" id="prev-impact">—</span>
+              </div>
+            </div>
+
+            <!-- DEX Comparison Table -->
+            <div id="dex-comparison" class="dex-comparison hidden">
+              <div class="exec-preview-title">DEX Comparison</div>
+              <div id="dex-comparison-rows"></div>
+            </div>
+
+            <!-- Warnings -->
+            <div id="exec-warnings" class="exec-warnings"></div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="exec-actions">
+            <button class="btn-secondary" id="exec-preview-btn">Preview</button>
+            <button class="btn-primary" id="exec-submit-btn" disabled>Execute</button>
+          </div>
+
+          <!-- Execution Result -->
+          <div id="exec-result" class="exec-result hidden"></div>
+        </div>
 
         <!-- Filters -->
         <div class="trade-filters">
@@ -765,6 +864,7 @@
   <script src="components/agents.js"></script>
   <script src="components/strategies.js"></script>
   <script src="components/trades.js"></script>
+  <script src="components/execution.js"></script>
   <script src="components/onboarding.js"></script>
   <script src="components/growth.js"></script>
   <script src="components/marketplace.js"></script>

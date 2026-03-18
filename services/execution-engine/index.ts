@@ -7,3 +7,34 @@
 // Import directly from the specific submodule paths:
 //   core/trading/engine/...
 //   core/trading/live/...
+
+// Smart Execution Engine (Issue #253 — Smart Order Execution & Slippage Control)
+export {
+  // Core engine
+  DefaultSmartExecutionEngine,
+  createSmartExecutionEngine,
+  // Slippage utilities
+  bpsToPercent,
+  percentToBps,
+  estimatePriceImpact,
+  estimateQuoteSlippage,
+  // Configuration
+  DEFAULT_SLIPPAGE_CONFIG,
+  DEFAULT_SMART_EXECUTION_CONFIG,
+} from './smart-execution';
+
+export type {
+  SlippageConfig,
+  SmartExecutionMode,
+  SmartExecutionRequest,
+  SmartExecutionResult,
+  SmartExecutionPreview,
+  SmartExecutionEngine,
+  SmartExecutionEngineConfig,
+  SimulationConfig,
+  SimulationDetails,
+  DexComparisonRow,
+  ExecutionWarning,
+  ExecutionFailureReason,
+  TwapParams,
+} from './smart-execution';
