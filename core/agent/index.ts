@@ -1,5 +1,5 @@
 /**
- * TONAIAgent — Agent Abstraction (Issue #259)
+ * TONAIAgent — Agent Abstraction (Issue #259, #261)
  *
  * Core Agent interface used by the Portfolio Allocator to represent a
  * strategy-running agent within the multi-agent system.
@@ -8,7 +8,14 @@
  *   Agent A (trend) ─┐
  *   Agent B (arb)   ─┤→ Portfolio Allocator → Execution Engine
  *   Agent C (signal)─┘
+ *
+ * Issue #261 additions:
+ *   - AgentGoal, GoalProgress, computeGoalProgress (via core/agent/goals)
  */
+
+// Re-export goal model (Issue #261)
+export type { AgentGoal, AgentGoalType, GoalProgress } from './goals';
+export { createAgentGoal, computeGoalProgress } from './goals';
 
 // ============================================================================
 // Core Agent Interface
