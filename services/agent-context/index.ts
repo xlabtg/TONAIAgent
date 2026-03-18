@@ -1,16 +1,17 @@
 /**
- * TONAIAgent — Agent Context Builder (Issue #263)
+ * TONAIAgent — Agent Context Builder (Issue #263, #265)
  *
  * Builds a rich context object from current agent metrics and memory,
  * which is then consumed by the Decision Engine to make memory-aware,
  * context-sensitive trading decisions.
  *
  * Architecture:
- *   AgentMemory + AgentMetrics
+ *   AgentMemory + AgentMetrics + ExternalSignals (Issue #265)
  *     ↓
  *   AgentContextBuilder  (this module)
  *     ↓
- *   AgentContext  { trendState, recentPerformance, volatilityLevel, confidenceScore }
+ *   AgentContext  { trendState, recentPerformance, volatilityLevel, confidenceScore,
+ *                   externalSignalScore, sentimentLevel }
  *     ↓
  *   Decision Engine  (services/agent-decision)
  *
@@ -21,12 +22,15 @@
  *   recentPerformance
  *   volatilityLevel
  *   confidenceScore
+ *   externalSignalScore  // Issue #265
+ *   sentimentLevel       // Issue #265
  * }
  * ```
  */
 
 import type { AgentMemory, PatternDetectionResult } from '../../core/agent/memory';
 import type { AgentMetrics } from '../agent-decision/index';
+import type { SentimentLevel } from '../signal-aggregator/index';
 
 // ============================================================================
 // Context Types
@@ -85,6 +89,24 @@ export interface AgentContext {
    * Pattern detection results from memory scan.
    */
   patterns: PatternDetectionResult;
+  /**
+   * Aggregated external market signal score [-1, +1] (Issue #265).
+   *
+   * Combines news, sentiment, momentum, and on-chain signals via
+   * the SignalAggregator.  Defaults to 0 (neutral) when no external
+   * signals have been injected.
+   *
+   * Positive → bullish market signals; negative → bearish.
+   */
+  externalSignalScore: number;
+  /**
+   * Bucketed sentiment level derived from externalSignalScore (Issue #265).
+   *
+   * - `positive` — externalSignalScore > +0.15
+   * - `negative` — externalSignalScore < -0.15
+   * - `neutral`  — otherwise
+   */
+  sentimentLevel: SentimentLevel;
   /** ISO timestamp when this context was built. */
   builtAt: string;
 }
@@ -131,21 +153,25 @@ export class AgentContextBuilder {
   }
 
   /**
-   * Build a complete AgentContext from memory and live metrics.
+   * Build a complete AgentContext from memory, live metrics, and optional
+   * external market signals (Issue #265).
    *
-   * @param memory   - the agent's current memory (from AgentMemoryStore)
-   * @param patterns - pre-computed pattern detection result
-   * @param metrics  - live metrics snapshot from the current cycle
+   * @param memory              - the agent's current memory (from AgentMemoryStore)
+   * @param patterns            - pre-computed pattern detection result
+   * @param metrics             - live metrics snapshot from the current cycle
+   * @param externalSignalScore - optional aggregated external signal [-1, +1] (Issue #265)
    */
   build(
     memory: Readonly<AgentMemory>,
     patterns: PatternDetectionResult,
     metrics: AgentMetrics,
+    externalSignalScore = 0,
   ): AgentContext {
     const recentPerformance = this._buildPerformanceSummary(memory, patterns);
     const trendState = this._computeTrend(memory, metrics);
     const volatilityLevel = this._computeVolatility(memory);
     const confidenceScore = this._computeConfidence(recentPerformance, volatilityLevel, metrics);
+    const sentimentLevel = this._toSentimentLevel(externalSignalScore);
 
     return {
       trendState,
@@ -153,8 +179,20 @@ export class AgentContextBuilder {
       volatilityLevel,
       confidenceScore,
       patterns,
+      externalSignalScore: Math.max(-1, Math.min(1, externalSignalScore)),
+      sentimentLevel,
       builtAt: new Date().toISOString(),
     };
+  }
+
+  // --------------------------------------------------------------------------
+  // Sentiment Level (Issue #265)
+  // --------------------------------------------------------------------------
+
+  private _toSentimentLevel(score: number): SentimentLevel {
+    if (score > 0.15) return 'positive';
+    if (score < -0.15) return 'negative';
+    return 'neutral';
   }
 
   // --------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 /**
- * TONAIAgent — Agent Decision Service (Issue #261, #263)
+ * TONAIAgent — Agent Decision Service (Issue #261, #263, #265)
  *
  * Implements the autonomous agent decision layer:
- *   goal + metrics + context + memory → choose strategy + params
+ *   goal + metrics + context + memory + external signals → choose strategy + params
  *
  * Architecture:
  *   Goal Engine
@@ -21,6 +21,8 @@
  *   Step 6 — Goal Evaluation       (progressToGoal)
  *   Step 7 — Safeguards            (overtrading, unstable switching, risk spikes)
  *   Step 8 — Context-aware decisions (Issue #263)
+ *   Step 9 — External signal integration (Issue #265)
+ *             finalScore = internalConfidence × 0.6 + externalSignal × 0.4
  */
 
 import type { AgentGoal } from '../../core/agent/goals';
@@ -28,6 +30,7 @@ import type { AgentStrategy } from '../../core/agent/index';
 import { computeGoalProgress } from '../../core/agent/goals';
 import type { GoalProgress } from '../../core/agent/goals';
 import type { AgentContext } from '../agent-context/index';
+import { SignalAggregator } from '../signal-aggregator/index';
 
 // ============================================================================
 // Behavior Modes
@@ -232,10 +235,16 @@ export class AgentDecisionEngine {
     // Build strategy params tuned for mode, goal, and context
     const params = this._buildParams(selectedStrategy, goal, metrics, context);
 
-    // Confidence score: use context value when available, else derive from strategyScore
-    const confidenceScore = context !== undefined
+    // Confidence score: blend internal confidence with external signal (Issue #265)
+    // Formula: finalScore = internalConfidence × 0.6 + externalNorm × 0.4
+    const internalConfidence = context !== undefined
       ? context.confidenceScore
       : Math.max(0, Math.min(1, metrics.strategyScore / 100));
+
+    const externalSignalScore = context?.externalSignalScore ?? 0;
+    const confidenceScore = context !== undefined && externalSignalScore !== 0
+      ? SignalAggregator.blendScores(internalConfidence, externalSignalScore).finalScore
+      : internalConfidence;
 
     return {
       strategy: safeguardResult.blocked ? currentStrategy : selectedStrategy,
@@ -321,6 +330,23 @@ export class AgentDecisionEngine {
         this.mode !== 'conservative'
       ) {
         return 'ai-signal';
+      }
+
+      // ── External signal overrides (Issue #265) ───────────────────────
+      const extScore = context.externalSignalScore ?? 0;
+      const sentiment = context.sentimentLevel ?? 'neutral';
+      // Strong negative sentiment → defensive mode regardless of goal
+      if (sentiment === 'negative' && extScore < -0.5) {
+        return 'ai-signal';
+      }
+
+      // Strong positive sentiment + aggressive mode → increase allocation via arbitrage
+      if (
+        sentiment === 'positive' &&
+        extScore > 0.5 &&
+        this.mode === 'aggressive'
+      ) {
+        return 'arbitrage';
       }
     }
 
@@ -483,6 +509,16 @@ export class AgentDecisionEngine {
       if (context.volatilityLevel === 'high') {
         positionMultiplier *= 0.9;
       }
+      // External signal adjustments (Issue #265):
+      const sentiment = context.sentimentLevel ?? 'neutral';
+      // Positive sentiment → increase allocation
+      if (sentiment === 'positive') {
+        positionMultiplier *= 1.1;
+      }
+      // Negative sentiment → defensive mode; reduce size
+      if (sentiment === 'negative') {
+        positionMultiplier *= 0.8;
+      }
     }
 
     if (strategy === 'trend') {
@@ -541,12 +577,12 @@ export class AgentDecisionEngine {
     const modeLabel = this.mode;
     if (switched) {
       const contextSuffix = context !== undefined
-        ? `, confidence: ${(context.confidenceScore * 100).toFixed(0)}%, trend: ${context.trendState}`
+        ? `, confidence: ${(context.confidenceScore * 100).toFixed(0)}%, trend: ${context.trendState}, sentiment: ${context.sentimentLevel ?? 'neutral'}`
         : '';
       return `Strategy switched from ${currentStrategy} → ${selectedStrategy} (goal: ${goal.type}, mode: ${modeLabel}${contextSuffix})`;
     }
     const contextSuffix = context !== undefined
-      ? ` [confidence: ${(context.confidenceScore * 100).toFixed(0)}%, trend: ${context.trendState}]`
+      ? ` [confidence: ${(context.confidenceScore * 100).toFixed(0)}%, trend: ${context.trendState}, sentiment: ${context.sentimentLevel ?? 'neutral'}]`
       : '';
     return `Continuing ${selectedStrategy} (goal: ${goal.type}, mode: ${modeLabel})${contextSuffix}`;
   }
