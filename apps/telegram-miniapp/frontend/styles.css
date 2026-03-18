@@ -3102,3 +3102,106 @@ body {
   color: var(--hint);
   word-break: break-all;
 }
+
+
+/* ============================================================
+   Analytics Dashboard (Issue #255)
+   ============================================================ */
+
+/* Strategy breakdown */
+.analytics-strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.analytics-strategy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.analytics-strategy-row:last-child { border-bottom: none; }
+
+.analytics-strategy-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.analytics-strategy-meta {
+  font-size: var(--text-xs);
+  color: var(--hint);
+  margin-top: 2px;
+}
+
+.analytics-strategy-pnl {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.analytics-strategy-pnl.positive { color: var(--positive); }
+.analytics-strategy-pnl.negative { color: var(--negative); }
+
+/* Equity curve */
+.equity-curve-list { display: flex; flex-direction: column; gap: var(--s2); }
+
+.equity-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-sm);
+}
+
+.equity-label { color: var(--hint); }
+.equity-arrow { color: var(--hint); }
+
+.equity-change {
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.equity-change.positive { color: var(--positive); }
+.equity-change.negative { color: var(--negative); }
+
+.equity-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.equity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--text-xs);
+  padding: var(--s1) 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.equity-date {
+  flex: 0 0 80px;
+  color: var(--hint);
+}
+
+.equity-value {
+  flex: 1;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.equity-pnl {
+  font-weight: 600;
+  text-align: right;
+}
+
+.equity-pnl.positive { color: var(--positive); }
+.equity-pnl.negative { color: var(--negative); }
+.equity-pnl.neutral  { color: var(--hint); }
