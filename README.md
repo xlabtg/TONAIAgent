@@ -548,6 +548,60 @@ See [docs/deployment.md](docs/deployment.md) for cloud deployment instructions i
 
 ---
 
+## MVP Scope
+
+> **Issue #247** — Define MVP Boundary & Extract Extended Layer
+
+The platform is organized into two clear layers:
+
+### ✅ MVP Modules (Production-Critical)
+
+These modules form the end-to-end trading flow via Telegram and are production-ready:
+
+| Layer | Modules |
+|-------|---------|
+| **Apps** | `apps/telegram-miniapp`, `apps/mvp-platform` |
+| **Core** | `core/agents`, `core/strategies`, `core/trading`, `core/portfolio`, `core/market-data`, `core/risk-engine`, `core/ai` |
+| **Services** | `services/api`, `services/execution-engine`, `services/scheduler` |
+| **Connectors** | `connectors/dex`, `connectors/wallets`, `connectors/market-data` |
+| **Packages** | `packages/sdk`, `packages/shared-types`, `packages/utils` |
+
+MVP modules are tagged with `@mvp` in their JSDoc headers.
+
+### ❌ Extended Modules (Post-MVP, not in MVP runtime)
+
+These modules are deferred to Phase 2+. They live under `extended/` and must **not** be imported by MVP modules:
+
+```
+extended/
+  hedgefund         — Autonomous hedge fund infrastructure
+  tokenomics        — TONAI staking and governance
+  dao-governance    — DAO treasury and on-chain governance
+  institutional     — Institutional compliance (KYC/AML)
+  rwa               — Real-world asset integration
+  fund-manager      — AI-driven investment fund management
+  growth            — Referral, social trading, gamification
+  launchpad         — Agent launchpad for DAOs and funds
+  no-code           — Visual strategy builder
+  superapp          — TON Super App (wallet, social, finance)
+  marketplace       — Public strategy marketplace
+  monetary-policy   — AI-driven emission and treasury control
+```
+
+### Dependency Rules
+
+- MVP modules **MUST NOT** import from `extended/` or `research/`
+- Extended modules **MAY** import from MVP core modules
+- Validate with: `npm run validate:mvp`
+
+### Feature Flag
+
+Set `ENABLE_EXTENDED=true` in `.env` to load extended modules at runtime (default: `false`).
+
+See [docs/mvp-modules.md](docs/mvp-modules.md) for the full module classification.
+
+---
+
 ## Roadmap
 
 ```

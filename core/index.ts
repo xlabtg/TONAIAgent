@@ -94,7 +94,16 @@ export * from './ai';
 // (both modules define types like FraudPattern, PolicyCondition, RiskContext, etc.)
 export * as AISafety from './ai-safety';
 export * from './security';
-export * from '../extended/tokenomics';
+
+// @mvp-boundary: extended/ modules are NOT exported from core/index.ts.
+// Import them directly via their dedicated paths, e.g.:
+//   import { ... } from '@tonaiagent/core/tokenomics'   (extended/tokenomics)
+//   import { ... } from '@tonaiagent/core/marketplace'  (extended/marketplace)
+//   import { ... } from '@tonaiagent/core/dao-governance'
+//   import { ... } from '@tonaiagent/core/hedgefund'
+//   import { ... } from '@tonaiagent/core/launchpad'
+//   import { ... } from '@tonaiagent/core/growth'
+//   import { ... } from '@tonaiagent/core/fund-manager'
 
 // Re-export plugins with namespace to avoid naming conflicts with AI types
 export * as Plugins from './plugins';
@@ -117,45 +126,8 @@ export * as AutonomousDiscovery from '../services/autonomous-discovery';
 // '@tonaiagent/core/cross-chain-liquidity'
 export * as CrossChainLiquidity from '../connectors/cross-chain-liquidity';
 
-// Marketplace exports (with explicit exports to avoid conflicts)
-export {
-  // Marketplace service
-  createMarketplaceService,
-  DefaultMarketplaceService,
-  // Strategy
-  createStrategyManager,
-  DefaultStrategyManager,
-  // Copy trading
-  createCopyTradingEngine,
-  DefaultCopyTradingEngine,
-  // Reputation
-  createReputationManager,
-  DefaultReputationManager,
-  // Analytics
-  createAnalyticsEngine,
-  DefaultAnalyticsEngine,
-  // Monetization
-  createMonetizationManager,
-  DefaultMonetizationManager,
-  // Risk transparency
-  createRiskTransparencyManager,
-  DefaultRiskTransparencyManager,
-} from '../extended/marketplace';
-
-// Re-export marketplace types with namespace to avoid conflicts
-export type * as MarketplaceTypes from '../extended/marketplace/types';
-
-// Strategy Marketplace v1 — unified module namespace
-// Exposes: Strategy Registry, Marketplace API, and all v1 marketplace components
-export * as StrategyMarketplaceModule from '../extended/marketplace';
-export {
-  // Strategy Registry
-  createStrategyRegistry,
-  DefaultStrategyRegistry,
-  // Marketplace API
-  createMarketplaceAPI,
-  DefaultMarketplaceAPI,
-} from '../extended/marketplace';
+// extended/marketplace is NOT part of MVP.
+// Import via: import { ... } from '@tonaiagent/core/marketplace'
 
 // Re-export omnichain with namespace to avoid naming conflicts
 // (omnichain defines its own ActionResult, ChainId, and other common types)
@@ -167,48 +139,18 @@ export * as Omnichain from '../services/omnichain';
 // Note: Import omnichain module separately from '@tonaiagent/core/omnichain'
 // for full access to all omnichain types and interfaces
 
-// Re-export launchpad with namespace to avoid naming conflicts
-// (launchpad has its own GovernanceConfig, CapitalPool, and similar types)
-export * as Launchpad from '../extended/launchpad';
+// extended/launchpad is NOT part of MVP.
+// Import via: import { ... } from '@tonaiagent/core/launchpad'
 
-// Re-export hedgefund with namespace to avoid naming conflicts
-// (hedgefund module defines StrategyAllocation, PortfolioPerformance, etc.)
-export * as HedgeFund from '../extended/hedgefund';
-
-// Note: Import hedgefund module separately from '@tonaiagent/core/hedgefund'
-// for direct access to hedge fund types and managers
+// extended/hedgefund is NOT part of MVP.
+// Import via: import { ... } from '@tonaiagent/core/hedgefund'
 
 // Re-export data-platform with namespace to avoid naming conflicts
 // (data-platform defines MarketDataService which could conflict with other modules)
 export * as DataPlatform from './market-data/data-platform';
 
-// Growth Engine exports (referral, social trading, gamification, viral loops, analytics, anti-abuse)
-export {
-  // Main engine
-  createGrowthEngine,
-  DefaultGrowthEngine,
-  // Referral system
-  createReferralSystem,
-  DefaultReferralSystem,
-  // Social trading
-  createSocialTradingEngine,
-  DefaultSocialTradingEngine,
-  // Gamification
-  createGamificationEngine,
-  DefaultGamificationEngine,
-  // Viral loops
-  createViralLoopsEngine,
-  DefaultViralLoopsEngine,
-  // Growth analytics
-  createGrowthAnalyticsEngine,
-  DefaultGrowthAnalyticsEngine,
-  // Anti-abuse
-  createAntiAbuseSystem,
-  DefaultAntiAbuseSystem,
-} from '../extended/growth';
-
-// Re-export growth types with namespace to avoid conflicts
-export type * as GrowthTypes from '../extended/growth/types';
+// extended/growth is NOT part of MVP.
+// Import via: import { ... } from '@tonaiagent/core/growth'
 
 // Note: Import ecosystem fund module separately from '@tonaiagent/core/ecosystem-fund'
 // to avoid naming conflicts with existing exports (governance, treasury, etc.)
@@ -846,97 +788,8 @@ export {
   type LiquidityNetworkEventCallback,
 } from '../connectors/liquidity-network';
 
-// DAO Governance & Treasury Layer (Issue #103)
-// Self-governing AI financial protocol with on-chain treasury management,
-// multi-tier voting, AI-driven capital allocation within governance constraints,
-// and institutional-grade governance comparable to MakerDAO/Aave.
-// Architecture: Token Holders → Governance Layer → Treasury Policies
-//               → AI Treasury Manager → AI Investment Agents → Execution Layer
-// Note: Import separately from '@tonaiagent/core/dao-governance' for full access.
-export * as DaoGovernanceModule from '../extended/dao-governance';
-export {
-  // Unified layer
-  DefaultDaoGovernanceLayer,
-  createDaoGovernanceLayer,
-  DEFAULT_DAO_GOVERNANCE_CONFIG,
-  // Governance engine
-  DefaultGovernanceEngine,
-  createGovernanceEngine,
-  // Treasury vault
-  DefaultTreasuryVaultManager,
-  createTreasuryVaultManager,
-  // Risk governance
-  DefaultRiskGovernanceManager,
-  createRiskGovernanceManager,
-  // AI treasury
-  DefaultAiTreasuryManager,
-  createAiTreasuryManager,
-  // Multi-sig
-  DefaultMultiSigManager,
-  createMultiSigManager,
-  // Marketplace governance
-  DefaultMarketplaceGovernanceManager,
-  createMarketplaceGovernanceManager,
-  // Delegated governance
-  DefaultDelegatedGovernanceManager,
-  createDelegatedGovernanceManager,
-  // Types
-  type DaoGovernanceLayerService,
-  type DaoGovernanceConfig,
-  type DaoGovernanceHealth,
-  type GovernanceEngine,
-  type GovernanceEngineConfig,
-  type DaoProposal,
-  type DaoProposalType,
-  type DaoProposalStatus,
-  type CreateDaoProposalInput,
-  type DaoVote,
-  type DaoVoteType,
-  type DaoVoteResult,
-  type VotingDelegation,
-  type VotingPowerSnapshot,
-  type CreateDelegationInput,
-  type TreasuryVaultManager,
-  type TreasuryVaultConfig,
-  type TreasuryVault,
-  type TreasuryAsset,
-  type TreasuryAssetType,
-  type TreasuryAllocation,
-  type TreasuryAllocationRequest,
-  type TreasuryTransaction,
-  type TreasuryReport,
-  type TreasuryRiskParameters,
-  type TreasuryRiskAssessment,
-  type CircuitBreakerState,
-  type EmergencyAction,
-  type RiskGovernanceManager,
-  type RiskGovernanceConfig,
-  type RiskCheckReport,
-  // Note: exported as DaoRiskViolation to avoid conflict with investment module's RiskViolation
-  type RiskViolation as DaoRiskViolation,
-  type AiTreasuryManager,
-  type AiTreasuryConfig,
-  type AiRebalanceRecommendation,
-  type TreasuryRebalanceAction,
-  type YieldOptimizationResult,
-  type EmergencyExitPlan,
-  type MultiSigManager,
-  type MultiSigManagerConfig,
-  type MultiSigConfig,
-  type MultiSigOperation,
-  type MultiSigSignature,
-  type MarketplaceGovernanceManager,
-  type MarketplaceGovernanceStats,
-  type GovernedStrategyListing,
-  type StrategyVote,
-  type DelegatedGovernanceManager,
-  type DelegatedGovernanceStats,
-  type InstitutionalDelegate,
-  type DelegateVotingRecord,
-  type DaoEvent,
-  type DaoEventType,
-  type DaoEventCallback,
-} from '../extended/dao-governance';
+// extended/dao-governance is NOT part of MVP.
+// Import via: import { ... } from '@tonaiagent/core/dao-governance'
 
 // Systemic Risk & Stability Framework (Issue #122)
 // System-wide risk containment and stability controls analogous to BIS/Federal Reserve
@@ -1342,58 +1195,8 @@ export {
   type RiskCheckResult as LiveTradingRiskCheckResult,
 } from './trading/live';
 
-// AI Fund Manager (Issue #152)
-// Enables creation and management of AI-driven investment funds that allocate
-// capital across multiple strategies from the Strategy Marketplace, rebalance
-// portfolios automatically, manage risk exposure, track performance metrics,
-// and distribute fees to fund creators, strategy developers, and the platform.
-// Architecture: Investors → AI Fund Manager → Allocation Engine → Strategy Agents → Live Trading
-// Note: Import separately from '@tonaiagent/core/fund-manager' for full access.
-export * as FundManager from '../extended/fund-manager';
-export {
-  // Main fund manager factory
-  createAIFundManager,
-  AIFundManager,
-  DEFAULT_FUND_MANAGER_CONFIG,
-  // Component factories (aliased to avoid conflicts with investment module)
-  createFundCreationManager,
-  createAllocationEngine as createFundAllocationEngine,
-  createRebalancingEngine,
-  createRiskManagementService as createFundRiskManagementService,
-  createInvestorParticipationManager,
-  createPerformanceTrackingService as createFundPerformanceTrackingService,
-  createFeeDistributionEngine,
-  // Error
-  FundManagerError,
-  // Key types (aliased to avoid conflicts)
-  type AIFundManagerConfig,
-  type FundConfig,
-  type FundLifecycleState,
-  type FundType,
-  type FundBaseAsset,
-  type FundRiskProfile,
-  type FundPortfolio,
-  type StrategyAllocation as FundStrategyAllocation,
-  type FundRiskLimits,
-  type FundRiskStatus,
-  type FundPerformanceMetrics,
-  type AumSnapshot,
-  type InvestorPosition,
-  type DepositResult as FundDepositResult,
-  type WithdrawResult,
-  type AllocationResult as FundAllocationResult,
-  type RebalancingPlan,
-  type RebalancingResult,
-  type RebalanceTrigger,
-  type FeeCollectionEvent,
-  type FeeEarnings,
-  type FundManagerMetrics,
-  type FundManagerHealth,
-  type FundManagerEvent,
-  type FundManagerEventHandler,
-  type FundManagerUnsubscribe,
-  type FundManagerErrorCode,
-} from '../extended/fund-manager';
+// extended/fund-manager is NOT part of MVP.
+// Import via: import { ... } from '@tonaiagent/core/fund-manager'
 
 // Agent Developer SDK (Issue #158)
 // Standardized framework for building, testing, and deploying autonomous agents.

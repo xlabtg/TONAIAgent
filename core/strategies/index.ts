@@ -1,3 +1,4 @@
+/** @mvp Core strategies module — required for MVP (strategy engine, implementations, marketplace, backtesting) */
 // Core Strategies — consolidated from:
 //   src/strategy → core/strategies/engine
 //   src/strategies → core/strategies/implementations

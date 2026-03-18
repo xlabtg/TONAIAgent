@@ -1,5 +1,6 @@
 /**
  * TONAIAgent - Risk Management Engine
+ * @mvp Core risk module — required for MVP (risk limits, trade validation, stop-loss)
  * Issue #154: Risk Engine v1
  * Issue #203: Risk Management Engine (enhanced)
  *

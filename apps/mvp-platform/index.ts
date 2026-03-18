@@ -1,5 +1,6 @@
 /**
  * TONAIAgent — MVP Platform Integration Layer
+ * @mvp MVP app — unified entry point wiring all MVP core components
  *
  * Unified entry point that wires together all MVP core components:
  *
