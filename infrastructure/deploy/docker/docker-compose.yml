@@ -17,7 +17,7 @@ services:
   app:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile
+      dockerfile: infrastructure/deploy/docker/Dockerfile
     container_name: tonaiagent-app
     restart: unless-stopped
     ports:
@@ -60,7 +60,7 @@ services:
   worker:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile.worker
+      dockerfile: infrastructure/deploy/docker/Dockerfile.worker
     container_name: tonaiagent-worker
     restart: unless-stopped
     environment:
