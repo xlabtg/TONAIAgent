@@ -135,9 +135,9 @@ export class MarketplaceExecutionEngine {
       this.revenueService
     ) {
       // Estimate current portfolio value from execution result
-      const estimatedProfit = execution.executionResult.netAmountOut
-        ? Number(execution.executionResult.netAmountOut) - initialCapital
-        : 0;
+      const sim = execution.executionResult.simulationDetails;
+      const estimatedValue = sim ? sim.fillPrice * sim.fillAmount : 0;
+      const estimatedProfit = estimatedValue > 0 ? estimatedValue - initialCapital : 0;
 
       if (estimatedProfit > 0) {
         try {
@@ -148,12 +148,14 @@ export class MarketplaceExecutionEngine {
             initialCapital + estimatedProfit
           );
 
-          revenueShare = {
-            collected: true,
-            creatorEarnings: event.developer_earnings,
-            platformEarnings: event.platform_earnings,
-            totalFee: event.fee_amount,
-          };
+          if (event !== null) {
+            revenueShare = {
+              collected: true,
+              creatorEarnings: event.developer_earnings,
+              platformEarnings: event.platform_earnings,
+              totalFee: event.fee_amount,
+            };
+          }
         } catch {
           // Revenue processing failure should not block trade result
           revenueShare = { collected: false, creatorEarnings: 0, platformEarnings: 0, totalFee: 0 };
