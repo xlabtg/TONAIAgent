@@ -28,52 +28,50 @@ Production-grade, one-click cloud deployment for the TON AI Agent platform.
 ## Directory Structure
 
 ```
-deploy/
-├── vercel/                 # Vercel deployment
-│   ├── vercel.json         # Vercel configuration
-│   ├── api/                # Serverless API functions
-│   └── README.md           # Vercel-specific docs
+infrastructure/
+├── deploy/
+│   ├── vercel/                 # Vercel deployment
+│   │   ├── vercel.json         # Vercel configuration
+│   │   ├── api/                # Serverless API functions
+│   │   └── README.md           # Vercel-specific docs
+│   │
+│   ├── aws/                    # AWS deployment
+│   │   ├── terraform/          # Terraform IaC
+│   │   └── README.md           # AWS-specific docs
+│   │
+│   ├── docker/                 # Docker deployment
+│   │   ├── Dockerfile          # Main application
+│   │   ├── Dockerfile.worker   # Background workers
+│   │   ├── docker-compose.yml  # Full stack compose
+│   │   ├── docker-compose.dev.yml  # Development
+│   │   └── README.md           # Docker-specific docs
+│   │
+│   ├── kubernetes/             # Kubernetes deployment
+│   │   ├── helm/               # Helm charts
+│   │   └── README.md           # K8s-specific docs
+│   │
+│   ├── monitoring/             # Observability stack
+│   │   ├── prometheus/         # Metrics collection
+│   │   ├── grafana/            # Dashboards
+│   │   └── README.md           # Monitoring setup
+│   │
+│   ├── global/                 # Multi-region global setup
+│   │   └── README.md
+│   │
+│   └── github-actions/         # CI/CD pipelines
+│       └── *.yml               # Workflow files
 │
-├── aws/                    # AWS deployment
-│   ├── terraform/          # Terraform IaC
-│   ├── cdk/                # AWS CDK (TypeScript)
-│   ├── cloudformation/     # CloudFormation templates
-│   └── README.md           # AWS-specific docs
+├── installer/                  # One-click PHP installer wizard
+│   ├── index.php               # Entry point
+│   ├── steps/                  # Step handlers (logic)
+│   ├── templates/              # Step templates (HTML/UI)
+│   ├── lang/                   # Translations (en, ru, zh, ar)
+│   └── README.md
 │
-├── docker/                 # Docker deployment
-│   ├── Dockerfile          # Main application
-│   ├── Dockerfile.worker   # Background workers
-│   ├── docker-compose.yml  # Full stack compose
-│   ├── docker-compose.dev.yml  # Development
-│   └── README.md           # Docker-specific docs
-│
-├── kubernetes/             # Kubernetes deployment
-│   ├── helm/               # Helm charts
-│   ├── manifests/          # Raw Kubernetes manifests
-│   └── README.md           # K8s-specific docs
-│
-├── monitoring/             # Observability stack
-│   ├── prometheus/         # Metrics collection
-│   ├── grafana/            # Dashboards
-│   └── README.md           # Monitoring setup
-│
-├── secrets/                # Secrets management
-│   ├── vault/              # HashiCorp Vault
-│   ├── aws-secrets/        # AWS Secrets Manager
-│   └── README.md           # Secrets setup
-│
-├── cli/                    # CLI deployment tool
-│   ├── src/                # CLI source code
-│   ├── package.json        # CLI dependencies
-│   └── README.md           # CLI usage
-│
-├── github-actions/         # CI/CD pipelines
-│   └── *.yml               # Workflow files
-│
-└── scripts/                # Deployment scripts
-    ├── deploy.sh           # Main deploy script
-    ├── validate.sh         # Validation script
-    └── health-check.sh     # Health checks
+└── scripts/                    # Deployment helper scripts
+    ├── deploy.sh               # Main deploy script
+    ├── validate.sh             # Post-deploy validation
+    └── health-check.sh         # Health endpoint check
 ```
 
 ## Supported Platforms
@@ -152,7 +150,7 @@ npx vercel --prod
 ### Option 2: Docker Compose (Self-hosted)
 
 ```bash
-cd deploy/docker
+cd infrastructure/deploy/docker
 cp .env.example .env
 # Edit .env with your values
 docker compose up -d
@@ -161,7 +159,7 @@ docker compose up -d
 ### Option 3: AWS (Production)
 
 ```bash
-cd deploy/aws/terraform
+cd infrastructure/deploy/aws/terraform
 terraform init
 terraform apply
 ```
@@ -169,7 +167,7 @@ terraform apply
 ### Option 4: Kubernetes (Enterprise)
 
 ```bash
-cd deploy/kubernetes/helm
+cd infrastructure/deploy/kubernetes/helm
 helm install tonaiagent ./tonaiagent \
   --namespace tonaiagent \
   --create-namespace \
@@ -182,7 +180,7 @@ After deployment, validate your installation:
 
 ```bash
 # Using the validation script
-./deploy/scripts/validate.sh https://your-domain.com
+./infrastructure/scripts/validate.sh https://your-domain.com
 
 # Or use the CLI
 npx tonaiagent-cli validate --url https://your-domain.com
@@ -201,7 +199,7 @@ npx tonaiagent-cli validate --url https://your-domain.com
 Copy GitHub Actions workflows to your repository:
 
 ```bash
-cp deploy/github-actions/*.yml .github/workflows/
+cp infrastructure/deploy/github-actions/*.yml .github/workflows/
 ```
 
 Available workflows:

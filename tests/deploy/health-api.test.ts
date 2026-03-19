@@ -54,7 +54,7 @@ async function checkHealth(
   return {
     status: overallStatus,
     timestamp: new Date().toISOString(),
-    version: '2.8.0',
+    version: '2.43.0',
     components,
     uptime: 1000,
   };
@@ -105,7 +105,7 @@ describe('Health API', () => {
     it('should include version information', async () => {
       const health = await checkHealth(true, true, true);
 
-      expect(health.version).toBe('2.8.0');
+      expect(health.version).toBe('2.43.0');
     });
 
     it('should include timestamp', async () => {

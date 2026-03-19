@@ -15,7 +15,7 @@ services:
   app:
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile
+      dockerfile: infrastructure/deploy/docker/Dockerfile
       target: builder  # Use builder stage for dev
     container_name: tonaiagent-dev
     restart: unless-stopped

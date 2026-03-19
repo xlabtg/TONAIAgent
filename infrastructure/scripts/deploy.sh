@@ -111,7 +111,7 @@ deploy_vercel() {
 deploy_docker() {
     log_info "Deploying with Docker Compose ($ENVIRONMENT)..."
 
-    cd "$PROJECT_ROOT/deploy/docker"
+    cd "$PROJECT_ROOT/infrastructure/deploy/docker"
 
     # Check for .env file
     if [ ! -f ".env" ]; then
@@ -160,7 +160,7 @@ deploy_docker() {
 deploy_aws() {
     log_info "Deploying to AWS ($ENVIRONMENT)..."
 
-    cd "$PROJECT_ROOT/deploy/aws/terraform"
+    cd "$PROJECT_ROOT/infrastructure/deploy/aws/terraform"
 
     # Check for terraform.tfvars
     if [ ! -f "terraform.tfvars" ]; then
@@ -196,7 +196,7 @@ deploy_aws() {
 deploy_k8s() {
     log_info "Deploying to Kubernetes ($ENVIRONMENT)..."
 
-    cd "$PROJECT_ROOT/deploy/kubernetes/helm"
+    cd "$PROJECT_ROOT/infrastructure/deploy/kubernetes/helm"
 
     NAMESPACE="tonaiagent-${ENVIRONMENT}"
     RELEASE_NAME="tonaiagent"

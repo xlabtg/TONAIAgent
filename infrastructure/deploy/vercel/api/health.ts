@@ -171,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const healthStatus: HealthStatus = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '2.8.0',
+      version: process.env.npm_package_version || '2.43.0',
       components,
       uptime: Math.floor((Date.now() - startTime) / 1000),
     };
