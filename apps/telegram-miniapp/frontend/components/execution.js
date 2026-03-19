@@ -40,6 +40,8 @@
     customSlippage: null,
     preview: null,
     lastResult: null,
+    /** @type {'demo' | 'live'} Execution mode: demo (simulation) or live (on-chain) */
+    executionMode: 'demo',
   };
 
   // ============================================================================
@@ -236,6 +238,22 @@
         this.executeOrder();
         TG.haptic.impact('medium');
       });
+
+      // Execution mode toggle: demo / live (Issue #267)
+      el('exec-mode-toggle')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-exec-mode]');
+        if (!btn) return;
+        const mode = btn.dataset.execMode;
+        if (mode === 'live' && (!window.Wallet || !window.Wallet.isConnected())) {
+          TG.alert('Please connect your wallet first to enable live trading.');
+          return;
+        }
+        ExecState.executionMode = mode;
+        el('exec-mode-toggle').querySelectorAll('.exec-mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        TG.haptic.select();
+        this.hidePreview();
+      });
     },
 
     togglePanel() {
@@ -359,19 +377,38 @@
       const amount = el('exec-amount').value;
       if (!amount || parseFloat(amount) <= 0) return;
 
+      // Live mode: require wallet connection (Issue #267)
+      if (ExecState.executionMode === 'live') {
+        if (!window.Wallet || !window.Wallet.isConnected()) {
+          this.showError('Please connect your wallet to execute live trades.');
+          return;
+        }
+      }
+
       el('exec-submit-btn').disabled = true;
-      el('exec-submit-btn').textContent = 'Executing…';
+      el('exec-submit-btn').textContent = ExecState.executionMode === 'live'
+        ? 'Signing…' : 'Executing…';
+
+      // Build request payload
+      const payload = {
+        pair: ExecState.pair,
+        action: ExecState.action,
+        amount,
+        slippage_bps: ExecState.slippageBps,
+        mode: ExecState.mode,
+        execution_mode: ExecState.executionMode,
+      };
+
+      // Include wallet address for live mode
+      if (ExecState.executionMode === 'live' && window.Wallet) {
+        const walletState = window.Wallet.getState();
+        payload.wallet_address = walletState.address;
+      }
 
       // Try real API, fall back to demo
       let data = await API.request('/execution/execute', {
         method: 'POST',
-        body: JSON.stringify({
-          pair: ExecState.pair,
-          action: ExecState.action,
-          amount,
-          slippage_bps: ExecState.slippageBps,
-          mode: ExecState.mode,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!data) {
@@ -386,6 +423,16 @@
 
       if (data.success) {
         TG.haptic.notify('success');
+        // Track transaction in wallet component for live mode (Issue #267)
+        if (ExecState.executionMode === 'live' && data.txHash && window.Wallet) {
+          window.Wallet.addTransaction({
+            txHash: data.txHash,
+            status: 'pending',
+            dex: data.dex || '',
+            gasFee: data.gasFee || '',
+            timestamp: new Date().toISOString(),
+          });
+        }
         // Refresh trade list
         if (window.Trades) window.Trades.refresh();
       } else {
@@ -400,21 +447,34 @@
       if (data.success) {
         const [base, quote] = ExecState.pair.split('/');
         const outToken = ExecState.action === 'BUY' ? base : quote;
+        const isLive = ExecState.executionMode === 'live' || data.executionMode === 'live';
+        const modeLabel = isLive ? 'Live' : 'Simulated';
+
+        // Build TX hash display — link to explorer for live trades (Issue #267)
+        let txDisplay = esc(data.txHash ?? '—');
+        if (isLive && data.txHash && data.explorerUrl) {
+          txDisplay = '<a href="' + esc(data.explorerUrl) +
+            '" target="_blank" rel="noopener" class="tx-explorer-link">' +
+            esc(data.txHash.slice(0, 8) + '\u2026' + data.txHash.slice(-6)) + '</a>';
+        }
+
         resultEl.className = 'exec-result exec-result-success';
         resultEl.innerHTML = `
-          <div class="exec-result-icon">✅</div>
-          <div class="exec-result-title">Order Executed (Simulated)</div>
+          <div class="exec-result-icon">${isLive ? '\u26A1' : '\u2705'}</div>
+          <div class="exec-result-title">Order Executed (${esc(modeLabel)})</div>
           <div class="exec-result-detail">
             <span>DEX: <strong>${esc((data.dex ?? '—').toUpperCase())}</strong></span>
             <span>Filled: <strong>${(data.fillAmount ?? 0).toFixed(4)} ${esc(outToken)}</strong></span>
             ${data.fillRatio < 1 ? `<span class="warn">Partial fill: ${((data.fillRatio ?? 0) * 100).toFixed(0)}%</span>` : ''}
             <span>Slippage: <strong>${(data.actualSlippagePct ?? 0).toFixed(3)}%</strong></span>
-            <span class="tx-hash">TX: ${esc(data.txHash ?? '—')}</span>
+            <span class="tx-hash">TX: ${txDisplay}</span>
+            ${isLive && data.gasFee ? `<span class="tx-gas-fee">Gas: ${esc(data.gasFee)} TON</span>` : ''}
+            ${isLive && data.walletAddress ? `<span class="tx-wallet">Wallet: ${esc(data.walletAddress.slice(0, 6) + '\u2026' + data.walletAddress.slice(-4))}</span>` : ''}
           </div>`;
       } else {
         resultEl.className = 'exec-result exec-result-fail';
         resultEl.innerHTML = `
-          <div class="exec-result-icon">❌</div>
+          <div class="exec-result-icon">\u274C</div>
           <div class="exec-result-title">Trade Rejected</div>
           <div class="exec-result-reason">${esc(data.errorMessage ?? data.reason ?? 'Unknown error')}</div>`;
       }

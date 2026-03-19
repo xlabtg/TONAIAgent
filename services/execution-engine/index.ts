@@ -38,3 +38,20 @@ export type {
   ExecutionFailureReason,
   TwapParams,
 } from './smart-execution';
+
+// On-Chain Execution Layer (Issue #267 — Real Wallet Integration & On-Chain Execution)
+export {
+  DefaultOnChainExecutor,
+  createOnChainExecutor,
+  buildDexSwapPayload,
+  estimateSwapGas,
+  validateLiveModeRequest,
+} from './on-chain-execution';
+
+export type {
+  ExecutionMode,
+  OnChainExecutionRequest,
+  OnChainExecutionResult,
+  OnChainExecutor,
+  LiveModeSecurityCheck,
+} from './on-chain-execution';

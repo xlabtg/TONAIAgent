@@ -134,6 +134,17 @@ export interface SmartExecutionResult {
   executedAt: Date;
   /** Duration in ms */
   durationMs: number;
+  // --- On-chain execution fields (Issue #267) ---
+  /** Transaction hash on TON blockchain (live mode only) */
+  txHash?: string;
+  /** Block explorer URL (live mode only) */
+  explorerUrl?: string;
+  /** Gas fee paid in nanoTON (live mode only) */
+  gasFee?: string;
+  /** Wallet address used for execution (live mode only) */
+  walletAddress?: string;
+  /** Execution mode: 'demo' or 'live' */
+  executionMode?: 'demo' | 'live';
 }
 
 export interface SimulationDetails {

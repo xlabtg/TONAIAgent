@@ -334,3 +334,17 @@ CREATE TABLE IF NOT EXISTS `taa_portfolio_history` (
 --         COMMENT 'TON wallet address of the agent owner (set at deploy time)'
 --         AFTER `wallet_address`,
 --     ADD INDEX IF NOT EXISTS `idx_owner_wallet` (`owner_wallet`);
+
+-- -----------------------------------------------------
+-- Migration: Real Wallet Integration & On-Chain Execution (Issue #267)
+-- Adds on-chain execution tracking fields to agent_executions.
+-- Run on existing installations:
+-- ALTER TABLE `taa_agent_executions`
+--     ADD COLUMN IF NOT EXISTS `execution_mode` ENUM('demo', 'live') DEFAULT 'demo' AFTER `mode`,
+--     ADD COLUMN IF NOT EXISTS `wallet_address` VARCHAR(128) DEFAULT NULL AFTER `execution_mode`,
+--     ADD COLUMN IF NOT EXISTS `tx_hash` VARCHAR(128) DEFAULT NULL AFTER `wallet_address`,
+--     ADD COLUMN IF NOT EXISTS `gas_fee` DECIMAL(20, 8) DEFAULT NULL AFTER `tx_hash`,
+--     ADD INDEX IF NOT EXISTS `idx_execution_mode` (`execution_mode`),
+--     ADD INDEX IF NOT EXISTS `idx_wallet_address` (`wallet_address`),
+--     ADD INDEX IF NOT EXISTS `idx_tx_hash` (`tx_hash`);
+-- -----------------------------------------------------

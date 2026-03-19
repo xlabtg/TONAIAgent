@@ -522,6 +522,10 @@ function handleAgentExecute(): void
     $amount   = Security::sanitizeFloat($body['amount'] ?? 0);
     $mode     = Security::sanitizeString($body['mode'] ?? 'demo', 10);
 
+    // Issue #267: execution_mode controls demo vs live on-chain execution
+    $executionMode   = Security::sanitizeString($body['execution_mode'] ?? 'demo', 10);
+    $walletAddress   = Security::sanitizeString($body['wallet_address'] ?? '', 128);
+
     if (empty($strategy) || empty($pair) || $amount <= 0) {
         jsonResponse(['error' => 'strategy, pair, and amount are required'], 400);
         return;
@@ -529,6 +533,30 @@ function handleAgentExecute(): void
 
     if (!in_array($mode, ['demo', 'live'], true)) {
         jsonResponse(['error' => 'mode must be "demo" or "live"'], 400);
+        return;
+    }
+
+    if (!in_array($executionMode, ['demo', 'live'], true)) {
+        jsonResponse(['error' => 'execution_mode must be "demo" or "live"'], 400);
+        return;
+    }
+
+    // Issue #267: Live mode requires a connected wallet address
+    if ($executionMode === 'live' && empty($walletAddress)) {
+        jsonResponse(['error' => 'wallet_address is required for live execution'], 400);
+        return;
+    }
+
+    // Issue #267: Validate wallet address format for live mode
+    if ($executionMode === 'live' && !empty($walletAddress) && !isValidTonAddress($walletAddress)) {
+        jsonResponse(['error' => 'Invalid wallet address format'], 400);
+        return;
+    }
+
+    // Issue #267: Maximum trade size limit for live mode (safety)
+    $maxLiveTradeTon = 1000;
+    if ($executionMode === 'live' && $amount > $maxLiveTradeTon) {
+        jsonResponse(['error' => "Live trade amount exceeds maximum limit of {$maxLiveTradeTon} TON"], 400);
         return;
     }
 
@@ -553,7 +581,7 @@ function handleAgentExecute(): void
 
     try {
         // Persist the execution request to the database
-        $executionId = Database::insert('agent_executions', [
+        $insertData = [
             'user_id'    => $_SESSION['user_id'],
             'strategy'   => $canonicalStrategy,
             'pair'       => $pair,
@@ -561,7 +589,17 @@ function handleAgentExecute(): void
             'mode'       => $mode,
             'status'     => 'pending',
             'created_at' => date('Y-m-d H:i:s'),
-        ]);
+        ];
+
+        // Issue #267: Include on-chain execution fields
+        if ($executionMode === 'live') {
+            $insertData['execution_mode'] = 'live';
+            $insertData['wallet_address'] = $walletAddress;
+        } else {
+            $insertData['execution_mode'] = 'demo';
+        }
+
+        $executionId = Database::insert('agent_executions', $insertData);
 
         // Simulate the trade signal and portfolio update.
         // In 'live' mode this would route to the on-chain execution layer via
@@ -616,7 +654,7 @@ function handleAgentExecute(): void
             );
         }
 
-        jsonResponse([
+        $response = [
             'success'              => true,
             'agentId'              => 'exec_' . $executionId,
             'signal'               => $signal,
@@ -626,8 +664,21 @@ function handleAgentExecute(): void
             'pnlDelta'             => (float)$pnlDelta,
             'pair'                 => $pair,
             'mode'                 => $mode,
+            'executionMode'        => $executionMode,
             'timestamp'            => date('c'),
-        ]);
+        ];
+
+        // Issue #267: Include on-chain execution fields for live mode
+        if ($executionMode === 'live') {
+            $response['walletAddress'] = $walletAddress;
+            // In production, txHash would come from the on-chain execution result.
+            // The actual signing and submission happens client-side via TON Connect.
+            $response['txHash'] = null;
+            $response['explorerUrl'] = null;
+            $response['gasFee'] = null;
+        }
+
+        jsonResponse($response);
 
     } catch (Exception $e) {
         error_log('Agent execute error: ' . $e->getMessage());
