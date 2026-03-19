@@ -79,3 +79,18 @@ export {
   formatRoi,
   formatCurrency,
 } from './dashboard';
+
+// Production Monitoring (Issue #275)
+export {
+  ProductionMonitoringService,
+  createProductionMonitoringService,
+  DEFAULT_PRODUCTION_MONITORING_CONFIG,
+} from './production';
+
+export type {
+  HealthStatus,
+  SystemHealthResponse,
+  Anomaly,
+  AnomalyDetectionResult,
+  ProductionMonitoringConfig,
+} from './production';
