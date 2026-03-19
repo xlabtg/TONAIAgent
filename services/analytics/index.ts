@@ -364,3 +364,141 @@ export class AnalyticsService {
 
 export const analyticsService = new AnalyticsService();
 export default analyticsService;
+
+// ============================================================================
+// Portfolio Risk Analytics (Issue #269)
+// Real-time drawdown tracking, per-asset exposure, rolling loss windows
+// ============================================================================
+
+export interface PortfolioRiskSnapshot {
+  /** Current portfolio value in USD */
+  currentValueUsd: number;
+  /** Peak portfolio value in USD */
+  peakValueUsd: number;
+  /** Current drawdown from peak (percent) */
+  drawdownPercent: number;
+  /** Total exposure (sum of open positions) as percent of portfolio */
+  exposurePercent: number;
+  /** Cumulative loss over the last 24 hours in USD */
+  loss24hUsd: number;
+  /** Cumulative loss over the last 7 days in USD */
+  loss7dUsd: number;
+  /** Concentration risk: normalized HHI (0–1, 1 = fully concentrated) */
+  concentrationRisk: number;
+  /** Per-asset exposure breakdown */
+  assetExposures: Array<{ assetId: string; valueUsd: number; percent: number }>;
+  /** Timestamp of this snapshot */
+  timestamp: Date;
+}
+
+interface RollingLossEntry {
+  timestamp: number;
+  lossUsd: number;
+}
+
+/**
+ * PortfolioRiskAnalytics provides real-time risk tracking for a single portfolio.
+ *
+ * Tracks:
+ *   - Real-time drawdown from peak
+ *   - Per-asset exposure and concentration (HHI)
+ *   - Rolling loss windows (24h, 7d)
+ */
+export class PortfolioRiskAnalytics {
+  private peakValueUsd = 0;
+  private readonly lossHistory: RollingLossEntry[] = [];
+
+  /**
+   * Compute a full risk snapshot from current portfolio state.
+   *
+   * @param currentValueUsd   - current portfolio value
+   * @param assetPositions    - open positions by asset
+   * @param recentPnlHistory  - array of { timestamp, pnlUsd } for rolling loss tracking
+   */
+  snapshot(
+    currentValueUsd: number,
+    assetPositions: Array<{ assetId: string; valueUsd: number }>,
+    recentPnlHistory: Array<{ timestamp: number; pnlUsd: number }> = [],
+  ): PortfolioRiskSnapshot {
+    // Update peak
+    if (currentValueUsd > this.peakValueUsd) {
+      this.peakValueUsd = currentValueUsd;
+    }
+
+    // Drawdown
+    const drawdownPercent = this.peakValueUsd > 0
+      ? Math.max(0, ((this.peakValueUsd - currentValueUsd) / this.peakValueUsd) * 100)
+      : 0;
+
+    // Exposure
+    const totalExposureUsd = assetPositions.reduce((s, p) => s + p.valueUsd, 0);
+    const exposurePercent = currentValueUsd > 0
+      ? Math.min(100, (totalExposureUsd / currentValueUsd) * 100)
+      : 0;
+
+    // Per-asset breakdown
+    const assetExposures = assetPositions.map(p => ({
+      assetId: p.assetId,
+      valueUsd: p.valueUsd,
+      percent: totalExposureUsd > 0 ? (p.valueUsd / totalExposureUsd) * 100 : 0,
+    }));
+
+    // Concentration risk (HHI)
+    const hhi = assetPositions.length > 0
+      ? assetPositions.reduce((acc, p) => {
+          const share = totalExposureUsd > 0 ? p.valueUsd / totalExposureUsd : 0;
+          return acc + share * share;
+        }, 0)
+      : 0;
+    const concentrationRisk = Math.min(1, hhi); // normalized 0–1
+
+    // Rolling loss windows from provided history
+    const now = Date.now();
+    const window24h = now - 24 * 60 * 60 * 1000;
+    const window7d = now - 7 * 24 * 60 * 60 * 1000;
+
+    const loss24hUsd = recentPnlHistory
+      .filter(e => e.timestamp > window24h && e.pnlUsd < 0)
+      .reduce((s, e) => s + Math.abs(e.pnlUsd), 0);
+
+    const loss7dUsd = recentPnlHistory
+      .filter(e => e.timestamp > window7d && e.pnlUsd < 0)
+      .reduce((s, e) => s + Math.abs(e.pnlUsd), 0);
+
+    return {
+      currentValueUsd,
+      peakValueUsd: this.peakValueUsd,
+      drawdownPercent,
+      exposurePercent,
+      loss24hUsd,
+      loss7dUsd,
+      concentrationRisk,
+      assetExposures,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Compute real-time drawdown without full snapshot overhead.
+   */
+  getDrawdown(currentValueUsd: number): number {
+    if (currentValueUsd > this.peakValueUsd) this.peakValueUsd = currentValueUsd;
+    return this.peakValueUsd > 0
+      ? Math.max(0, ((this.peakValueUsd - currentValueUsd) / this.peakValueUsd) * 100)
+      : 0;
+  }
+
+  /** Reset the peak value (e.g. at start of new period). */
+  resetPeak(): void {
+    this.peakValueUsd = 0;
+  }
+
+  /** Returns current tracked peak value. */
+  getPeak(): number {
+    return this.peakValueUsd;
+  }
+}
+
+export function createPortfolioRiskAnalytics(): PortfolioRiskAnalytics {
+  return new PortfolioRiskAnalytics();
+}

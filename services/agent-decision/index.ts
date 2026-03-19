@@ -601,3 +601,18 @@ export function createAgentDecisionEngine(options?: {
 
 export const agentDecisionEngine = new AgentDecisionEngine();
 export default agentDecisionEngine;
+
+// ============================================================================
+// Issue #269: Autonomous Agent Risk Safeguards
+// ============================================================================
+
+export {
+  AgentRiskSafeguards,
+  createAgentRiskSafeguards,
+  DEFAULT_AGENT_RISK_SAFEGUARD_CONFIG,
+} from './risk-safeguards';
+
+export type {
+  AgentRiskSafeguardConfig,
+  AgentSafeguardResult,
+} from './risk-safeguards';

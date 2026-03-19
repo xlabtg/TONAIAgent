@@ -348,3 +348,21 @@ CREATE TABLE IF NOT EXISTS `taa_portfolio_history` (
 --     ADD INDEX IF NOT EXISTS `idx_wallet_address` (`wallet_address`),
 --     ADD INDEX IF NOT EXISTS `idx_tx_hash` (`tx_hash`);
 -- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Migration: Risk Engine Hardening & Capital Protection (Issue #269)
+-- Adds risk validation tracking fields to agent_executions.
+-- Run on existing installations:
+-- ALTER TABLE `taa_agent_executions`
+--     ADD COLUMN IF NOT EXISTS `risk_approved` TINYINT(1) DEFAULT 1
+--         COMMENT 'Whether the trade passed the capital protection risk gate (1=approved, 0=blocked)'
+--         AFTER `gas_fee`,
+--     ADD COLUMN IF NOT EXISTS `risk_reason` VARCHAR(64) DEFAULT NULL
+--         COMMENT 'Risk failure reason code when risk_approved=0 (e.g. RISK_MAX_DRAWDOWN, RISK_DAILY_LOSS)'
+--         AFTER `risk_approved`,
+--     ADD COLUMN IF NOT EXISTS `portfolio_drawdown` DECIMAL(5, 2) DEFAULT NULL
+--         COMMENT 'Portfolio drawdown percent at time of execution (for audit trail)'
+--         AFTER `risk_reason`,
+--     ADD INDEX IF NOT EXISTS `idx_risk_approved` (`risk_approved`),
+--     ADD INDEX IF NOT EXISTS `idx_risk_reason` (`risk_reason`);
+-- -----------------------------------------------------

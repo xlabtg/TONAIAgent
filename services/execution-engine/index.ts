@@ -55,3 +55,15 @@ export type {
   OnChainExecutor,
   LiveModeSecurityCheck,
 } from './on-chain-execution';
+
+// Risk-Aware Execution Engine (Issue #269 — Risk Engine Hardening & Capital Protection)
+export {
+  DefaultRiskAwareExecutionEngine,
+  createRiskAwareExecutionEngine,
+} from './risk-aware-execution';
+
+export type {
+  RiskAwareExecutionRequest,
+  RiskAwareExecutionResult,
+  RiskAwareExecutionEngine,
+} from './risk-aware-execution';
