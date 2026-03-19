@@ -91,6 +91,8 @@ export interface SmartExecutionRequest {
   /** Agent/strategy identifier for tracking */
   agentId?: string;
   strategyId?: string;
+  /** User who owns this execution — required for multi-tenant isolation (Issue #271) */
+  userId?: string;
 }
 
 export interface TwapParams {

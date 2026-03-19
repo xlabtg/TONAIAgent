@@ -39,6 +39,8 @@ export interface OnChainExecutionRequest {
   walletSession: WalletSession;
   /** Maximum gas fee the user is willing to pay (in nanoTON) */
   maxGasFee?: string;
+  /** User who owns this execution — required for multi-tenant isolation (Issue #271) */
+  userId?: string;
 }
 
 /** Result of an on-chain execution. */
