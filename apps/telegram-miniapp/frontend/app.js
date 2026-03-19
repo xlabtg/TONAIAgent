@@ -22,7 +22,12 @@
       tg.onEvent('themeChanged', () => this._applyTheme());
       tg.ready();
       window.dispatchEvent(new CustomEvent('tg:ready', {
-        detail: { user: tg.initDataUnsafe?.user || null, initData: tg.initData }
+        detail: {
+          user: tg.initDataUnsafe?.user || null,
+          initData: tg.initData,
+          // Referral code detection: Telegram passes ?start=ref_<code> as start_param
+          referralCode: (tg.initDataUnsafe?.start_param || '').replace(/^ref_/, '') || null,
+        }
       }));
     },
 
@@ -58,8 +63,14 @@
         document.documentElement.style.setProperty(k, v));
       document.documentElement.setAttribute('data-theme', 'dark');
 
+      // In standalone/browser mode, pick up referral from URL ?ref=<code>
+      const urlRef = new URLSearchParams(window.location.search).get('ref') || null;
       window.dispatchEvent(new CustomEvent('tg:ready', {
-        detail: { user: { id: 'demo', first_name: 'Demo', last_name: 'User', username: 'demo' }, initData: '' }
+        detail: {
+          user: { id: 'demo', first_name: 'Demo', last_name: 'User', username: 'demo' },
+          initData: '',
+          referralCode: urlRef,
+        }
       }));
     },
 
@@ -522,10 +533,43 @@
     window.addEventListener('tg:ready', (e) => {
       State.user = e.detail.user;
       API.initData = e.detail.initData || '';
+      // Auto-detect referral code on first login (?start=ref_<code>)
+      if (e.detail.referralCode) {
+        handleReferralDetection(e.detail.referralCode);
+      }
       onReady();
     });
 
     TG.init();
+  }
+
+  /**
+   * Auto-detect and store a referral code received via Telegram deep link.
+   *
+   * Flow:
+   *   1. User clicks: https://t.me/TONAIAgentBot?start=ref_<code>
+   *   2. Telegram passes `start_param` = "ref_<code>" to the Mini App
+   *   3. We strip the "ref_" prefix and persist the code in localStorage
+   *      (only on first launch — never overwrite an existing referral)
+   *   4. On first qualifying action (e.g., first trade) the backend
+   *      calls POST /api/referrals/claim with this stored code.
+   *
+   * @param {string} code - Raw referral code (prefix already stripped)
+   */
+  function handleReferralDetection(code) {
+    if (!code || code.length < 4) return; // Guard: sanity-check code format
+
+    const STORAGE_KEY = 'tonai_pending_referral_code';
+    const RECORDED_KEY = 'tonai_referral_recorded';
+
+    // Only record once — never overwrite an existing referral
+    if (localStorage.getItem(RECORDED_KEY)) return;
+
+    localStorage.setItem(STORAGE_KEY, code);
+    // Notify any listener (e.g., onboarding flow) that a referral was detected
+    window.dispatchEvent(
+      new CustomEvent('tonai:referral_detected', { detail: { code } }),
+    );
   }
 
   function onReady() {
