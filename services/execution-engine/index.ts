@@ -67,3 +67,15 @@ export type {
   RiskAwareExecutionResult,
   RiskAwareExecutionEngine,
 } from './risk-aware-execution';
+
+// Marketplace-Aware Execution Engine (Issue #273 — Strategy Marketplace & Monetization)
+export {
+  MarketplaceExecutionEngine,
+  createMarketplaceExecutionEngine,
+} from './marketplace-execution';
+
+export type {
+  MarketplaceExecutionRequest,
+  MarketplaceExecutionResult,
+  ExecutionRevenueShare,
+} from './marketplace-execution';

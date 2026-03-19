@@ -502,3 +502,119 @@ export class PortfolioRiskAnalytics {
 export function createPortfolioRiskAnalytics(): PortfolioRiskAnalytics {
   return new PortfolioRiskAnalytics();
 }
+
+// ============================================================================
+// Creator / Strategy Analytics Extension (Issue #273)
+// Metrics per strategy creator: subscriber count, revenue generated, trade stats
+// ============================================================================
+
+/**
+ * Aggregated analytics for a single strategy creator.
+ */
+export interface CreatorAnalytics {
+  /** Creator user ID */
+  creatorId: string;
+  /** Creator display name */
+  creatorName: string;
+  /** Number of strategies published */
+  strategyCount: number;
+  /** Total active subscribers across all strategies */
+  totalSubscribers: number;
+  /** Total revenue generated across all strategies (USD) */
+  totalRevenueUsd: number;
+  /** Total trades executed across all strategies */
+  totalTrades: number;
+  /** Weighted average win rate (0–100) */
+  avgWinRate: number;
+  /** Best strategy ROI (30-day) */
+  bestRoi30d: number;
+  /** Last updated ISO timestamp */
+  updatedAt: string;
+}
+
+/**
+ * Per-strategy breakdown for a creator analytics view.
+ */
+export interface CreatorStrategyBreakdown {
+  /** Strategy ID */
+  strategyId: string;
+  /** Strategy name */
+  strategyName: string;
+  /** Active subscriber count */
+  subscriberCount: number;
+  /** Revenue generated (USD) */
+  revenueUsd: number;
+  /** Win rate (0–100) */
+  winRate: number;
+  /** 30-day ROI */
+  roi30d: number;
+  /** Total trades */
+  totalTrades: number;
+}
+
+/** Input entry for computing creator analytics */
+export interface CreatorStrategyInput {
+  strategyId: string;
+  strategyName: string;
+  subscriberCount: number;
+  revenueUsd: number;
+  trades: TradeRecord[];
+  roi30d: number;
+}
+
+/**
+ * Compute aggregated analytics for a strategy creator.
+ *
+ * @param creatorId   - Creator user ID
+ * @param creatorName - Creator display name
+ * @param strategies  - Array of strategy inputs with their trades
+ */
+export function computeCreatorAnalytics(
+  creatorId: string,
+  creatorName: string,
+  strategies: CreatorStrategyInput[]
+): { summary: CreatorAnalytics; breakdown: CreatorStrategyBreakdown[] } {
+  const svc = new AnalyticsService();
+  let totalSubscribers = 0;
+  let totalRevenueUsd = 0;
+  let totalTrades = 0;
+  let totalWinRate = 0;
+  let bestRoi30d = 0;
+
+  const breakdown: CreatorStrategyBreakdown[] = [];
+
+  for (const s of strategies) {
+    const metrics = svc.computeMetrics(s.trades);
+    totalSubscribers += s.subscriberCount;
+    totalRevenueUsd += s.revenueUsd;
+    totalTrades += metrics.executedTrades;
+    totalWinRate += metrics.winRate;
+    if (s.roi30d > bestRoi30d) bestRoi30d = s.roi30d;
+
+    breakdown.push({
+      strategyId: s.strategyId,
+      strategyName: s.strategyName,
+      subscriberCount: s.subscriberCount,
+      revenueUsd: s.revenueUsd,
+      winRate: metrics.winRate,
+      roi30d: s.roi30d,
+      totalTrades: metrics.executedTrades,
+    });
+  }
+
+  const avgWinRate = strategies.length > 0 ? totalWinRate / strategies.length : 0;
+
+  const summary: CreatorAnalytics = {
+    creatorId,
+    creatorName,
+    strategyCount: strategies.length,
+    totalSubscribers,
+    totalRevenueUsd,
+    totalTrades,
+    avgWinRate,
+    bestRoi30d,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return { summary, breakdown };
+}
