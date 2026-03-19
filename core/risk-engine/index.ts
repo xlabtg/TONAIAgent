@@ -111,6 +111,24 @@
 
 export * from './types';
 
+// ─── Issue #269: Capital Protection Layer ────────────────────────────────────
+
+export {
+  CapitalProtectionEvaluator,
+  createCapitalProtectionEvaluator,
+  RollingLossTracker,
+  DrawdownTracker,
+  computeHHI,
+  normalizedHHI,
+  DEFAULT_HARDENED_RISK_CONFIG,
+  type HardenedRiskConfig,
+  type HardenedRiskFailureReason,
+  type CapitalProtectionRequest,
+  type CapitalProtectionPortfolio,
+  type CapitalProtectionResult,
+  type AssetExposureInput,
+} from './capital-protection';
+
 // ─── Re-export sub-modules ────────────────────────────────────────────────────
 
 export {
@@ -223,7 +241,9 @@ import { DefaultTradeValidator } from './trade-validator';
 import { DefaultStopLossManager } from './stop-loss-manager';
 import { DefaultPortfolioProtection } from './portfolio-protection';
 import { DefaultRiskMetricsAPI } from './risk-metrics-api';
+import { CapitalProtectionEvaluator } from './capital-protection';
 
+import type { HardenedRiskConfig, CapitalProtectionRequest, CapitalProtectionPortfolio, CapitalProtectionResult } from './capital-protection';
 import type { StrategyRiskEvaluator } from './strategy-risk-evaluator';
 import type { RealTimeExposureMonitor } from './exposure-monitor';
 import type { RiskLimitsEnforcer } from './risk-limits';
@@ -251,6 +271,8 @@ export interface ExtendedRiskEngineConfig extends RiskEngineConfig {
   stopLossManager?: Partial<StopLossManagerConfig>;
   /** Portfolio protection configuration */
   portfolioProtection?: Partial<PortfolioProtectionConfig>;
+  /** Issue #269: Capital protection configuration */
+  capitalProtection?: Partial<HardenedRiskConfig>;
 }
 
 export interface RiskEngineStatus {
@@ -280,6 +302,8 @@ export interface RiskEngine {
   readonly portfolioProtection: PortfolioProtection;
   /** Issue #203: Risk metrics API */
   readonly metricsAPI: RiskMetricsAPI;
+  /** Issue #269: Capital protection evaluator */
+  readonly capitalProtection: CapitalProtectionEvaluator;
   getStatus(): RiskEngineStatus;
   onEvent(callback: RiskEngineEventCallback): void;
 }
@@ -299,6 +323,8 @@ export class DefaultRiskEngine implements RiskEngine {
   readonly portfolioProtection: PortfolioProtection;
   /** Issue #203: Risk metrics API */
   readonly metricsAPI: RiskMetricsAPI;
+  /** Issue #269: Capital protection evaluator */
+  readonly capitalProtection: CapitalProtectionEvaluator;
 
   private readonly globalCallbacks: RiskEngineEventCallback[] = [];
 
@@ -316,6 +342,9 @@ export class DefaultRiskEngine implements RiskEngine {
     this.stopLossManager = new DefaultStopLossManager(config?.stopLossManager);
     this.portfolioProtection = new DefaultPortfolioProtection(config?.portfolioProtection);
     this.metricsAPI = new DefaultRiskMetricsAPI();
+
+    // v3 Components (Issue #269)
+    this.capitalProtection = new CapitalProtectionEvaluator(config?.capitalProtection);
 
     this.setupEventForwarding();
   }
@@ -361,6 +390,9 @@ export class DefaultRiskEngine implements RiskEngine {
     this.tradeValidator.onEvent(forward);
     this.stopLossManager.onEvent(forward);
     this.portfolioProtection.onEvent(forward);
+
+    // v3 Components (Issue #269)
+    this.capitalProtection.onEvent(forward);
   }
 }
 

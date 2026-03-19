@@ -84,12 +84,19 @@ CREATE TABLE IF NOT EXISTS executions (
     completed_at TIMESTAMP WITH TIME ZONE,
     result JSONB DEFAULT '{}'::jsonb,
     error TEXT,
-    gas_used DECIMAL(20, 8) DEFAULT 0
+    gas_used DECIMAL(20, 8) DEFAULT 0,
+    -- Issue #269: Risk Engine Hardening & Capital Protection
+    risk_approved BOOLEAN DEFAULT TRUE,
+    risk_reason VARCHAR(64) DEFAULT NULL,
+    portfolio_drawdown DECIMAL(5, 2) DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_executions_agent_id ON executions(agent_id);
 CREATE INDEX IF NOT EXISTS idx_executions_status ON executions(status);
 CREATE INDEX IF NOT EXISTS idx_executions_started_at ON executions(started_at);
+-- Issue #269: Risk indexes
+CREATE INDEX IF NOT EXISTS idx_executions_risk_approved ON executions(risk_approved);
+CREATE INDEX IF NOT EXISTS idx_executions_risk_reason ON executions(risk_reason);
 
 -- ============================================
 -- Transactions Table

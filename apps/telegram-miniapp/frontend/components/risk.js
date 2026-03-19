@@ -1,13 +1,17 @@
 /**
  * TON AI Agent – Risk Dashboard Component
  * Issue #203: Risk Management Engine
+ * Issue #269: Risk Engine Hardening & Capital Protection Layer
  *
  * Displays risk overview for the Telegram Mini App:
- *   - Portfolio Risk Level
- *   - Current Drawdown
- *   - Open Exposure
- *   - Active Risk Controls
- *   - Risk Configuration
+ *   - Portfolio Risk Level (with color coding)
+ *   - Current Drawdown % (real-time)
+ *   - Daily PnL and Daily Loss Limit progress
+ *   - Open Exposure %
+ *   - Rolling loss windows (24h / 7d)
+ *   - High-risk warnings and trading-paused banner
+ *   - Execution errors surfaced with risk reason code
+ *   - Active Risk Controls Configuration
  */
 (function () {
   'use strict';
@@ -16,7 +20,7 @@
 
   const Risk = {
     async refresh() {
-      await Promise.all([this.loadRiskOverview(), this.loadRiskControls()]);
+      await Promise.all([this.loadRiskOverview(), this.loadRiskControls(), this.loadRollingLoss()]);
     },
 
     async loadRiskOverview() {
@@ -36,6 +40,13 @@
       if (!data) data = DemoData.riskControls();
       State.riskControls = data;
       this.renderRiskControls(data);
+    },
+
+    async loadRollingLoss() {
+      let data = await API.get('/risk/rolling-loss');
+      if (!data) data = DemoData.rollingLoss();
+      State.rollingLoss = data;
+      this.renderRollingLoss(data);
     },
 
     renderRiskOverview(d) {
@@ -108,11 +119,138 @@
         statusEl.className = `status-badge ${tradingDisabled ? 'disabled' : 'active'}`;
       }
 
+      // Issue #269: Trading-paused banner
+      this.renderTradingPausedBanner(d);
+
+      // Issue #269: Daily PnL progress bar
+      const dailyPnlBarEl = el('daily-loss-progress');
+      if (dailyPnlBarEl) {
+        const dailyLoss = d.daily_loss_usd || 0;
+        const dailyLimit = d.daily_loss_limit_usd || (d.daily_loss_limit_percent || 3) / 100 * (d.portfolio_value_usd || 10000);
+        const pct = dailyLimit > 0 ? Math.min(100, (dailyLoss / dailyLimit) * 100) : 0;
+        dailyPnlBarEl.style.width = `${pct}%`;
+        dailyPnlBarEl.className = `progress-bar ${pct > 80 ? 'danger' : pct > 50 ? 'warning' : 'safe'}`;
+      }
+
+      // Issue #269: Risk score category label
+      const riskCategoryEl = el('risk-score-category');
+      if (riskCategoryEl) {
+        const score = d.risk_score || 0;
+        let category = 'Low';
+        if (score > 80) category = 'Critical';
+        else if (score > 60) category = 'High';
+        else if (score > 30) category = 'Moderate';
+        riskCategoryEl.textContent = category;
+        riskCategoryEl.className = `risk-category ${score > 80 ? 'critical' : score > 60 ? 'high' : score > 30 ? 'moderate' : 'low'}`;
+      }
+
       // Render tips/warnings
       this.renderRiskTips(d.tips || []);
 
       // Render alerts
       this.renderAlerts(d.alerts || []);
+
+      // Issue #269: Render execution errors with risk reason codes
+      this.renderExecutionErrors(d.last_execution_errors || []);
+    },
+
+    // Issue #269: Render trading-paused banner
+    renderTradingPausedBanner(d) {
+      const bannerEl = el('trading-paused-banner');
+      if (!bannerEl) return;
+
+      const tradingDisabled = d.trading_disabled || false;
+      const haltReason = d.halt_reason || null;
+      const drawdown = d.drawdown_percent || 0;
+      const maxDrawdown = d.max_drawdown_percent || 15;
+
+      if (tradingDisabled || drawdown >= maxDrawdown) {
+        bannerEl.style.display = 'block';
+        const reasonText = haltReason
+          ? `Reason: ${esc(haltReason)}`
+          : drawdown >= maxDrawdown
+            ? `Max drawdown ${maxDrawdown}% reached`
+            : 'Trading has been paused by risk controls';
+        bannerEl.innerHTML = `
+          <div class="paused-banner warning">
+            <span class="banner-icon">⚠️</span>
+            <div class="banner-content">
+              <strong>Trading Paused</strong>
+              <span>${reasonText}</span>
+            </div>
+            <button class="btn-sm" onclick="window.App.Risk.resumeTrading()">Resume</button>
+          </div>
+        `;
+      } else {
+        bannerEl.style.display = 'none';
+      }
+    },
+
+    // Issue #269: Render rolling 24h/7d loss windows
+    renderRollingLoss(d) {
+      const loss24hEl = el('rolling-loss-24h');
+      if (loss24hEl) {
+        const loss = d.loss_24h_usd || 0;
+        const cap = d.cap_24h_usd || 0;
+        loss24hEl.textContent = Fmt.usd(loss);
+        loss24hEl.className = `metric-value ${cap > 0 && loss >= cap * 0.8 ? 'warning' : ''}`;
+      }
+
+      const loss7dEl = el('rolling-loss-7d');
+      if (loss7dEl) {
+        const loss = d.loss_7d_usd || 0;
+        const cap = d.cap_7d_usd || 0;
+        loss7dEl.textContent = Fmt.usd(loss);
+        loss7dEl.className = `metric-value ${cap > 0 && loss >= cap * 0.8 ? 'warning' : ''}`;
+      }
+
+      const cap24hEl = el('rolling-loss-cap-24h');
+      if (cap24hEl) cap24hEl.textContent = Fmt.usd(d.cap_24h_usd || 0);
+
+      const cap7dEl = el('rolling-loss-cap-7d');
+      if (cap7dEl) cap7dEl.textContent = Fmt.usd(d.cap_7d_usd || 0);
+    },
+
+    // Issue #269: Render execution errors with risk reason codes
+    renderExecutionErrors(errors) {
+      const container = el('execution-errors');
+      if (!container) return;
+
+      if (!errors || errors.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      // Friendly labels for risk reason codes
+      const reasonLabels = {
+        RISK_MAX_DRAWDOWN: 'Max Drawdown Exceeded',
+        RISK_DAILY_LOSS: 'Daily Loss Cap Reached',
+        RISK_POSITION_TOO_LARGE: 'Position Too Large',
+        RISK_OVEREXPOSURE: 'Portfolio Over-Exposed',
+        RISK_TOO_FREQUENT: 'Trade Frequency Limit',
+        RISK_SYSTEM_HALT: 'System Halted',
+        RISK_SLIPPAGE_TOO_HIGH: 'Slippage Too High',
+        RISK_ROLLING_LOSS_24H: '24h Loss Limit Reached',
+        RISK_ROLLING_LOSS_7D: '7d Loss Limit Reached',
+      };
+
+      container.style.display = 'block';
+      container.innerHTML = `
+        <div class="errors-header">
+          <span class="errors-title">Blocked Executions</span>
+          <span class="errors-count">${errors.length}</span>
+        </div>
+        ${errors.slice(0, 5).map(err => `
+          <div class="error-item">
+            <div class="error-icon">🚫</div>
+            <div class="error-content">
+              <div class="error-reason">${esc(reasonLabels[err.reason] || err.reason || 'Risk Check Failed')}</div>
+              <div class="error-detail">${esc(err.message || '')}</div>
+              <div class="error-time">${this.formatTime(err.timestamp)}</div>
+            </div>
+          </div>
+        `).join('')}
+      `;
     },
 
     renderRiskControls(d) {
@@ -248,6 +386,10 @@
         max_asset_exposure_percent: parseFloat(el('config-max-exposure')?.value) || 20,
         max_drawdown_percent: parseFloat(el('config-max-drawdown')?.value) || 15,
         daily_loss_limit_percent: parseFloat(el('config-daily-loss')?.value) || 3,
+        // Issue #269: new hardened config fields
+        daily_loss_limit_usd: parseFloat(el('config-daily-loss-usd')?.value) || 500,
+        max_slippage_bps: parseFloat(el('config-max-slippage-bps')?.value) || 100,
+        max_trades_per_window: parseInt(el('config-max-trades')?.value, 10) || 10,
       };
 
       try {
@@ -333,11 +475,16 @@
         drawdown_percent: 3.5,
         exposure_percent: 65,
         daily_loss_usd: 0,
-        max_drawdown_percent: 15,
+        daily_loss_limit_usd: 500,
         daily_loss_limit_percent: 3,
+        portfolio_value_usd: 10000,
+        max_drawdown_percent: 15,
         trading_disabled: false,
+        halt_reason: null,
         tips: [],
-        alerts: []
+        alerts: [],
+        // Issue #269: execution errors with risk reason codes
+        last_execution_errors: []
       };
     };
 
@@ -349,8 +496,21 @@
         max_asset_exposure_percent: 20,
         max_drawdown_percent: 15,
         daily_loss_limit_percent: 3,
+        daily_loss_limit_usd: 500,
+        max_slippage_bps: 100,
+        max_trades_per_window: 10,
         auto_pause_enabled: true,
         auto_suspend_enabled: true
+      };
+    };
+
+    // Issue #269: Rolling loss window demo data
+    DemoData.rollingLoss = function () {
+      return {
+        loss_24h_usd: 35.50,
+        loss_7d_usd: 120.00,
+        cap_24h_usd: 600,
+        cap_7d_usd: 2000
       };
     };
   }
