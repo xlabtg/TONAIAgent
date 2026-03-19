@@ -40,6 +40,7 @@ $routes = [
         '/api/trades' => 'handleTrades',
         '/api/analytics' => 'handleAnalytics',
         '/api/portfolio/history' => 'handlePortfolioHistory',
+        '/api/keys' => 'handleListApiKeys',          // Issue #271: list own API keys
     ],
     'POST' => [
         '/api/auth' => 'handleAuth',
@@ -50,6 +51,8 @@ $routes = [
         '/api/wallet' => 'handleWallet',
         '/api/ai/chat' => 'handleAiChat',
         '/webhook' => 'handleWebhook',
+        '/api/keys' => 'handleCreateApiKey',         // Issue #271: create API key
+        '/api/keys/revoke' => 'handleRevokeApiKey',  // Issue #271: revoke API key
     ],
 ];
 
@@ -284,7 +287,7 @@ function handleAuth(): void
 
             $userId = $existingUser['id'];
         } else {
-            // Create user
+            // Auto-create user — role defaults to 'user', status to 'active' (Issue #271)
             $userId = Database::insert('users', [
                 'telegram_id' => $user['id'],
                 'first_name' => $user['first_name'],
@@ -292,18 +295,34 @@ function handleAuth(): void
                 'username' => $user['username'],
                 'language_code' => $user['language_code'],
                 'is_premium' => $user['is_premium'] ? 1 : 0,
+                'role' => 'user',
+                'status' => 'active',
                 'created_at' => date('Y-m-d H:i:s'),
                 'last_login_at' => date('Y-m-d H:i:s'),
             ]);
         }
 
+        // Fetch current user record (including role/status for session binding)
+        $dbUser = Database::fetchOne(
+            'SELECT id, telegram_id, username, first_name, role, status FROM '
+            . Database::table('users') . ' WHERE id = :id',
+            ['id' => $userId]
+        );
+
+        // Guard: suspended/deleted users cannot authenticate
+        if ($dbUser && in_array($dbUser['status'], ['suspended', 'deleted'], true)) {
+            jsonResponse(['error' => 'Account suspended or deleted'], 403);
+            return;
+        }
+
         // Generate session token
         $sessionToken = Security::generateToken();
 
-        // Store session
+        // Store session — include role for downstream RBAC checks
         $_SESSION['user_id'] = $userId;
         $_SESSION['telegram_id'] = $user['id'];
         $_SESSION['session_token'] = $sessionToken;
+        $_SESSION['user_role'] = $dbUser['role'] ?? 'user';
 
         jsonResponse([
             'success' => true,
@@ -312,6 +331,7 @@ function handleAuth(): void
                 'telegram_id' => $user['id'],
                 'first_name' => $user['first_name'],
                 'username' => $user['username'],
+                'role' => $dbUser['role'] ?? 'user',
             ],
             'token' => $sessionToken,
         ]);
@@ -521,10 +541,32 @@ function handleAgentExecute(): void
     $pair     = Security::sanitizeString($body['pair'] ?? '', 20);
     $amount   = Security::sanitizeFloat($body['amount'] ?? 0);
     $mode     = Security::sanitizeString($body['mode'] ?? 'demo', 10);
+    // Issue #271: agent_id for ownership validation — if provided, verify caller owns it
+    $agentId  = isset($body['agent_id']) ? (int)$body['agent_id'] : null;
 
     // Issue #267: execution_mode controls demo vs live on-chain execution
     $executionMode   = Security::sanitizeString($body['execution_mode'] ?? 'demo', 10);
     $walletAddress   = Security::sanitizeString($body['wallet_address'] ?? '', 128);
+
+    // Issue #271: Ownership check — if agent_id is supplied, confirm the caller owns it
+    if ($agentId !== null) {
+        $agentOwner = Database::fetchOne(
+            'SELECT user_id FROM ' . Database::table('agents') . ' WHERE id = :id',
+            ['id' => $agentId]
+        );
+        $sessionUserId = (int)$_SESSION['user_id'];
+        $sessionRole   = $_SESSION['user_role'] ?? 'user';
+
+        if (!$agentOwner) {
+            jsonResponse(['error' => 'Agent not found'], 404);
+            return;
+        }
+        // Only admins can execute another user's agent
+        if ((int)$agentOwner['user_id'] !== $sessionUserId && $sessionRole !== 'admin') {
+            jsonResponse(['error' => 'Forbidden: you do not own this agent'], 403);
+            return;
+        }
+    }
 
     if (empty($strategy) || empty($pair) || $amount <= 0) {
         jsonResponse(['error' => 'strategy, pair, and amount are required'], 400);
@@ -1148,6 +1190,154 @@ function handleWebhook(): void
     // Always return 200 to Telegram
     http_response_code(200);
     echo 'OK';
+}
+
+// === API Key Handlers (Issue #271) ===
+
+/**
+ * GET /api/keys — List the current user's API keys (no raw key shown)
+ */
+function handleListApiKeys(): void
+{
+    requireAuth();
+
+    $userId = (int)$_SESSION['user_id'];
+
+    try {
+        $keys = Database::fetchAll(
+            'SELECT id, name, key_prefix, scopes, status, rate_limit, usage_count, created_at, expires_at, last_used_at'
+            . ' FROM ' . Database::table('api_keys')
+            . ' WHERE user_id = :uid ORDER BY created_at DESC',
+            ['uid' => $userId]
+        );
+
+        jsonResponse(['success' => true, 'keys' => $keys ?: []]);
+    } catch (Exception $e) {
+        error_log('List API keys error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Failed to list API keys'], 500);
+    }
+}
+
+/**
+ * POST /api/keys — Create a new API key for the current user
+ *
+ * Request body:
+ *   { "name": "My Integration", "scopes": ["agent:read", "agent:execute"], "rate_limit": 60 }
+ *
+ * Response includes the raw key once — it will not be shown again.
+ */
+function handleCreateApiKey(): void
+{
+    requireAuth();
+
+    $userId = (int)$_SESSION['user_id'];
+    $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    $name      = Security::sanitizeString($body['name'] ?? '', 255);
+    $scopes    = $body['scopes'] ?? ['agent:read'];
+    $rateLimit = max(1, min(600, (int)($body['rate_limit'] ?? 60)));
+    $expiresAt = !empty($body['expires_at']) ? Security::sanitizeString($body['expires_at'], 30) : null;
+
+    if (empty($name)) {
+        jsonResponse(['error' => 'name is required'], 400);
+        return;
+    }
+
+    // Validate scopes
+    $allowedScopes = ['agent:read', 'agent:execute', 'portfolio:read', 'analytics:read', 'admin:all'];
+    $sessionRole   = $_SESSION['user_role'] ?? 'user';
+    if (in_array('admin:all', $scopes, true) && $sessionRole !== 'admin') {
+        jsonResponse(['error' => 'admin:all scope requires admin role'], 403);
+        return;
+    }
+    foreach ($scopes as $scope) {
+        if (!in_array($scope, $allowedScopes, true)) {
+            jsonResponse(['error' => "Invalid scope: {$scope}"], 400);
+            return;
+        }
+    }
+
+    try {
+        // Generate a cryptographically random API key
+        $rawBytes = random_bytes(32);
+        $rawKey   = 'tonai_' . rtrim(strtr(base64_encode($rawBytes), '+/', '-_'), '=');
+        $keyHash  = hash('sha256', $rawKey);
+        $keyPrefix = substr($rawKey, 0, 12);
+
+        $keyId = Database::insert('api_keys', [
+            'user_id'    => $userId,
+            'name'       => $name,
+            'key_prefix' => $keyPrefix,
+            'key_hash'   => $keyHash,
+            'scopes'     => implode(',', $scopes),
+            'status'     => 'active',
+            'rate_limit' => $rateLimit,
+            'expires_at' => $expiresAt,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        jsonResponse([
+            'success' => true,
+            'key' => [
+                'id'         => $keyId,
+                'name'       => $name,
+                'key_prefix' => $keyPrefix,
+                'scopes'     => $scopes,
+                'rate_limit' => $rateLimit,
+                'expires_at' => $expiresAt,
+                'created_at' => date('c'),
+                // Raw key is returned once — store it securely, it will not be shown again
+                'raw_key'    => $rawKey,
+            ],
+        ]);
+    } catch (Exception $e) {
+        error_log('Create API key error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Failed to create API key'], 500);
+    }
+}
+
+/**
+ * POST /api/keys/revoke — Revoke an API key
+ *
+ * Request body: { "key_id": 123 }
+ */
+function handleRevokeApiKey(): void
+{
+    requireAuth();
+
+    $userId = (int)$_SESSION['user_id'];
+    $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+    $keyId  = (int)($body['key_id'] ?? 0);
+
+    if ($keyId <= 0) {
+        jsonResponse(['error' => 'key_id is required'], 400);
+        return;
+    }
+
+    try {
+        $key = Database::fetchOne(
+            'SELECT id, user_id, status FROM ' . Database::table('api_keys') . ' WHERE id = :id',
+            ['id' => $keyId]
+        );
+
+        if (!$key) {
+            jsonResponse(['error' => 'API key not found'], 404);
+            return;
+        }
+
+        $sessionRole = $_SESSION['user_role'] ?? 'user';
+        if ((int)$key['user_id'] !== $userId && $sessionRole !== 'admin') {
+            jsonResponse(['error' => 'Forbidden: you do not own this key'], 403);
+            return;
+        }
+
+        Database::update('api_keys', ['status' => 'revoked'], 'id = :id', ['id' => $keyId]);
+
+        jsonResponse(['success' => true, 'key_id' => $keyId, 'status' => 'revoked']);
+    } catch (Exception $e) {
+        error_log('Revoke API key error: ' . $e->getMessage());
+        jsonResponse(['error' => 'Failed to revoke API key'], 500);
+    }
 }
 
 // === Helper Functions ===
