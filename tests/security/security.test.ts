@@ -252,6 +252,100 @@ describe('Key Management', () => {
 });
 
 // ============================================================================
+// SoftwareKeyStorage Real Crypto Tests
+// ============================================================================
+
+describe('SoftwareKeyStorage', () => {
+  it('should throw in production environment', () => {
+    const original = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      expect(() => new SoftwareKeyStorage()).toThrow(
+        'SoftwareKeyStorage is not allowed in production'
+      );
+    } finally {
+      process.env.NODE_ENV = original;
+    }
+  });
+
+  it('should generate real non-deterministic key pairs for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    const result1 = await storage.generateKeyPair('key_a', 'ed25519');
+    const result2 = await storage.generateKeyPair('key_b', 'ed25519');
+    expect(result1.publicKey).toBeTruthy();
+    expect(result2.publicKey).toBeTruthy();
+    expect(result1.publicKey).not.toBe(result2.publicKey);
+  });
+
+  it('should generate real non-deterministic key pairs for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    const result1 = await storage.generateKeyPair('key_c', 'secp256k1');
+    const result2 = await storage.generateKeyPair('key_d', 'secp256k1');
+    expect(result1.publicKey).toBeTruthy();
+    expect(result2.publicKey).toBeTruthy();
+    expect(result1.publicKey).not.toBe(result2.publicKey);
+  });
+
+  it('should produce a real cryptographic signature for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_ed', 'ed25519');
+    const sig = await storage.sign('key_ed', 'hello world');
+    // Real ed25519 signature is 64 bytes -> 128 hex chars
+    expect(sig).toHaveLength(128);
+    expect(sig).toMatch(/^[0-9a-f]+$/);
+  });
+
+  it('should produce a real cryptographic signature for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_ec', 'secp256k1');
+    const sig = await storage.sign('key_ec', 'hello world');
+    // DER-encoded ECDSA signature — at least a non-trivial hex string
+    expect(sig.length).toBeGreaterThan(64);
+    expect(sig).toMatch(/^[0-9a-f]+$/);
+  });
+
+  it('should verify a real signature for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_v_ed', 'ed25519');
+    const message = 'sign this message';
+    const sig = await storage.sign('key_v_ed', message);
+    const valid = await storage.verify('key_v_ed', message, sig);
+    expect(valid).toBe(true);
+  });
+
+  it('should verify a real signature for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_v_ec', 'secp256k1');
+    const message = 'sign this message';
+    const sig = await storage.sign('key_v_ec', message);
+    const valid = await storage.verify('key_v_ec', message, sig);
+    expect(valid).toBe(true);
+  });
+
+  it('should reject a tampered signature for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_t_ed', 'ed25519');
+    const sig = await storage.sign('key_t_ed', 'original message');
+    const valid = await storage.verify('key_t_ed', 'tampered message', sig);
+    expect(valid).toBe(false);
+  });
+
+  it('should reject a tampered signature for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_t_ec', 'secp256k1');
+    const sig = await storage.sign('key_t_ec', 'original message');
+    const valid = await storage.verify('key_t_ec', 'tampered message', sig);
+    expect(valid).toBe(false);
+  });
+
+  it('should return false when verifying with unknown key', async () => {
+    const storage = new SoftwareKeyStorage();
+    const valid = await storage.verify('nonexistent_key', 'message', 'deadbeef');
+    expect(valid).toBe(false);
+  });
+});
+
+// ============================================================================
 // Custody Tests
 // ============================================================================
 
