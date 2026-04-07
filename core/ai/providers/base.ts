@@ -453,6 +453,17 @@ export abstract class BaseProvider {
   }
 
   /**
+   * Prevent raw API key from appearing in JSON serialization
+   */
+  toJSON(): object {
+    const { apiKey: _redacted, ...safeConfig } = this.config;
+    return {
+      ...this,
+      config: safeConfig,
+    };
+  }
+
+  /**
    * Validate and get the model to use
    */
   protected getModelId(request: CompletionRequest): string {

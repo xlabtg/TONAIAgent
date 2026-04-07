@@ -190,12 +190,20 @@ const GOOGLE_MODELS: ModelInfo[] = [
 
 export class GoogleProvider extends BaseProvider {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  readonly #apiKey: string;
 
   constructor(config: ProviderConfig) {
     super(config);
+    const apiKey = config.apiKey ?? '';
+    if (!apiKey || apiKey.length < 10) {
+      throw new Error('GoogleProvider: apiKey must be at least 10 characters');
+    }
     this.baseUrl = config.baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta';
-    this.apiKey = config.apiKey ?? '';
+    this.#apiKey = apiKey;
+  }
+
+  get maskedApiKey(): string {
+    return `${this.#apiKey.slice(0, 4)}...${this.#apiKey.slice(-4)}`;
   }
 
   get type(): ProviderType {
@@ -215,13 +223,13 @@ export class GoogleProvider extends BaseProvider {
   }
 
   async isAvailable(): Promise<boolean> {
-    if (!this.apiKey) {
+    if (!this.#apiKey) {
       return false;
     }
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/models?key=${this.apiKey}`,
+        `${this.baseUrl}/models?key=${this.#apiKey}`,
         {
           method: 'GET',
           headers: this.getHeaders(),
@@ -240,7 +248,7 @@ export class GoogleProvider extends BaseProvider {
     const modelId = this.getModelId(request);
 
     const googleRequest = this.convertRequest(request);
-    const url = `${this.baseUrl}/models/${modelId}:generateContent?key=${this.apiKey}`;
+    const url = `${this.baseUrl}/models/${modelId}:generateContent?key=${this.#apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -268,7 +276,7 @@ export class GoogleProvider extends BaseProvider {
     const modelId = this.getModelId(request);
 
     const googleRequest = this.convertRequest(request);
-    const url = `${this.baseUrl}/models/${modelId}:streamGenerateContent?alt=sse&key=${this.apiKey}`;
+    const url = `${this.baseUrl}/models/${modelId}:streamGenerateContent?alt=sse&key=${this.#apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',

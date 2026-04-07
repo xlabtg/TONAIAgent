@@ -183,7 +183,7 @@ describe('ProviderRegistry', () => {
   });
 
   it('should register providers', () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     registry.register(provider);
 
     expect(registry.get('groq')).toBe(provider);
@@ -194,7 +194,7 @@ describe('ProviderRegistry', () => {
   });
 
   it('should list all providers', () => {
-    const groq = createGroqProvider({ apiKey: 'test-key' });
+    const groq = createGroqProvider({ apiKey: 'test-api-key-123' });
     const anthropic = createAnthropicProvider({ apiKey: 'sk-ant-test' });
 
     registry.register(groq);
@@ -207,7 +207,7 @@ describe('ProviderRegistry', () => {
   });
 
   it('should filter available providers', () => {
-    const groq = createGroqProvider({ apiKey: 'test-key', enabled: true });
+    const groq = createGroqProvider({ apiKey: 'test-api-key-123', enabled: true });
     const anthropic = createAnthropicProvider({ apiKey: 'sk-ant-test', enabled: false });
 
     registry.register(groq);
@@ -225,7 +225,7 @@ describe('ProviderRegistry', () => {
 
 describe('Provider Factories', () => {
   it('should create Groq provider with default config', () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     expect(provider.type).toBe('groq');
     expect(provider.name).toBe('Groq');
   });
@@ -237,25 +237,25 @@ describe('Provider Factories', () => {
   });
 
   it('should create OpenAI provider with default config', () => {
-    const provider = createOpenAIProvider({ apiKey: 'sk-test' });
+    const provider = createOpenAIProvider({ apiKey: 'sk-test-key-123' });
     expect(provider.type).toBe('openai');
     expect(provider.name).toBe('OpenAI');
   });
 
   it('should create Google provider with default config', () => {
-    const provider = createGoogleProvider({ apiKey: 'test-key' });
+    const provider = createGoogleProvider({ apiKey: 'test-api-key-123' });
     expect(provider.type).toBe('google');
     expect(provider.name).toBe('Google AI');
   });
 
   it('should create xAI provider with default config', () => {
-    const provider = createXAIProvider({ apiKey: 'test-key' });
+    const provider = createXAIProvider({ apiKey: 'test-api-key-123' });
     expect(provider.type).toBe('xai');
     expect(provider.name).toBe('xAI');
   });
 
   it('should create OpenRouter provider with default config', () => {
-    const provider = createOpenRouterProvider({ apiKey: 'test-key' });
+    const provider = createOpenRouterProvider({ apiKey: 'test-api-key-123' });
     expect(provider.type).toBe('openrouter');
     expect(provider.name).toBe('OpenRouter');
   });
@@ -267,7 +267,7 @@ describe('Provider Factories', () => {
 
 describe('Model Information', () => {
   it('should list Groq models', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     expect(models.length).toBeGreaterThan(0);
@@ -284,7 +284,7 @@ describe('Model Information', () => {
   });
 
   it('should list OpenAI models', async () => {
-    const provider = createOpenAIProvider({ apiKey: 'sk-test' });
+    const provider = createOpenAIProvider({ apiKey: 'sk-test-key-123' });
     const models = await provider.getModels();
 
     expect(models.length).toBeGreaterThan(0);
@@ -292,7 +292,7 @@ describe('Model Information', () => {
   });
 
   it('should have model cost information', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     for (const model of models) {
@@ -303,7 +303,7 @@ describe('Model Information', () => {
   });
 
   it('should have model capabilities', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     for (const model of models) {
@@ -320,7 +320,7 @@ describe('Model Information', () => {
 
 describe('Provider Status', () => {
   it('should return status for Groq provider', () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const status = provider.getStatus();
 
     expect(status.type).toBe('groq');
@@ -330,9 +330,129 @@ describe('Provider Status', () => {
   });
 
   it('should report unavailable when disabled', () => {
-    const provider = createGroqProvider({ apiKey: 'test-key', enabled: false });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123', enabled: false });
     const status = provider.getStatus();
 
     expect(status.available).toBe(false);
+  });
+});
+
+// ============================================================================
+// API Key Security Tests
+// ============================================================================
+
+describe('API Key Security', () => {
+  it('should reject empty API key for Groq provider', () => {
+    expect(() => createGroqProvider({ apiKey: '' })).toThrow(
+      'GroqProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject short API key for Groq provider', () => {
+    expect(() => createGroqProvider({ apiKey: 'short' })).toThrow(
+      'GroqProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject empty API key for Anthropic provider', () => {
+    expect(() => createAnthropicProvider({ apiKey: '' })).toThrow(
+      'AnthropicProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject short API key for Anthropic provider', () => {
+    expect(() => createAnthropicProvider({ apiKey: 'short' })).toThrow(
+      'AnthropicProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject empty API key for OpenAI provider', () => {
+    expect(() => createOpenAIProvider({ apiKey: '' })).toThrow(
+      'OpenAIProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject short API key for OpenAI provider', () => {
+    expect(() => createOpenAIProvider({ apiKey: 'short' })).toThrow(
+      'OpenAIProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject empty API key for Google provider', () => {
+    expect(() => createGoogleProvider({ apiKey: '' })).toThrow(
+      'GoogleProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject short API key for Google provider', () => {
+    expect(() => createGoogleProvider({ apiKey: 'short' })).toThrow(
+      'GoogleProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject empty API key for xAI provider', () => {
+    expect(() => createXAIProvider({ apiKey: '' })).toThrow(
+      'XAIProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject short API key for xAI provider', () => {
+    expect(() => createXAIProvider({ apiKey: 'short' })).toThrow(
+      'XAIProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject empty API key for OpenRouter provider', () => {
+    expect(() => createOpenRouterProvider({ apiKey: '' })).toThrow(
+      'OpenRouterProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should reject short API key for OpenRouter provider', () => {
+    expect(() => createOpenRouterProvider({ apiKey: 'short' })).toThrow(
+      'OpenRouterProvider: apiKey must be at least 10 characters'
+    );
+  });
+
+  it('should mask API key showing only first 4 and last 4 characters for Groq', () => {
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
+    expect(provider.maskedApiKey).toBe('test...-123');
+    expect(provider.maskedApiKey).not.toContain('test-api-key-123');
+  });
+
+  it('should mask API key showing only first 4 and last 4 characters for Anthropic', () => {
+    const provider = createAnthropicProvider({ apiKey: 'sk-ant-test-key-123' });
+    expect(provider.maskedApiKey).toBe('sk-a...-123');
+    expect(provider.maskedApiKey).not.toContain('sk-ant-test-key-123');
+  });
+
+  it('should mask API key showing only first 4 and last 4 characters for OpenAI', () => {
+    const provider = createOpenAIProvider({ apiKey: 'sk-test-key-123' });
+    expect(provider.maskedApiKey).toBe('sk-t...-123');
+    expect(provider.maskedApiKey).not.toContain('sk-test-key-123');
+  });
+
+  it('should mask API key showing only first 4 and last 4 characters for Google', () => {
+    const provider = createGoogleProvider({ apiKey: 'test-api-key-123' });
+    expect(provider.maskedApiKey).toBe('test...-123');
+    expect(provider.maskedApiKey).not.toContain('test-api-key-123');
+  });
+
+  it('should mask API key showing only first 4 and last 4 characters for xAI', () => {
+    const provider = createXAIProvider({ apiKey: 'test-api-key-123' });
+    expect(provider.maskedApiKey).toBe('test...-123');
+    expect(provider.maskedApiKey).not.toContain('test-api-key-123');
+  });
+
+  it('should mask API key showing only first 4 and last 4 characters for OpenRouter', () => {
+    const provider = createOpenRouterProvider({ apiKey: 'test-api-key-123' });
+    expect(provider.maskedApiKey).toBe('test...-123');
+    expect(provider.maskedApiKey).not.toContain('test-api-key-123');
+  });
+
+  it('should not expose raw API key on provider instance', () => {
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
+    const serialized = JSON.stringify(provider);
+    expect(serialized).not.toContain('test-api-key-123');
   });
 });
