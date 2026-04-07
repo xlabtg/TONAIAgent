@@ -119,6 +119,8 @@ export {
 export {
   DefaultRiskEngine,
   createRiskEngine,
+  DEFAULT_RISK_THRESHOLDS,
+  DEFAULT_FRAUD_PATTERNS,
   type RiskEngine,
   type TransactionHistory,
   type HistoricalTransaction,

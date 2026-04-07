@@ -22,6 +22,7 @@ import {
   RiskRecommendation,
   RiskConfig,
   SecurityRiskThresholds,
+  FraudPatternDefinition,
   SecurityEvent,
   SecurityEventCallback,
 } from './types';
@@ -105,11 +106,7 @@ export interface FraudCheckResult {
   recommendations: string[];
 }
 
-export interface FraudPattern {
-  id: string;
-  name: string;
-  severity: RiskLevel;
-  description: string;
+export interface FraudPattern extends FraudPatternDefinition {
   matchedIndicators: string[];
 }
 
@@ -127,7 +124,7 @@ const RISK_WEIGHTS = {
   time: 0.05,
 };
 
-const RISK_THRESHOLDS: SecurityRiskThresholds = {
+export const DEFAULT_RISK_THRESHOLDS: SecurityRiskThresholds = {
   lowRiskMax: 0.3,
   mediumRiskMax: 0.6,
   highRiskMax: 0.8,
@@ -138,48 +135,42 @@ const RISK_THRESHOLDS: SecurityRiskThresholds = {
 // Fraud Patterns Database
 // ============================================================================
 
-const FRAUD_PATTERNS: FraudPattern[] = [
+export const DEFAULT_FRAUD_PATTERNS: FraudPatternDefinition[] = [
   {
     id: 'rapid_drain',
     name: 'Rapid Wallet Drain',
     severity: 'critical',
     description: 'Multiple large transactions in quick succession attempting to drain wallet',
-    matchedIndicators: [],
   },
   {
     id: 'new_dest_large',
     name: 'Large Transfer to New Destination',
     severity: 'high',
     description: 'Significant transfer to previously unknown address',
-    matchedIndicators: [],
   },
   {
     id: 'unusual_time',
     name: 'Unusual Trading Time',
     severity: 'medium',
     description: 'Trading activity at unusual hours for this user',
-    matchedIndicators: [],
   },
   {
     id: 'split_transfers',
     name: 'Split Transfers',
     severity: 'high',
     description: 'Multiple small transfers that appear to be splitting a larger amount',
-    matchedIndicators: [],
   },
   {
     id: 'dust_collection',
     name: 'Dust Collection Attack',
     severity: 'medium',
     description: 'Receiving many small amounts followed by a large transfer',
-    matchedIndicators: [],
   },
   {
     id: 'sandwich_attack',
     name: 'Sandwich Attack Indicator',
     severity: 'high',
     description: 'Transaction pattern indicates possible sandwich attack',
-    matchedIndicators: [],
   },
 ];
 
@@ -197,13 +188,14 @@ export class DefaultRiskEngine implements RiskEngine {
       enabled: config?.enabled ?? true,
       mlModelEnabled: config?.mlModelEnabled ?? false, // Requires actual ML model
       behavioralAnalysisEnabled: config?.behavioralAnalysisEnabled ?? true,
-      thresholds: config?.thresholds ?? RISK_THRESHOLDS,
+      thresholds: config?.thresholds ?? DEFAULT_RISK_THRESHOLDS,
       velocityLimits: config?.velocityLimits ?? {
         maxTransactionsPerMinute: 5,
         maxTransactionsPerHour: 20,
         maxTransactionsPerDay: 100,
         unusualVolumeMultiplier: 3,
       },
+      fraudPatterns: config?.fraudPatterns,
     };
   }
 
@@ -539,6 +531,7 @@ export class DefaultRiskEngine implements RiskEngine {
   }
 
   checkFraudPatterns(request: TransactionRequest): FraudCheckResult {
+    const patterns = this.config.fraudPatterns ?? DEFAULT_FRAUD_PATTERNS;
     const matchedPatterns: FraudPattern[] = [];
     const recommendations: string[] = [];
     let fraudScore = 0;
@@ -549,11 +542,12 @@ export class DefaultRiskEngine implements RiskEngine {
       request.amount?.valueTon &&
       request.amount.valueTon > 100
     ) {
-      const pattern = { ...FRAUD_PATTERNS.find((p) => p.id === 'new_dest_large')! };
-      pattern.matchedIndicators = ['new_destination', 'large_amount'];
-      matchedPatterns.push(pattern);
-      fraudScore += 0.4;
-      recommendations.push('Verify destination address before proceeding');
+      const def = patterns.find((p) => p.id === 'new_dest_large');
+      if (def) {
+        matchedPatterns.push({ ...def, matchedIndicators: ['new_destination', 'large_amount'] });
+        fraudScore += 0.4;
+        recommendations.push('Verify destination address before proceeding');
+      }
     }
 
     // Check: Blacklisted destination
@@ -565,10 +559,11 @@ export class DefaultRiskEngine implements RiskEngine {
     // Check: Unusual trading time
     const hour = new Date().getHours();
     if (hour >= 2 && hour <= 5) {
-      const pattern = { ...FRAUD_PATTERNS.find((p) => p.id === 'unusual_time')! };
-      pattern.matchedIndicators = ['late_night_activity'];
-      matchedPatterns.push(pattern);
-      fraudScore += 0.1;
+      const def = patterns.find((p) => p.id === 'unusual_time');
+      if (def) {
+        matchedPatterns.push({ ...def, matchedIndicators: ['late_night_activity'] });
+        fraudScore += 0.1;
+      }
     }
 
     return {
