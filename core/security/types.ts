@@ -624,12 +624,21 @@ export interface AuthorizationConfig {
   requireMultiSigAbove: number; // TON amount
 }
 
+export interface FraudPatternDefinition {
+  id: string;
+  name: string;
+  severity: RiskLevel;
+  description: string;
+}
+
 export interface RiskConfig {
   enabled: boolean;
   mlModelEnabled: boolean;
   behavioralAnalysisEnabled: boolean;
   thresholds: SecurityRiskThresholds;
   velocityLimits: VelocityLimits;
+  /** Override the built-in fraud patterns with a custom set. */
+  fraudPatterns?: FraudPatternDefinition[];
 }
 
 export interface SecurityRiskThresholds {
