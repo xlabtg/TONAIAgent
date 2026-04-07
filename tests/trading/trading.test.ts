@@ -1099,6 +1099,113 @@ describe('Integration: Strategy Signal → Swap Execution → Trade Record', () 
 });
 
 // ============================================================================
+// Transaction Simulator (Issue #291)
+// ============================================================================
+
+import { simulateTransaction, estimateGas } from '../../core/trading/simulator';
+import type { TransactionRequest } from '../../core/security/types';
+
+function makeTransactionRequest(
+  overrides: Partial<TransactionRequest> = {}
+): TransactionRequest {
+  return {
+    id: 'tx_test',
+    type: 'transfer',
+    agentId: 'agent_1',
+    userId: 'user_1',
+    source: { address: 'EQ_src', type: 'agent', isWhitelisted: true, isNew: false },
+    destination: { address: 'EQ_dst', type: 'external', isWhitelisted: false, isNew: false },
+    amount: { token: 'TON', symbol: 'TON', amount: '10', decimals: 9, valueTon: 10 },
+    metadata: {},
+    createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+describe('estimateGas', () => {
+  it('returns type-specific estimate for transfer', () => {
+    expect(estimateGas('transfer')).toBe(25000);
+  });
+
+  it('returns type-specific estimate for swap', () => {
+    expect(estimateGas('swap')).toBe(80000);
+  });
+
+  it('returns type-specific estimate for deploy', () => {
+    expect(estimateGas('deploy')).toBe(150000);
+  });
+
+  it('falls back to "other" for unknown types', () => {
+    expect(estimateGas('unknown_op')).toBe(50000);
+  });
+
+  it('applies dedust protocol multiplier', () => {
+    expect(estimateGas('swap', 'dedust')).toBe(Math.round(80000 * 1.1));
+  });
+
+  it('applies stonfi protocol multiplier', () => {
+    expect(estimateGas('swap', 'stonfi')).toBe(Math.round(80000 * 1.05));
+  });
+
+  it('applies no multiplier for unknown protocol', () => {
+    expect(estimateGas('swap', 'unknown_dex')).toBe(80000);
+  });
+});
+
+describe('simulateTransaction', () => {
+  it('returns success true', () => {
+    const result = simulateTransaction(makeTransactionRequest());
+    expect(result.success).toBe(true);
+  });
+
+  it('uses type-aware gas estimate instead of hardcoded 50000', () => {
+    const transferResult = simulateTransaction(makeTransactionRequest({ type: 'transfer' }));
+    expect(transferResult.gasEstimate).toBe(25000);
+    expect(transferResult.gasEstimate).not.toBe(50000);
+
+    const swapResult = simulateTransaction(makeTransactionRequest({ type: 'swap' }));
+    expect(swapResult.gasEstimate).toBe(80000);
+  });
+
+  it('reads protocol from request.metadata when not passed explicitly', () => {
+    const request = makeTransactionRequest({
+      type: 'swap',
+      metadata: { protocol: 'dedust' },
+    });
+    const result = simulateTransaction(request);
+    expect(result.gasEstimate).toBe(Math.round(80000 * 1.1));
+  });
+
+  it('explicit protocol parameter overrides metadata protocol', () => {
+    const request = makeTransactionRequest({
+      type: 'swap',
+      metadata: { protocol: 'dedust' },
+    });
+    const result = simulateTransaction(request, 'stonfi');
+    expect(result.gasEstimate).toBe(Math.round(80000 * 1.05));
+  });
+
+  it('includes balance change for token amount', () => {
+    const result = simulateTransaction(makeTransactionRequest());
+    expect(result.balanceChanges).toHaveLength(1);
+    expect(result.balanceChanges[0]).toEqual({ token: 'TON', amount: '10', direction: 'out' });
+  });
+
+  it('has empty balanceChanges when amount is absent', () => {
+    const request = makeTransactionRequest();
+    delete (request as any).amount;
+    const result = simulateTransaction(request);
+    expect(result.balanceChanges).toHaveLength(0);
+  });
+
+  it('returns empty warnings and errors arrays', () => {
+    const result = simulateTransaction(makeTransactionRequest());
+    expect(result.warnings).toEqual([]);
+    expect(result.errors).toEqual([]);
+  });
+});
+
+// ============================================================================
 // Cleanup
 // ============================================================================
 

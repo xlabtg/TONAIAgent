@@ -14,10 +14,12 @@ import {
   CustodyConfig,
   AgentPermissions,
   TransactionRequest,
+  TransactionSimulation,
   SecurityEvent,
   SecurityEventCallback,
 } from './types';
 import { SecureKeyManager, createKeyManager } from './key-management';
+import { simulateTransaction } from '../trading/simulator';
 
 // ============================================================================
 // Interfaces
@@ -98,17 +100,7 @@ export interface PreparedTransaction {
   status: 'prepared' | 'approved' | 'rejected' | 'expired';
 }
 
-export interface TransactionSimulation {
-  success: boolean;
-  gasEstimate: number;
-  balanceChanges: Array<{
-    token: string;
-    amount: string;
-    direction: 'in' | 'out';
-  }>;
-  warnings: string[];
-  errors: string[];
-}
+export type { TransactionSimulation } from './types';
 
 export interface TransactionApproval {
   type: 'user_signature' | 'timeout' | 'multi_sig';
@@ -461,7 +453,7 @@ export class SmartContractWalletProvider implements CustodyProvider {
     const withinLimits = this.checkOnChainLimits(wallet, request);
 
     // Simulate transaction
-    const simulation = this.simulateTransaction(request);
+    const simulation = simulateTransaction(request);
 
     const serializedMessage = this.serializeSmartContractCall(wallet, request);
     const messageHash = Buffer.from(serializedMessage).toString('base64');
@@ -699,24 +691,6 @@ export class SmartContractWalletProvider implements CustodyProvider {
     return true;
   }
 
-  private simulateTransaction(request: TransactionRequest): TransactionSimulation {
-    return {
-      success: true,
-      gasEstimate: 50000,
-      balanceChanges: request.amount
-        ? [
-            {
-              token: request.amount.symbol,
-              amount: request.amount.amount,
-              direction: 'out',
-            },
-          ]
-        : [],
-      warnings: [],
-      errors: [],
-    };
-  }
-
   private serializeSmartContractCall(
     wallet: CustodyWallet,
     request: TransactionRequest
@@ -845,7 +819,7 @@ export class MPCCustodyProvider implements CustodyProvider {
     const requiresMultiSig =
       valueTon > wallet.permissions.maxTransactionAmount * 10;
 
-    const simulation = this.simulateTransaction(request);
+    const simulation = simulateTransaction(request);
     const serializedMessage = this.serializeMPCMessage(wallet, request);
     const messageHash = Buffer.from(serializedMessage).toString('base64');
 
@@ -1053,24 +1027,6 @@ export class MPCCustodyProvider implements CustodyProvider {
       allowedTokens: ['*'],
       allowedProtocols: ['*'],
       whitelistedAddresses: [],
-    };
-  }
-
-  private simulateTransaction(request: TransactionRequest): TransactionSimulation {
-    return {
-      success: true,
-      gasEstimate: 50000,
-      balanceChanges: request.amount
-        ? [
-            {
-              token: request.amount.symbol,
-              amount: request.amount.amount,
-              direction: 'out',
-            },
-          ]
-        : [],
-      warnings: [],
-      errors: [],
     };
   }
 

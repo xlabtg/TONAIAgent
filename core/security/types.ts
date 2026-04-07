@@ -145,6 +145,18 @@ export interface TransactionMetadata {
   deviceId?: string;
 }
 
+export interface TransactionSimulation {
+  success: boolean;
+  gasEstimate: number;
+  balanceChanges: Array<{
+    token: string;
+    amount: string;
+    direction: 'in' | 'out';
+  }>;
+  warnings: string[];
+  errors: string[];
+}
+
 // ============================================================================
 // Authorization Pipeline Types
 // ============================================================================
