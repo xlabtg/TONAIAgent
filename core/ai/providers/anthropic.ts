@@ -174,12 +174,20 @@ const ANTHROPIC_MODELS: ModelInfo[] = [
 
 export class AnthropicProvider extends BaseProvider {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  readonly #apiKey: string;
 
   constructor(config: ProviderConfig) {
     super(config);
+    const apiKey = config.apiKey ?? '';
+    if (!apiKey || apiKey.length < 10) {
+      throw new Error('AnthropicProvider: apiKey must be at least 10 characters');
+    }
     this.baseUrl = config.baseUrl ?? 'https://api.anthropic.com/v1';
-    this.apiKey = config.apiKey ?? '';
+    this.#apiKey = apiKey;
+  }
+
+  get maskedApiKey(): string {
+    return `${this.#apiKey.slice(0, 4)}...${this.#apiKey.slice(-4)}`;
   }
 
   get type(): ProviderType {
@@ -199,13 +207,13 @@ export class AnthropicProvider extends BaseProvider {
   }
 
   async isAvailable(): Promise<boolean> {
-    if (!this.apiKey) {
+    if (!this.#apiKey) {
       return false;
     }
 
     try {
       // Simple validation by checking API key format
-      return this.apiKey.startsWith('sk-ant-');
+      return this.#apiKey.startsWith('sk-ant-');
     } catch {
       return false;
     }
@@ -220,7 +228,7 @@ export class AnthropicProvider extends BaseProvider {
     const response = await fetch(`${this.baseUrl}/messages`, {
       method: 'POST',
       headers: {
-        'x-api-key': this.apiKey,
+        'x-api-key': this.#apiKey,
         'anthropic-version': '2023-06-01',
         ...this.getHeaders(),
       },
@@ -252,7 +260,7 @@ export class AnthropicProvider extends BaseProvider {
     const response = await fetch(`${this.baseUrl}/messages`, {
       method: 'POST',
       headers: {
-        'x-api-key': this.apiKey,
+        'x-api-key': this.#apiKey,
         'anthropic-version': '2023-06-01',
         ...this.getHeaders(),
       },

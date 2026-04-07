@@ -1,0 +1,30 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: {
+    'services/institutional-network/index': 'services/institutional-network/index.ts',
+    'services/omnichain/index': 'services/omnichain/index.ts',
+    'services/ecosystem-fund/index': 'services/ecosystem-fund/index.ts',
+    'services/token-strategy/index': 'services/token-strategy/index.ts',
+    'services/payments/index': 'services/payments/index.ts',
+    'services/regulatory/index': 'services/regulatory/index.ts',
+    'services/ai-credit/index': 'services/ai-credit/index.ts',
+    'services/distributed-scheduler/index': 'services/distributed-scheduler/index.ts',
+    'services/multi-tenant/index': 'services/multi-tenant/index.ts',
+    'services/global-infrastructure/index': 'services/global-infrastructure/index.ts',
+    'services/investment/index': 'services/investment/index.ts',
+    'services/token-utility-economy/index': 'services/token-utility-economy/index.ts',
+    'services/prime-brokerage/index': 'services/prime-brokerage/index.ts',
+    'services/clearing-house/index': 'services/clearing-house/index.ts',
+    'services/autonomous-discovery/index': 'services/autonomous-discovery/index.ts',
+    'services/reputation/index': 'services/reputation/index.ts',
+    'services/monitoring/index': 'services/monitoring/index.ts',
+    'services/agent-decision/index': 'services/agent-decision/index.ts',
+    'services/agent-decision/autonomous-loop': 'services/agent-decision/autonomous-loop.ts',
+    'services/agent-decision/miniapp-ui': 'services/agent-decision/miniapp-ui.ts',
+    'services/agent-context/index': 'services/agent-context/index.ts',
+    'services/signal-aggregator/index': 'services/signal-aggregator/index.ts',
+  },
+  outDir: 'dist',
+  format: ['cjs', 'esm'],
+});

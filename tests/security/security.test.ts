@@ -252,6 +252,100 @@ describe('Key Management', () => {
 });
 
 // ============================================================================
+// SoftwareKeyStorage Real Crypto Tests
+// ============================================================================
+
+describe('SoftwareKeyStorage', () => {
+  it('should throw in production environment', () => {
+    const original = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      expect(() => new SoftwareKeyStorage()).toThrow(
+        'SoftwareKeyStorage is not allowed in production'
+      );
+    } finally {
+      process.env.NODE_ENV = original;
+    }
+  });
+
+  it('should generate real non-deterministic key pairs for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    const result1 = await storage.generateKeyPair('key_a', 'ed25519');
+    const result2 = await storage.generateKeyPair('key_b', 'ed25519');
+    expect(result1.publicKey).toBeTruthy();
+    expect(result2.publicKey).toBeTruthy();
+    expect(result1.publicKey).not.toBe(result2.publicKey);
+  });
+
+  it('should generate real non-deterministic key pairs for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    const result1 = await storage.generateKeyPair('key_c', 'secp256k1');
+    const result2 = await storage.generateKeyPair('key_d', 'secp256k1');
+    expect(result1.publicKey).toBeTruthy();
+    expect(result2.publicKey).toBeTruthy();
+    expect(result1.publicKey).not.toBe(result2.publicKey);
+  });
+
+  it('should produce a real cryptographic signature for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_ed', 'ed25519');
+    const sig = await storage.sign('key_ed', 'hello world');
+    // Real ed25519 signature is 64 bytes -> 128 hex chars
+    expect(sig).toHaveLength(128);
+    expect(sig).toMatch(/^[0-9a-f]+$/);
+  });
+
+  it('should produce a real cryptographic signature for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_ec', 'secp256k1');
+    const sig = await storage.sign('key_ec', 'hello world');
+    // DER-encoded ECDSA signature — at least a non-trivial hex string
+    expect(sig.length).toBeGreaterThan(64);
+    expect(sig).toMatch(/^[0-9a-f]+$/);
+  });
+
+  it('should verify a real signature for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_v_ed', 'ed25519');
+    const message = 'sign this message';
+    const sig = await storage.sign('key_v_ed', message);
+    const valid = await storage.verify('key_v_ed', message, sig);
+    expect(valid).toBe(true);
+  });
+
+  it('should verify a real signature for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_v_ec', 'secp256k1');
+    const message = 'sign this message';
+    const sig = await storage.sign('key_v_ec', message);
+    const valid = await storage.verify('key_v_ec', message, sig);
+    expect(valid).toBe(true);
+  });
+
+  it('should reject a tampered signature for ed25519', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_t_ed', 'ed25519');
+    const sig = await storage.sign('key_t_ed', 'original message');
+    const valid = await storage.verify('key_t_ed', 'tampered message', sig);
+    expect(valid).toBe(false);
+  });
+
+  it('should reject a tampered signature for secp256k1', async () => {
+    const storage = new SoftwareKeyStorage();
+    await storage.generateKeyPair('key_t_ec', 'secp256k1');
+    const sig = await storage.sign('key_t_ec', 'original message');
+    const valid = await storage.verify('key_t_ec', 'tampered message', sig);
+    expect(valid).toBe(false);
+  });
+
+  it('should return false when verifying with unknown key', async () => {
+    const storage = new SoftwareKeyStorage();
+    const valid = await storage.verify('nonexistent_key', 'message', 'deadbeef');
+    expect(valid).toBe(false);
+  });
+});
+
+// ============================================================================
 // Custody Tests
 // ============================================================================
 
@@ -501,6 +595,92 @@ describe('Transaction Authorization', () => {
 
       expect(result.passed).toBe(true);
       expect(result.metadata?.gasEstimate).toBeDefined();
+    });
+  });
+
+  describe('Authorization Caching (cacheDecisionSeconds)', () => {
+    it('should return cached result on identical request', async () => {
+      const request = createMockTransactionRequest({ id: 'tx_cache_test' });
+      const engineWithCache = createAuthorizationEngine({ cacheDecisionSeconds: 60 });
+
+      const firstResult = await engineWithCache.authorize(request, {});
+      const secondResult = await engineWithCache.authorize(request, {});
+
+      // Both results should have the same decision
+      expect(secondResult.decision).toBe(firstResult.decision);
+      // The cached result should be identical (same object id)
+      expect(secondResult.id).toBe(firstResult.id);
+    });
+
+    it('should not use cache when cacheDecisionSeconds is 0', async () => {
+      const request = createMockTransactionRequest({ id: 'tx_nocache_test' });
+      const engineNoCache = createAuthorizationEngine({ cacheDecisionSeconds: 0 });
+
+      const firstResult = await engineNoCache.authorize(request, {});
+      const secondResult = await engineNoCache.authorize(request, {});
+
+      // Results should have different ids when cache is disabled
+      expect(secondResult.id).not.toBe(firstResult.id);
+    });
+
+    it('should clear cache when config is updated', async () => {
+      const request = createMockTransactionRequest({ id: 'tx_config_change_test' });
+      const engineWithCache = createAuthorizationEngine({ cacheDecisionSeconds: 60 });
+
+      const firstResult = await engineWithCache.authorize(request, {});
+      // Changing config should clear cache
+      engineWithCache.setConfig({ cacheDecisionSeconds: 30 });
+      const secondResult = await engineWithCache.authorize(request, {});
+
+      // After config change cache was cleared, new result should have a new id
+      expect(secondResult.id).not.toBe(firstResult.id);
+    });
+
+    it('should include validUntil based on cacheDecisionSeconds', async () => {
+      const request = createMockTransactionRequest();
+      const cacheSeconds = 60;
+      const engineWithCache = createAuthorizationEngine({ cacheDecisionSeconds: cacheSeconds });
+
+      const before = Date.now();
+      const result = await engineWithCache.authorize(request, {});
+      const after = Date.now();
+
+      const validUntilMs = result.validUntil.getTime();
+      expect(validUntilMs).toBeGreaterThanOrEqual(before + cacheSeconds * 1000);
+      expect(validUntilMs).toBeLessThanOrEqual(after + cacheSeconds * 1000);
+    });
+  });
+
+  describe('Per-Layer Timeout', () => {
+    it('should reject when a layer exceeds its timeout budget', async () => {
+      vi.useFakeTimers();
+      try {
+        const engineTight = createAuthorizationEngine({
+          maxLatencyMs: 500, // 500ms / 8 layers = 62ms per layer
+          cacheDecisionSeconds: 0,
+        });
+
+        // Replace runLayer (not runLayerWithTimeout) so the internal timeout can still fire
+        (engineTight as unknown as {
+          runLayer: (...args: unknown[]) => Promise<unknown>;
+        }).runLayer = () => new Promise(() => {}); // never resolves
+
+        const request = createMockTransactionRequest();
+        const authPromise = engineTight.authorize(request, {});
+
+        // Advance timers past the per-layer timeout (500ms / 8 layers = 62ms)
+        await vi.advanceTimersByTimeAsync(200);
+
+        const result = await authPromise;
+
+        expect(result.decision).toBe('rejected');
+        const timedOutLayer = result.checkedLayers.find((l) =>
+          l.reason?.includes('timed out')
+        );
+        expect(timedOutLayer).toBeDefined();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

@@ -12,6 +12,7 @@
  * AI agents NEVER have direct access to private keys.
  */
 
+import * as nodeCrypto from 'node:crypto';
 import {
   KeyMetadata,
   KeyShare,
@@ -136,51 +137,86 @@ export abstract class KeyStorageBackend {
 /**
  * Software-based key storage for development and testing.
  * WARNING: Not suitable for production use with real funds.
+ *
+ * Uses real cryptographic operations via node:crypto so that
+ * signatures produced here are genuine and verifiable.
  */
 export class SoftwareKeyStorage extends KeyStorageBackend {
   readonly type: KeyStorageType = 'software';
 
-  private readonly keys = new Map<string, { publicKey: string; privateKey: string }>();
+  private readonly keys = new Map<
+    string,
+    { publicKey: nodeCrypto.KeyObject; privateKey: nodeCrypto.KeyObject; algorithm: string }
+  >();
+
+  constructor() {
+    super();
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'SoftwareKeyStorage is not allowed in production. Use HSM or MPC custody.'
+      );
+    }
+  }
 
   async generateKeyPair(
     keyId: string,
     algorithm: 'ed25519' | 'secp256k1'
   ): Promise<{ publicKey: string }> {
-    // Generate mock key pair for demonstration
-    // In production, use proper cryptographic libraries
-    const publicKey = this.generateMockPublicKey(keyId, algorithm);
-    const privateKey = this.generateMockPrivateKey(keyId, algorithm);
+    const { publicKey, privateKey } =
+      algorithm === 'ed25519'
+        ? nodeCrypto.generateKeyPairSync('ed25519')
+        : nodeCrypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' });
 
-    this.keys.set(keyId, { publicKey, privateKey });
+    this.keys.set(keyId, { publicKey, privateKey, algorithm });
 
-    return { publicKey };
+    const publicKeyHex = publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
+    return { publicKey: publicKeyHex };
   }
 
   async sign(keyId: string, message: string): Promise<string> {
-    const keyPair = this.keys.get(keyId);
-    if (!keyPair) {
+    const entry = this.keys.get(keyId);
+    if (!entry) {
       throw new Error(`Key not found: ${keyId}`);
     }
 
-    // Mock signature for demonstration
-    const messageHash = Buffer.from(message).toString('base64');
-    return `sig_${keyId}_${messageHash.slice(0, 16)}`;
+    const msgBuffer = Buffer.from(message);
+    let signature: Buffer;
+
+    if (entry.algorithm === 'ed25519') {
+      signature = nodeCrypto.sign(null, msgBuffer, entry.privateKey);
+    } else {
+      // secp256k1 via ECDSA with SHA-256
+      signature = nodeCrypto.createSign('SHA256').update(msgBuffer).sign(entry.privateKey);
+    }
+
+    return signature.toString('hex');
   }
 
   async verify(keyId: string, message: string, signature: string): Promise<boolean> {
-    const keyPair = this.keys.get(keyId);
-    if (!keyPair) {
+    const entry = this.keys.get(keyId);
+    if (!entry) {
       return false;
     }
 
-    // Mock verification for demonstration
-    const messageHash = Buffer.from(message).toString('base64');
-    const expectedSig = `sig_${keyId}_${messageHash.slice(0, 16)}`;
-    return signature === expectedSig;
+    try {
+      const msgBuffer = Buffer.from(message);
+      const sigBuffer = Buffer.from(signature, 'hex');
+
+      if (entry.algorithm === 'ed25519') {
+        return nodeCrypto.verify(null, msgBuffer, entry.publicKey, sigBuffer);
+      } else {
+        // secp256k1 via ECDSA with SHA-256
+        return nodeCrypto.createVerify('SHA256').update(msgBuffer).verify(entry.publicKey, sigBuffer);
+      }
+    } catch {
+      return false;
+    }
   }
 
   async getPublicKey(keyId: string): Promise<string | null> {
-    return this.keys.get(keyId)?.publicKey ?? null;
+    const entry = this.keys.get(keyId);
+    if (!entry) return null;
+    return entry.publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
   }
 
   async deleteKey(keyId: string): Promise<void> {
@@ -189,16 +225,6 @@ export class SoftwareKeyStorage extends KeyStorageBackend {
 
   async healthCheck(): Promise<boolean> {
     return true;
-  }
-
-  private generateMockPublicKey(keyId: string, algorithm: string): string {
-    const prefix = algorithm === 'ed25519' ? 'ed25519_pub_' : 'secp256k1_pub_';
-    return prefix + Buffer.from(keyId).toString('base64').slice(0, 44);
-  }
-
-  private generateMockPrivateKey(keyId: string, algorithm: string): string {
-    const prefix = algorithm === 'ed25519' ? 'ed25519_priv_' : 'secp256k1_priv_';
-    return prefix + Buffer.from(keyId).toString('base64').slice(0, 64);
   }
 }
 

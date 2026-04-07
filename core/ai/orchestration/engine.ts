@@ -73,6 +73,12 @@ export interface OrchestrationConfig {
   enableMemory: boolean;
   enableSafety: boolean;
   enableObservability: boolean;
+  /** Maximum number of tool calls allowed in a single iteration. Default: 5. */
+  maxToolCallsPerIteration: number;
+  /** Maximum total number of messages in the conversation context. Default: 50. */
+  maxContextMessages: number;
+  /** Maximum total tool calls across all iterations (tool execution budget). Default: 25. */
+  maxTotalToolCalls: number;
   onEvent?: (event: AIEvent) => void;
 }
 
@@ -94,6 +100,9 @@ export class OrchestrationEngine {
       enableMemory: true,
       enableSafety: true,
       enableObservability: true,
+      maxToolCallsPerIteration: 5,
+      maxContextMessages: 50,
+      maxTotalToolCalls: 25,
       ...config,
     };
 
@@ -185,6 +194,7 @@ export class OrchestrationEngine {
       let response: CompletionResponse | undefined;
       let llmLatencyMs = 0;
       let toolLatencyMs = 0;
+      let totalToolCallCount = 0;
 
       while (iterationCount < this.config.maxIterations) {
         iterationCount++;
@@ -196,6 +206,17 @@ export class OrchestrationEngine {
             'TIMEOUT',
             undefined,
             false
+          );
+        }
+
+        // Guard: context message limit
+        if (currentMessages.length > this.config.maxContextMessages) {
+          throw new AIError(
+            `Context message limit exceeded: ${currentMessages.length} messages (max: ${this.config.maxContextMessages})`,
+            'CONTEXT_MESSAGE_LIMIT_EXCEEDED',
+            undefined,
+            false,
+            { messageCount: currentMessages.length, limit: this.config.maxContextMessages }
           );
         }
 
@@ -232,11 +253,34 @@ export class OrchestrationEngine {
           break;
         }
 
+        // Guard: per-iteration tool call limit
+        if (toolCalls.length > this.config.maxToolCallsPerIteration) {
+          throw new AIError(
+            `Too many tool calls in one iteration: ${toolCalls.length} (max: ${this.config.maxToolCallsPerIteration})`,
+            'TOOL_CALL_LIMIT_EXCEEDED',
+            undefined,
+            false,
+            { toolCallCount: toolCalls.length, limit: this.config.maxToolCallsPerIteration }
+          );
+        }
+
+        // Guard: total tool call budget
+        if (totalToolCallCount + toolCalls.length > this.config.maxTotalToolCalls) {
+          throw new AIError(
+            `Total tool call budget exceeded: ${totalToolCallCount + toolCalls.length} calls (max: ${this.config.maxTotalToolCalls})`,
+            'TOTAL_TOOL_BUDGET_EXCEEDED',
+            undefined,
+            false,
+            { totalToolCallCount: totalToolCallCount + toolCalls.length, limit: this.config.maxTotalToolCalls }
+          );
+        }
+
         // Execute tools
         const toolStart = Date.now();
         const toolCallResults = await this.executeTools(toolCalls, agent.tools);
         toolResults.push(...toolCallResults);
         toolLatencyMs += Date.now() - toolStart;
+        totalToolCallCount += toolCalls.length;
 
         // Add assistant message and tool results to conversation
         currentMessages.push(response.choices[0].message);
