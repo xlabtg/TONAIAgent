@@ -290,16 +290,24 @@ const OPENROUTER_MODELS: ModelInfo[] = [
 
 export class OpenRouterProvider extends BaseProvider {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  readonly #apiKey: string;
   private readonly appName: string;
   private readonly siteUrl: string;
 
   constructor(config: ProviderConfig & { appName?: string; siteUrl?: string }) {
     super(config);
+    const apiKey = config.apiKey ?? '';
+    if (!apiKey || apiKey.length < 10) {
+      throw new Error('OpenRouterProvider: apiKey must be at least 10 characters');
+    }
     this.baseUrl = config.baseUrl ?? 'https://openrouter.ai/api/v1';
-    this.apiKey = config.apiKey ?? '';
+    this.#apiKey = apiKey;
     this.appName = config.appName ?? 'TONAIAgent';
     this.siteUrl = config.siteUrl ?? 'https://tonaiagent.com';
+  }
+
+  get maskedApiKey(): string {
+    return `${this.#apiKey.slice(0, 4)}...${this.#apiKey.slice(-4)}`;
   }
 
   get type(): ProviderType {
@@ -353,7 +361,7 @@ export class OpenRouterProvider extends BaseProvider {
   }
 
   async isAvailable(): Promise<boolean> {
-    if (!this.apiKey) {
+    if (!this.#apiKey) {
       return false;
     }
 
@@ -361,7 +369,7 @@ export class OpenRouterProvider extends BaseProvider {
       const response = await fetch(`${this.baseUrl}/models`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.#apiKey}`,
           ...this.getHeaders(),
         },
         signal: AbortSignal.timeout(this.config.timeout ?? 10000),
@@ -391,7 +399,7 @@ export class OpenRouterProvider extends BaseProvider {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.#apiKey}`,
         ...this.getHeaders(),
       },
       body: JSON.stringify(orRequest),
@@ -422,7 +430,7 @@ export class OpenRouterProvider extends BaseProvider {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.#apiKey}`,
         ...this.getHeaders(),
       },
       body: JSON.stringify(orRequest),

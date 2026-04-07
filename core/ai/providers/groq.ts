@@ -248,12 +248,20 @@ const GROQ_MODELS: ModelInfo[] = [
 
 export class GroqProvider extends BaseProvider {
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  readonly #apiKey: string;
 
   constructor(config: ProviderConfig) {
     super(config);
+    const apiKey = config.apiKey ?? '';
+    if (!apiKey || apiKey.length < 10) {
+      throw new Error('GroqProvider: apiKey must be at least 10 characters');
+    }
     this.baseUrl = config.baseUrl ?? 'https://api.groq.com/openai/v1';
-    this.apiKey = config.apiKey ?? '';
+    this.#apiKey = apiKey;
+  }
+
+  get maskedApiKey(): string {
+    return `${this.#apiKey.slice(0, 4)}...${this.#apiKey.slice(-4)}`;
   }
 
   get type(): ProviderType {
@@ -273,7 +281,7 @@ export class GroqProvider extends BaseProvider {
   }
 
   async isAvailable(): Promise<boolean> {
-    if (!this.apiKey) {
+    if (!this.#apiKey) {
       return false;
     }
 
@@ -281,7 +289,7 @@ export class GroqProvider extends BaseProvider {
       const response = await fetch(`${this.baseUrl}/models`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.#apiKey}`,
           ...this.getHeaders(),
         },
         signal: AbortSignal.timeout(this.config.timeout ?? 10000),
@@ -302,7 +310,7 @@ export class GroqProvider extends BaseProvider {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.#apiKey}`,
         ...this.getHeaders(),
       },
       body: JSON.stringify(groqRequest),
@@ -333,7 +341,7 @@ export class GroqProvider extends BaseProvider {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.#apiKey}`,
         ...this.getHeaders(),
       },
       body: JSON.stringify(groqRequest),

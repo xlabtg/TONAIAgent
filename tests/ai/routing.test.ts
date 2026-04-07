@@ -151,12 +151,12 @@ describe('ModelScorer', () => {
   beforeEach(() => {
     scorer = new ModelScorer();
     registry = new ProviderRegistry();
-    registry.register(createGroqProvider({ apiKey: 'test-key' }));
+    registry.register(createGroqProvider({ apiKey: 'test-api-key-123' }));
     registry.register(createAnthropicProvider({ apiKey: 'sk-ant-test' }));
   });
 
   it('should score models based on task', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     const modelsWithProvider = models.map((m) => ({ model: m, provider }));
@@ -181,7 +181,7 @@ describe('ModelScorer', () => {
   });
 
   it('should prioritize fast models in fast mode', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     const modelsWithProvider = models.map((m) => ({ model: m, provider }));
@@ -210,7 +210,7 @@ describe('ModelScorer', () => {
   });
 
   it('should prioritize low-cost models in cost_optimized mode', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     const modelsWithProvider = models.map((m) => ({ model: m, provider }));
@@ -241,7 +241,7 @@ describe('ModelScorer', () => {
   });
 
   it('should filter by required features', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     const modelsWithProvider = models.map((m) => ({ model: m, provider }));
@@ -267,7 +267,7 @@ describe('ModelScorer', () => {
   });
 
   it('should exclude specified models', async () => {
-    const provider = createGroqProvider({ apiKey: 'test-key' });
+    const provider = createGroqProvider({ apiKey: 'test-api-key-123' });
     const models = await provider.getModels();
 
     const modelsWithProvider = models.map((m) => ({ model: m, provider }));
@@ -299,7 +299,7 @@ describe('AIRouter', () => {
 
   beforeEach(() => {
     registry = new ProviderRegistry();
-    registry.register(createGroqProvider({ apiKey: 'test-key' }));
+    registry.register(createGroqProvider({ apiKey: 'test-api-key-123' }));
     registry.register(createAnthropicProvider({ apiKey: 'sk-ant-test' }));
   });
 
