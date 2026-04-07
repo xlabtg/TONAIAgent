@@ -597,6 +597,92 @@ describe('Transaction Authorization', () => {
       expect(result.metadata?.gasEstimate).toBeDefined();
     });
   });
+
+  describe('Authorization Caching (cacheDecisionSeconds)', () => {
+    it('should return cached result on identical request', async () => {
+      const request = createMockTransactionRequest({ id: 'tx_cache_test' });
+      const engineWithCache = createAuthorizationEngine({ cacheDecisionSeconds: 60 });
+
+      const firstResult = await engineWithCache.authorize(request, {});
+      const secondResult = await engineWithCache.authorize(request, {});
+
+      // Both results should have the same decision
+      expect(secondResult.decision).toBe(firstResult.decision);
+      // The cached result should be identical (same object id)
+      expect(secondResult.id).toBe(firstResult.id);
+    });
+
+    it('should not use cache when cacheDecisionSeconds is 0', async () => {
+      const request = createMockTransactionRequest({ id: 'tx_nocache_test' });
+      const engineNoCache = createAuthorizationEngine({ cacheDecisionSeconds: 0 });
+
+      const firstResult = await engineNoCache.authorize(request, {});
+      const secondResult = await engineNoCache.authorize(request, {});
+
+      // Results should have different ids when cache is disabled
+      expect(secondResult.id).not.toBe(firstResult.id);
+    });
+
+    it('should clear cache when config is updated', async () => {
+      const request = createMockTransactionRequest({ id: 'tx_config_change_test' });
+      const engineWithCache = createAuthorizationEngine({ cacheDecisionSeconds: 60 });
+
+      const firstResult = await engineWithCache.authorize(request, {});
+      // Changing config should clear cache
+      engineWithCache.setConfig({ cacheDecisionSeconds: 30 });
+      const secondResult = await engineWithCache.authorize(request, {});
+
+      // After config change cache was cleared, new result should have a new id
+      expect(secondResult.id).not.toBe(firstResult.id);
+    });
+
+    it('should include validUntil based on cacheDecisionSeconds', async () => {
+      const request = createMockTransactionRequest();
+      const cacheSeconds = 60;
+      const engineWithCache = createAuthorizationEngine({ cacheDecisionSeconds: cacheSeconds });
+
+      const before = Date.now();
+      const result = await engineWithCache.authorize(request, {});
+      const after = Date.now();
+
+      const validUntilMs = result.validUntil.getTime();
+      expect(validUntilMs).toBeGreaterThanOrEqual(before + cacheSeconds * 1000);
+      expect(validUntilMs).toBeLessThanOrEqual(after + cacheSeconds * 1000);
+    });
+  });
+
+  describe('Per-Layer Timeout', () => {
+    it('should reject when a layer exceeds its timeout budget', async () => {
+      vi.useFakeTimers();
+      try {
+        const engineTight = createAuthorizationEngine({
+          maxLatencyMs: 500, // 500ms / 8 layers = 62ms per layer
+          cacheDecisionSeconds: 0,
+        });
+
+        // Replace runLayer (not runLayerWithTimeout) so the internal timeout can still fire
+        (engineTight as unknown as {
+          runLayer: (...args: unknown[]) => Promise<unknown>;
+        }).runLayer = () => new Promise(() => {}); // never resolves
+
+        const request = createMockTransactionRequest();
+        const authPromise = engineTight.authorize(request, {});
+
+        // Advance timers past the per-layer timeout (500ms / 8 layers = 62ms)
+        await vi.advanceTimersByTimeAsync(200);
+
+        const result = await authPromise;
+
+        expect(result.decision).toBe('rejected');
+        const timedOutLayer = result.checkedLayers.find((l) =>
+          l.reason?.includes('timed out')
+        );
+        expect(timedOutLayer).toBeDefined();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });
 
 // ============================================================================

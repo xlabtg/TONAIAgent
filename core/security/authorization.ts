@@ -712,6 +712,7 @@ export class TransactionAuthorizationEngine implements AuthorizationEngine {
   private readonly anomalyLayer: AnomalyDetectionLayer;
   private readonly simulationLayer: SimulationLayer;
   private readonly eventCallbacks: SecurityEventCallback[] = [];
+  private readonly authCache = new Map<string, { result: AuthorizationResult; expiresAt: number }>();
 
   constructor(config?: Partial<AuthorizationConfig>) {
     this.config = {
@@ -756,9 +757,18 @@ export class TransactionAuthorizationEngine implements AuthorizationEngine {
     // Build full context with defaults
     const fullContext = this.buildFullContext(request, context);
 
+    // Check cache for identical requests
+    if (this.config.cacheDecisionSeconds > 0) {
+      const cacheKey = this.buildCacheKey(request, fullContext);
+      const cached = this.authCache.get(cacheKey);
+      if (cached && cached.expiresAt > Date.now()) {
+        return cached.result;
+      }
+    }
+
     // Run each enabled layer
     for (const layer of this.config.enabledLayers) {
-      const layerResult = await this.runLayer(layer, request, fullContext);
+      const layerResult = await this.runLayerWithTimeout(layer, request, fullContext);
       checkedLayers.push(layerResult);
 
       // If layer rejects, stop processing
@@ -840,6 +850,15 @@ export class TransactionAuthorizationEngine implements AuthorizationEngine {
       startTime
     );
 
+    // Cache the result for identical future requests
+    if (this.config.cacheDecisionSeconds > 0) {
+      const cacheKey = this.buildCacheKey(request, fullContext);
+      this.authCache.set(cacheKey, {
+        result,
+        expiresAt: Date.now() + this.config.cacheDecisionSeconds * 1000,
+      });
+    }
+
     // Emit event - at this point we're approved (possibly with conditions)
     // Rejections are returned earlier in the flow
     this.emitEvent({
@@ -899,6 +918,8 @@ export class TransactionAuthorizationEngine implements AuthorizationEngine {
 
   setConfig(config: Partial<AuthorizationConfig>): void {
     this.config = { ...this.config, ...config };
+    // Clear cache when config changes to avoid stale cached decisions
+    this.authCache.clear();
   }
 
   getConfig(): AuthorizationConfig {
@@ -911,6 +932,41 @@ export class TransactionAuthorizationEngine implements AuthorizationEngine {
 
   registerStrategy(strategy: StrategyDefinition): void {
     this.strategyLayer.registerStrategy(strategy);
+  }
+
+  private async runLayerWithTimeout(
+    layer: AuthorizationLayer,
+    request: TransactionRequest,
+    context: AuthorizationContext
+  ): Promise<AuthorizationLayerResult> {
+    const perLayerTimeoutMs = Math.floor(this.config.maxLatencyMs / this.config.enabledLayers.length);
+    const timeoutPromise = new Promise<AuthorizationLayerResult>((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            layer,
+            passed: false,
+            decision: 'rejected',
+            reason: `Layer ${layer} timed out after ${perLayerTimeoutMs}ms`,
+            latencyMs: perLayerTimeoutMs,
+          }),
+        perLayerTimeoutMs
+      )
+    );
+    return Promise.race([this.runLayer(layer, request, context), timeoutPromise]);
+  }
+
+  private buildCacheKey(request: TransactionRequest, context: AuthorizationContext): string {
+    return JSON.stringify({
+      type: request.type,
+      source: request.source?.address,
+      destination: request.destination?.address,
+      token: request.amount?.token,
+      amount: request.amount?.amount,
+      agentId: request.agentId,
+      userId: request.userId,
+      layers: this.config.enabledLayers,
+    });
   }
 
   private async runLayer(
