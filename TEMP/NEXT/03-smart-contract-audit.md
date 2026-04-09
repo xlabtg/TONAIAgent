@@ -74,7 +74,7 @@ export const DEFAULT_FACTORY_CONFIG: FactoryConfig = {
 
 ## References
 
-- [TON FunC documentation](https://docs.ton.org/develop/smart-contracts/func)
+- [TON FunC documentation](https://docs.ton.org/languages/func/overview)
 - [Tact language](https://tact-lang.org/)
 - [Blueprint testing framework](https://github.com/ton-org/blueprint)
 - [TON Security Best Practices](https://docs.ton.org/contract-dev/security)
