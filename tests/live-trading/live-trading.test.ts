@@ -718,6 +718,51 @@ describe('KeyManagementService', () => {
     expect(decrypted.permissions).toContain('place_orders');
   });
 
+  it('should encrypt credentials using AES-256-GCM (not plain base64)', () => {
+    const service = createKeyManagementService();
+    const plainText = 'super-secret-api-key-12345';
+
+    const credential = service.storeCredential({
+      agentId: 'agent_aes',
+      exchangeId: 'stonfi',
+      keyType: 'api_key',
+      plainTextValue: plainText,
+      permissions: ['read_balance'],
+    });
+
+    // Decoding the stored value as plain base64 must NOT yield the original plaintext,
+    // proving that the value is truly encrypted, not just encoded.
+    const naiveDecoded = Buffer.from(credential.encryptedValue, 'base64').toString('utf8');
+    expect(naiveDecoded).not.toBe(plainText);
+
+    // The IV must be a 12-byte (96-bit) value encoded as base64 (16 characters).
+    expect(Buffer.from(credential.iv, 'base64').length).toBe(12);
+  });
+
+  it('should produce different ciphertexts for the same plaintext (random IV)', () => {
+    const service = createKeyManagementService();
+    const plainText = 'identical-secret';
+
+    const cred1 = service.storeCredential({
+      agentId: 'agent_iv1',
+      exchangeId: 'stonfi',
+      keyType: 'api_key',
+      plainTextValue: plainText,
+      permissions: ['read_balance'],
+    });
+    const cred2 = service.storeCredential({
+      agentId: 'agent_iv2',
+      exchangeId: 'stonfi',
+      keyType: 'api_key',
+      plainTextValue: plainText,
+      permissions: ['read_balance'],
+    });
+
+    // Each encryption must use a fresh IV, so ciphertexts and IVs differ.
+    expect(cred1.encryptedValue).not.toBe(cred2.encryptedValue);
+    expect(cred1.iv).not.toBe(cred2.iv);
+  });
+
   it('should deny access to wrong agent', () => {
     const service = createKeyManagementService();
     const credential = service.storeCredential({

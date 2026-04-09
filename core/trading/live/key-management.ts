@@ -14,8 +14,10 @@
  *
  * Note: In production, encryption keys should be stored in an HSM or
  * secrets manager (e.g., AWS KMS, HashiCorp Vault). This implementation
- * uses a simulated in-memory approach for testing.
+ * uses an in-memory master key with real AES-256-GCM encryption.
  */
+
+import * as nodeCrypto from 'node:crypto';
 
 import {
   TradingCredential,
@@ -88,9 +90,10 @@ export interface TradingCredentialSummary {
 export class DefaultKeyManagementService implements KeyManagementService {
   private readonly config: CredentialStoreConfig;
   private readonly credentials = new Map<string, TradingCredential>();
-  private readonly plainTextCache = new Map<string, string>(); // In-memory only, never persisted
   private readonly accessLogs = new Map<string, CredentialAccessLog[]>();
   private readonly eventCallbacks: LiveTradingEventCallback[] = [];
+  /** AES-256-GCM master key — generated once per service instance, never persisted */
+  private readonly masterKey: Buffer;
   private credentialCounter = 0;
   private logCounter = 0;
 
@@ -101,6 +104,9 @@ export class DefaultKeyManagementService implements KeyManagementService {
       enableAuditLog: config?.enableAuditLog ?? true,
       maxCredentialAgeDays: config?.maxCredentialAgeDays,
     };
+    // Generate a cryptographically secure 256-bit master key.
+    // In production, load this from an HSM / AWS KMS / HashiCorp Vault.
+    this.masterKey = nodeCrypto.randomBytes(32);
   }
 
   onEvent(callback: LiveTradingEventCallback): void {
@@ -145,9 +151,6 @@ export class DefaultKeyManagementService implements KeyManagementService {
 
     this.credentials.set(credentialId, credential);
 
-    // Cache plain text for retrieval (in a real system, re-decrypt from KMS)
-    this.plainTextCache.set(credentialId, input.plainTextValue);
-
     this.logAccess(credentialId, input.agentId, input.exchangeId, 'create', true);
 
     this.emitEvent({
@@ -191,11 +194,7 @@ export class DefaultKeyManagementService implements KeyManagementService {
       }
     }
 
-    const plainText = this.plainTextCache.get(credentialId);
-    if (!plainText) {
-      // In production: call KMS/HSM to decrypt
-      throw new KeyManagementError('Unable to decrypt credential', 'DECRYPTION_FAILED');
-    }
+    const plainText = this.decrypt(credential.encryptedValue, credential.iv);
 
     credential.lastUsedAt = new Date();
     this.logAccess(credentialId, requestingAgentId, credential.exchangeId, 'read', true);
@@ -226,7 +225,6 @@ export class DefaultKeyManagementService implements KeyManagementService {
     credential.iv = iv;
     credential.rotatedAt = new Date();
 
-    this.plainTextCache.set(credentialId, newValue);
     this.logAccess(credentialId, requestingAgentId, credential.exchangeId, 'rotate', true);
 
     this.emitEvent({
@@ -252,7 +250,6 @@ export class DefaultKeyManagementService implements KeyManagementService {
     }
 
     this.credentials.delete(credentialId);
-    this.plainTextCache.delete(credentialId);
     this.logAccess(credentialId, requestingAgentId, credential.exchangeId, 'revoke', true);
 
     this.emitEvent({
@@ -299,15 +296,40 @@ export class DefaultKeyManagementService implements KeyManagementService {
   // ============================================================================
 
   /**
-   * Simulated encryption. In production, replace with AES-256-GCM via
-   * Node.js crypto module or delegate to an HSM/KMS.
+   * Encrypts plainText using AES-256-GCM with a random 96-bit IV.
+   * The GCM authentication tag is appended to the ciphertext before base64-encoding.
    */
   private encrypt(plainText: string): { encrypted: string; iv: string } {
-    // Simulated encryption — stores a base64 representation with a fake IV
-    // In production: use crypto.createCipheriv('aes-256-gcm', key, iv)
-    const iv = Math.random().toString(36).slice(2, 18); // 16-char fake IV
-    const encrypted = Buffer.from(plainText).toString('base64'); // NOT real encryption
-    return { encrypted, iv };
+    const iv = nodeCrypto.randomBytes(12); // 96-bit IV recommended for GCM
+    const cipher = nodeCrypto.createCipheriv('aes-256-gcm', this.masterKey, iv);
+    const encryptedBuf = Buffer.concat([
+      cipher.update(plainText, 'utf8'),
+      cipher.final(),
+      cipher.getAuthTag(), // 16-byte GCM authentication tag
+    ]);
+    return {
+      encrypted: encryptedBuf.toString('base64'),
+      iv: iv.toString('base64'),
+    };
+  }
+
+  /**
+   * Decrypts a value previously encrypted by {@link encrypt}.
+   * Verifies the GCM authentication tag to detect any tampering.
+   */
+  private decrypt(encryptedBase64: string, ivBase64: string): string {
+    const iv = Buffer.from(ivBase64, 'base64');
+    const encryptedBuf = Buffer.from(encryptedBase64, 'base64');
+    // Last 16 bytes are the GCM auth tag
+    const authTag = encryptedBuf.subarray(encryptedBuf.length - 16);
+    const ciphertext = encryptedBuf.subarray(0, encryptedBuf.length - 16);
+    const decipher = nodeCrypto.createDecipheriv('aes-256-gcm', this.masterKey, iv);
+    decipher.setAuthTag(authTag);
+    try {
+      return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+    } catch {
+      throw new KeyManagementError('Unable to decrypt credential — data may be corrupted or tampered', 'DECRYPTION_FAILED');
+    }
   }
 
   private validateInput(input: StoreCredentialInput): void {
