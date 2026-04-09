@@ -9,6 +9,7 @@
  * Each model provides different trade-offs between security and automation.
  */
 
+import * as nodeCrypto from 'node:crypto';
 import {
   CustodyMode,
   CustodyConfig,
@@ -221,7 +222,7 @@ export class NonCustodialProvider implements CustodyProvider {
     wallet: CustodyWallet,
     request: TransactionRequest
   ): Promise<PreparedTransaction> {
-    const preparedId = `prep_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const preparedId = `prep_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
 
     // Serialize the transaction for signing
     const serializedMessage = this.serializeTransaction(request);
@@ -447,7 +448,7 @@ export class SmartContractWalletProvider implements CustodyProvider {
     wallet: CustodyWallet,
     request: TransactionRequest
   ): Promise<PreparedTransaction> {
-    const preparedId = `prep_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const preparedId = `prep_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
 
     // Check if transaction is within on-chain limits
     const withinLimits = this.checkOnChainLimits(wallet, request);
@@ -812,7 +813,7 @@ export class MPCCustodyProvider implements CustodyProvider {
     wallet: CustodyWallet,
     request: TransactionRequest
   ): Promise<PreparedTransaction> {
-    const preparedId = `prep_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const preparedId = `prep_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
 
     const valueTon = request.amount?.valueTon ?? 0;
     const requiresUserApproval = valueTon > wallet.permissions.maxTransactionAmount;

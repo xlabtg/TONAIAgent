@@ -122,6 +122,16 @@ export class AuthService {
       throw new Error('Invalid Telegram initData signature');
     }
 
+    // Validate auth_date freshness — reject tokens older than 1 hour to prevent replay attacks
+    const authDateStr = params.get('auth_date');
+    if (!authDateStr) throw new Error('Missing auth_date in Telegram initData');
+    const authDate = parseInt(authDateStr, 10);
+    if (isNaN(authDate)) throw new Error('Invalid auth_date in Telegram initData');
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (nowSec - authDate > 3600) {
+      throw new Error('Telegram initData has expired — auth_date is older than 1 hour');
+    }
+
     // Parse user object from initData
     const userJson = params.get('user');
     if (!userJson) throw new Error('Missing user in Telegram initData');

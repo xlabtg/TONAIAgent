@@ -12,6 +12,7 @@
  * SECURITY: AI never has direct access to signing.
  */
 
+import * as nodeCrypto from 'node:crypto';
 import {
   TransactionRequest,
   AuthorizationContext,
@@ -750,7 +751,7 @@ export class TransactionAuthorizationEngine implements AuthorizationEngine {
     context: Partial<AuthorizationContext>
   ): Promise<AuthorizationResult> {
     const startTime = Date.now();
-    const resultId = `auth_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const resultId = `auth_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
     const checkedLayers: AuthorizationLayerResult[] = [];
     const requiredActions: RequiredAction[] = [];
 

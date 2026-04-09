@@ -33,12 +33,18 @@ function makeUserInput(overrides: Partial<CreateUserInput> = {}): CreateUserInpu
   };
 }
 
-function buildFakeInitData(telegramId: number, username: string, botToken: string): string {
+function buildFakeInitData(
+  telegramId: number,
+  username: string,
+  botToken: string,
+  authDateOffsetSeconds = 0
+): string {
   // Build a valid HMAC-SHA256 Telegram initData string for testing.
   // We use Node's crypto in the same way the AuthService does.
   const { createHmac } = require('crypto');
   const user = JSON.stringify({ id: telegramId, username });
-  const params = new URLSearchParams({ user });
+  const authDate = Math.floor(Date.now() / 1000) + authDateOffsetSeconds;
+  const params = new URLSearchParams({ auth_date: String(authDate), user });
   const sorted = Array.from(params.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)
@@ -404,6 +410,35 @@ describe('AuthService', () => {
     const initData = buildFakeInitData(33333, 'hacker', BOT_TOKEN);
     const tampered = initData.replace(/hash=[^&]+/, 'hash=deadbeef');
     expect(() => authService.authenticateTelegram({ initData: tampered, botToken: BOT_TOKEN })).toThrow();
+  });
+
+  it('rejects Telegram auth with missing auth_date', () => {
+    // Build initData without auth_date to test the missing field check
+    const { createHmac } = require('crypto');
+    const user2 = JSON.stringify({ id: 55555, username: 'ndate' });
+    const params = new URLSearchParams({ user: user2 });
+    const sorted = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n');
+    const secretKey = createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+    const hash = createHmac('sha256', secretKey).update(sorted).digest('hex');
+    params.set('hash', hash);
+    expect(() => authService.authenticateTelegram({ initData: params.toString(), botToken: BOT_TOKEN })).toThrow(/auth_date/);
+  });
+
+  it('rejects expired Telegram initData (replay attack prevention)', () => {
+    // Build initData with auth_date 2 hours in the past — should be rejected
+    const initData = buildFakeInitData(66666, 'old_user', BOT_TOKEN, -7201);
+    expect(() => authService.authenticateTelegram({ initData, botToken: BOT_TOKEN })).toThrow(/expired/);
+  });
+
+  it('accepts Telegram initData within the 1-hour freshness window', () => {
+    // Build initData with auth_date 30 minutes in the past — should be accepted
+    const initData = buildFakeInitData(77777, 'fresh_user', BOT_TOKEN, -1800);
+    const ctx = authService.authenticateTelegram({ initData, botToken: BOT_TOKEN });
+    expect(ctx.userId).toBeTruthy();
+    expect(ctx.source).toBe('telegram');
   });
 
   it('rejects Telegram auth for suspended user', () => {
