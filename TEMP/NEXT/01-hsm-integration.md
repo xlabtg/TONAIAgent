@@ -56,4 +56,4 @@ This means **no key generation is possible in production** without HSM.
 
 - [AWS CloudHSM Developer Guide](https://docs.aws.amazon.com/cloudhsm/latest/userguide/)
 - [Azure Dedicated HSM](https://docs.microsoft.com/en-us/azure/dedicated-hsm/)
-- [TON Ed25519 key format](https://docs.ton.org/develop/smart-contracts/security)
+- [TON Ed25519 key format](https://docs.ton.org/contract-dev/signing)
