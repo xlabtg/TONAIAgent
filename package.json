@@ -403,8 +403,8 @@
     "test:coverage": "vitest run --coverage",
     "backtest": "npx ts-node infrastructure/scripts/backtest.ts",
     "validate:mvp": "npx ts-node infrastructure/scripts/validate-mvp-deps.ts",
-    "lint": "eslint core apps extended services connectors packages --ext .ts",
-    "lint:fix": "eslint core apps extended services connectors packages --ext .ts --fix",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit --project tsconfig.strict.json",
     "format": "prettier --write \"core/**/*.ts\" \"apps/**/*.ts\" \"extended/**/*.ts\" \"services/**/*.ts\" \"connectors/**/*.ts\" \"packages/**/*.ts\"",
@@ -616,14 +616,14 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@types/node": "^25.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
     "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^8.56.0",
+    "eslint": "^10.2.0",
     "prettier": "^3.2.0",
     "tsup": "^8.5.1",
-    "typescript": "^5.3.0",
-    "vitest": "^1.2.0"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"
