@@ -10,6 +10,7 @@
  * - Automatic threat response
  */
 
+import * as nodeCrypto from 'node:crypto';
 import {
   EmergencyEvent,
   EmergencyType,
@@ -167,7 +168,7 @@ export class DefaultEmergencyController implements EmergencyController {
     affectedAgents?: string[],
     affectedUsers?: string[]
   ): Promise<EmergencyEvent> {
-    const eventId = `emerg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const eventId = `emerg_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
 
     const event: EmergencyEvent = {
       id: eventId,
@@ -553,7 +554,7 @@ export class DefaultRecoveryManager implements RecoveryManager {
     type: RecoveryType,
     options?: RecoveryOptions
   ): Promise<RecoveryRequest> {
-    const requestId = `recovery_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const requestId = `recovery_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
 
     const verificationSteps = this.getVerificationSteps(type, options);
 

@@ -225,6 +225,22 @@ describe('Key Management', () => {
         keyManager.createSigningRequest(key.id, 'test', {})
       ).rejects.toThrow();
     });
+
+    it('should generate cryptographically unique signing request IDs (not Math.random)', async () => {
+      const key = await keyManager.generateKey('user_123', 'signing');
+      const ids = new Set<string>();
+      for (let i = 0; i < 50; i++) {
+        const req = await keyManager.createSigningRequest(key.id, `msg_${i}`, {});
+        ids.add(req.id);
+      }
+      // All 50 IDs must be unique
+      expect(ids.size).toBe(50);
+      // IDs should contain hex entropy from randomBytes, not short Math.random output
+      const sampleId = ids.values().next().value as string;
+      const entropyPart = sampleId.split('_').pop() ?? '';
+      // crypto.randomBytes(8).toString('hex') produces 16 hex chars
+      expect(entropyPart).toMatch(/^[0-9a-f]{16}$/);
+    });
   });
 
   describe('Key Derivation', () => {

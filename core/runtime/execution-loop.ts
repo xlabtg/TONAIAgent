@@ -43,11 +43,13 @@ export interface ExecutionLoopConfig {
   simulationMode: boolean;
 }
 
+// Simulation mode defaults to true for safety — must be explicitly disabled for live trading.
+// Set SIMULATION_MODE=false in environment to enable real trade execution.
 export const DEFAULT_EXECUTION_LOOP_CONFIG: ExecutionLoopConfig = {
   verbose: false,
   maxMarketDataRetries: 3,
   strategyTimeoutMs: 5000,
-  simulationMode: true,
+  simulationMode: process.env['SIMULATION_MODE'] !== 'false',
 };
 
 // ============================================================================
@@ -392,6 +394,13 @@ export class ExecutionLoop {
     this.strategyExecutor = options.strategyExecutor ?? new DefaultStrategyExecutor();
     this.riskValidator = options.riskValidator ?? new DefaultRiskValidator();
     this.tradeExecutor = options.tradeExecutor ?? new DefaultTradeExecutor();
+
+    if (!this.config.simulationMode) {
+      console.warn(
+        '[ExecutionLoop] LIVE TRADING MODE ENABLED — real funds will be used. ' +
+        'Ensure SIMULATION_MODE=false is intentional.'
+      );
+    }
   }
 
   /**

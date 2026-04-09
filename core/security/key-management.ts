@@ -711,7 +711,7 @@ export class SecureKeyManager implements KeyManagementService {
       throw new Error(`Cannot sign with key status: ${key.status}`);
     }
 
-    const requestId = `sig_req_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const requestId = `sig_req_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
     const messageHash = Buffer.from(message).toString('base64');
 
     const mpcStatus = this.mpcCoordinator.getSharesStatus(keyId);
@@ -875,15 +875,16 @@ export class SecureKeyManager implements KeyManagementService {
   }
 
   private generateKeyId(userId: string, keyType: KeyType): string {
-    return `key_${userId}_${keyType}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    return `key_${userId}_${keyType}_${Date.now()}_${nodeCrypto.randomBytes(4).toString('hex')}`;
   }
 
   private emitEvent(event: SecurityEvent): void {
     for (const callback of this.eventCallbacks) {
       try {
         callback(event);
-      } catch {
-        // Ignore callback errors
+      } catch (e) {
+        // Log but do not propagate callback errors — monitoring should not crash the security module
+        console.warn('[SecurityKeyManager] Event callback error:', (e as Error)?.message ?? e);
       }
     }
   }

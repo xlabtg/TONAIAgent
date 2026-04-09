@@ -178,6 +178,19 @@ export class AgentManager {
     if (this.running) return;
     this.running = true;
 
+    // Register global handlers to prevent silent process crashes from unhandled async errors
+    if (!process.listenerCount('unhandledRejection')) {
+      process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+        console.error('[AgentManager] Unhandled promise rejection:', { reason, promise });
+      });
+    }
+    if (!process.listenerCount('uncaughtException')) {
+      process.on('uncaughtException', (error: Error) => {
+        console.error('[AgentManager] Uncaught exception:', error);
+        process.exit(1);
+      });
+    }
+
     this.scheduler.start();
     this.monitor.start();
 
