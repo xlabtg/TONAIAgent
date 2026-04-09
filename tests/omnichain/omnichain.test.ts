@@ -85,6 +85,9 @@ describe('OmnichainService', () => {
 
   describe('health check', () => {
     it('should return health status', async () => {
+      // Mock exchange.checkHealth to avoid real network calls in CI
+      vi.spyOn(service.exchange, 'checkHealth').mockResolvedValue({ success: true, data: true });
+
       const health = await service.getHealth();
 
       expect(health.overall).toBeDefined();
@@ -94,6 +97,9 @@ describe('OmnichainService', () => {
     });
 
     it('should report component statuses', async () => {
+      // Mock exchange.checkHealth to avoid real network calls in CI
+      vi.spyOn(service.exchange, 'checkHealth').mockResolvedValue({ success: true, data: true });
+
       const health = await service.getHealth();
 
       expect(health.components.portfolio).toBe(true);
