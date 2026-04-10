@@ -91,6 +91,10 @@ export interface AgentControlResponseBody<T = unknown> {
   data?: T;
   error?: string;
   code?: AgentControlErrorCode;
+  /** Seconds until the client may retry (used with RATE_LIMIT_EXCEEDED) */
+  retryAfter?: number;
+  /** Field-level validation issues (used with VALIDATION_ERROR) */
+  details?: Array<{ path: string; message: string }>;
 }
 
 /** Response for lifecycle action endpoints (start/stop/restart) */
@@ -165,7 +169,10 @@ export type AgentControlErrorCode =
   | 'AGENT_ALREADY_STOPPED'
   | 'AGENT_IN_ERROR_STATE'
   | 'INVALID_AGENT_ID'
-  | 'OPERATION_FAILED';
+  | 'OPERATION_FAILED'
+  | 'RATE_LIMIT_EXCEEDED'
+  | 'VALIDATION_ERROR'
+  | 'UNSUPPORTED_MEDIA_TYPE';
 
 /** Structured error for agent control operations */
 export class AgentControlError extends Error {
