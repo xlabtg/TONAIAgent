@@ -36,6 +36,10 @@ describe('TonFactoryService', () => {
     service = createTonFactoryService({
       network: 'testnet',
       enabled: true,
+      factory: {
+        owner: '0:service_owner_address_for_tests_0000000000000000000000000000',
+        treasury: '0:service_treasury_address_for_tests_00000000000000000000000000',
+      },
     });
   });
 
@@ -186,6 +190,38 @@ describe('FactoryContractManager', () => {
       treasury: '0:factory_treasury',
       deploymentFee: BigInt(100_000_000),
       maxAgentsPerUser: 3,
+    });
+  });
+
+  describe('null address guard', () => {
+    it('should throw when owner is the null address', () => {
+      expect(() =>
+        createFactoryContractManager({
+          owner: '0:0000000000000000000000000000000000000000000000000000000000000000',
+          treasury: '0:factory_treasury',
+        })
+      ).toThrow(/owner.*must be explicitly configured/i);
+    });
+
+    it('should throw when treasury is the null address', () => {
+      expect(() =>
+        createFactoryContractManager({
+          owner: '0:factory_owner',
+          treasury: '0:0000000000000000000000000000000000000000000000000000000000000000',
+        })
+      ).toThrow(/treasury.*must be explicitly configured/i);
+    });
+
+    it('should throw from createTonFactoryService when owner not set', () => {
+      expect(() =>
+        createTonFactoryService({
+          network: 'testnet',
+          factory: {
+            owner: '0:0000000000000000000000000000000000000000000000000000000000000000',
+            treasury: '0:valid_treasury',
+          },
+        })
+      ).toThrow(/factory\.owner/i);
     });
   });
 

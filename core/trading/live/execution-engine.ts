@@ -26,6 +26,7 @@ import {
   LiveTradingEventCallback,
 } from './types';
 import { ConnectorRegistry, isTerminalOrderStatus } from './connector';
+import { KycAmlManager } from '../../../services/regulatory/kyc-aml';
 
 // ============================================================================
 // Execution Engine Configuration
@@ -48,6 +49,8 @@ export interface ExecutionEngineConfig {
   splitThresholdUSD: number;
   /** Whether simulation mode is active */
   simulationMode: boolean;
+  /** Whether AML transaction checks are enforced before execution */
+  enforceAmlChecks: boolean;
 }
 
 const DEFAULT_CONFIG: ExecutionEngineConfig = {
@@ -59,6 +62,7 @@ const DEFAULT_CONFIG: ExecutionEngineConfig = {
   enableCrossSplitting: false,
   splitThresholdUSD: 10000,
   simulationMode: false,
+  enforceAmlChecks: false, // disabled by default; enable in production
 };
 
 // ============================================================================
@@ -92,6 +96,7 @@ export interface ExecutionMetrics {
 export class DefaultExecutionEngine implements ExecutionEngine {
   private readonly config: ExecutionEngineConfig;
   private readonly registry: ConnectorRegistry;
+  private readonly kycAmlManager: KycAmlManager | undefined;
   private readonly executions = new Map<string, ExecutionResult>();
   private readonly eventCallbacks: LiveTradingEventCallback[] = [];
   private executionCounter = 0;
@@ -106,9 +111,10 @@ export class DefaultExecutionEngine implements ExecutionEngine {
     updatedAt: new Date(),
   };
 
-  constructor(registry: ConnectorRegistry, config: Partial<ExecutionEngineConfig> = {}) {
+  constructor(registry: ConnectorRegistry, config: Partial<ExecutionEngineConfig> = {}, kycAmlManager?: KycAmlManager) {
     this.registry = registry;
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.kycAmlManager = kycAmlManager;
   }
 
   onEvent(callback: LiveTradingEventCallback): void {
@@ -170,6 +176,29 @@ export class DefaultExecutionEngine implements ExecutionEngine {
 
     try {
       execution.status = 'routing';
+
+      // AML transaction check — run before routing to catch blocked trades early
+      if (this.config.enforceAmlChecks && this.kycAmlManager && request.agentId) {
+        const amlResult = await this.kycAmlManager.checkTransaction({
+          transactionId: executionId,
+          userId: request.agentId,
+          type: 'trade',
+          amount: request.quantity * (request.priceLimit ?? 0),
+          currency: 'USD',
+          source: request.agentId,
+          destination: request.symbol,
+          timestamp: startedAt,
+        });
+
+        if (!amlResult.approved) {
+          throw new ExecutionError(
+            `AML check blocked transaction: ${amlResult.requiredActions.join('; ')}`,
+            'AML_BLOCKED',
+            executionId,
+            false, // not retryable
+          );
+        }
+      }
 
       // Select execution strategy
       switch (request.executionStrategy) {
@@ -552,9 +581,10 @@ export class ExecutionError extends Error {
 
 export function createExecutionEngine(
   registry: ConnectorRegistry,
-  config?: Partial<ExecutionEngineConfig>
+  config?: Partial<ExecutionEngineConfig>,
+  kycAmlManager?: KycAmlManager,
 ): DefaultExecutionEngine {
-  return new DefaultExecutionEngine(registry, config);
+  return new DefaultExecutionEngine(registry, config, kycAmlManager);
 }
 
 // ============================================================================

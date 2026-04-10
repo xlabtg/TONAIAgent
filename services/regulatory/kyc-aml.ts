@@ -197,6 +197,68 @@ export interface KycAmlManagerConfig {
   customTierConfigs?: Partial<Record<KycTier, Partial<KycTierConfig>>>;
 }
 
+// ============================================================================
+// KYC Enforcement Types
+// ============================================================================
+
+export type KycEnforcementMode = 'testnet' | 'mainnet';
+
+export interface KycEnforcementConfig {
+  /** Minimum KYC tier required to create an agent */
+  minimumTierForAgentCreation: KycTier;
+  /** Minimum KYC tier required for live (non-demo) trading */
+  minimumTierForLiveTrading: KycTier;
+  /** Whether to enforce KYC checks (false = advisory only) */
+  enforceOnAgentCreation: boolean;
+  /** Whether to enforce AML transaction checks */
+  enforceOnTransactions: boolean;
+}
+
+export const KYC_ENFORCEMENT_DEFAULTS: Record<KycEnforcementMode, KycEnforcementConfig> = {
+  testnet: {
+    minimumTierForAgentCreation: 'basic',
+    minimumTierForLiveTrading: 'basic',
+    enforceOnAgentCreation: true,
+    enforceOnTransactions: true,
+  },
+  mainnet: {
+    minimumTierForAgentCreation: 'standard',
+    minimumTierForLiveTrading: 'standard',
+    enforceOnAgentCreation: true,
+    enforceOnTransactions: true,
+  },
+};
+
+export interface KycEnforcementResult {
+  allowed: boolean;
+  userId: string;
+  currentTier: KycTier | 'none';
+  requiredTier: KycTier;
+  reason?: string;
+  auditId: string;
+  timestamp: Date;
+}
+
+export interface TierLimitCheckResult {
+  allowed: boolean;
+  userId: string;
+  currentTier: KycTier | 'none';
+  transactionAmount: number;
+  limitAmount: number | 'unlimited';
+  limitType: 'singleTransaction' | 'dailyTransaction' | 'monthlyTransaction';
+  reason?: string;
+  auditId: string;
+  timestamp: Date;
+}
+
+export interface FrozenAccount {
+  userId: string;
+  frozenAt: Date;
+  frozenBy: string;
+  reason: string;
+  caseId: string;
+}
+
 export class KycAmlManager {
   private config: Required<KycAmlManagerConfig>;
   private tierConfigs: Record<KycTier, KycTierConfig>;
@@ -206,6 +268,8 @@ export class KycAmlManager {
   private eventListeners: RegulatoryEventCallback[] = [];
   private highRiskAddresses: Set<string> = new Set();
   private blacklistedAddresses: Set<string> = new Set();
+  private frozenAccounts: Map<string, FrozenAccount> = new Map();
+  private auditLog: Array<{ id: string; timestamp: Date; action: string; userId: string; details: Record<string, unknown> }> = [];
 
   constructor(config: KycAmlManagerConfig = {}) {
     this.config = {
@@ -583,6 +647,247 @@ export class KycAmlManager {
   }
 
   // ============================================================================
+  // KYC Enforcement
+  // ============================================================================
+
+  /**
+   * Enforce KYC tier requirement before allowing agent creation.
+   * Returns a result object that callers must check before proceeding.
+   * Logs all decisions for audit trail.
+   */
+  async enforceKycForAgentCreation(
+    userId: string,
+    enforcementConfig: KycEnforcementConfig
+  ): Promise<KycEnforcementResult> {
+    const auditId = this.generateId('audit');
+    const timestamp = new Date();
+
+    // Check if account is frozen
+    const frozenAccount = this.frozenAccounts.get(userId);
+    if (frozenAccount) {
+      const result: KycEnforcementResult = {
+        allowed: false,
+        userId,
+        currentTier: 'none',
+        requiredTier: enforcementConfig.minimumTierForAgentCreation,
+        reason: `Account frozen for compliance review (case: ${frozenAccount.caseId})`,
+        auditId,
+        timestamp,
+      };
+      this.logAuditEvent(auditId, 'kyc_enforcement_blocked_frozen', userId, { frozenAccount });
+      this.emitEvent({
+        type: 'kyc.enforcement_blocked',
+        timestamp,
+        payload: { userId, reason: result.reason, auditId },
+        source: 'kyc-aml-manager',
+      });
+      return result;
+    }
+
+    const kycStatus = await this.getKycStatus(userId);
+    const currentTier = kycStatus?.approvedTier ?? 'none';
+    const requiredTier = enforcementConfig.minimumTierForAgentCreation;
+
+    const tierOrder: Array<KycTier | 'none'> = ['none', 'basic', 'standard', 'enhanced', 'institutional'];
+    const currentIndex = tierOrder.indexOf(currentTier);
+    const requiredIndex = tierOrder.indexOf(requiredTier);
+
+    const meetsRequirement =
+      kycStatus?.status === 'approved' &&
+      kycStatus.approvedTier !== undefined &&
+      currentIndex >= requiredIndex;
+
+    if (!enforcementConfig.enforceOnAgentCreation) {
+      // Advisory mode — log but allow
+      this.logAuditEvent(auditId, 'kyc_enforcement_advisory', userId, { currentTier, requiredTier, meetsRequirement });
+      return {
+        allowed: true,
+        userId,
+        currentTier,
+        requiredTier,
+        reason: meetsRequirement ? undefined : `Advisory: KYC tier ${currentTier} is below required ${requiredTier}`,
+        auditId,
+        timestamp,
+      };
+    }
+
+    if (!meetsRequirement) {
+      const reason = currentTier === 'none'
+        ? `KYC verification required before creating trading agents (minimum tier: ${requiredTier})`
+        : `KYC tier '${currentTier}' is below required tier '${requiredTier}' for agent creation`;
+
+      const result: KycEnforcementResult = {
+        allowed: false,
+        userId,
+        currentTier,
+        requiredTier,
+        reason,
+        auditId,
+        timestamp,
+      };
+
+      this.logAuditEvent(auditId, 'kyc_enforcement_blocked', userId, { currentTier, requiredTier, reason });
+      this.emitEvent({
+        type: 'kyc.enforcement_blocked',
+        timestamp,
+        payload: { userId, currentTier, requiredTier, reason, auditId },
+        source: 'kyc-aml-manager',
+      });
+      return result;
+    }
+
+    this.logAuditEvent(auditId, 'kyc_enforcement_allowed', userId, { currentTier, requiredTier });
+    this.emitEvent({
+      type: 'kyc.enforcement_allowed',
+      timestamp,
+      payload: { userId, currentTier, requiredTier, auditId },
+      source: 'kyc-aml-manager',
+    });
+    return {
+      allowed: true,
+      userId,
+      currentTier,
+      requiredTier,
+      auditId,
+      timestamp,
+    };
+  }
+
+  /**
+   * Check if a transaction amount is within the user's KYC tier limits.
+   * Call this before executing any trade to enforce per-tier position limits.
+   */
+  async enforceTierLimits(
+    userId: string,
+    amount: number,
+    limitType: 'singleTransaction' | 'dailyTransaction' | 'monthlyTransaction' = 'singleTransaction'
+  ): Promise<TierLimitCheckResult> {
+    const auditId = this.generateId('audit');
+    const timestamp = new Date();
+
+    const kycStatus = await this.getKycStatus(userId);
+    const currentTier = kycStatus?.approvedTier ?? 'none';
+
+    if (!kycStatus || kycStatus.status !== 'approved' || !kycStatus.approvedTier) {
+      const result: TierLimitCheckResult = {
+        allowed: false,
+        userId,
+        currentTier: 'none',
+        transactionAmount: amount,
+        limitAmount: 0,
+        limitType,
+        reason: 'No approved KYC status found — user must complete KYC before trading',
+        auditId,
+        timestamp,
+      };
+      this.logAuditEvent(auditId, 'tier_limit_blocked_no_kyc', userId, { amount, limitType });
+      return result;
+    }
+
+    const tierConfig = this.tierConfigs[kycStatus.approvedTier];
+    const limitAmount = tierConfig.limits[limitType];
+
+    if (limitAmount !== 'unlimited' && amount > limitAmount) {
+      const result: TierLimitCheckResult = {
+        allowed: false,
+        userId,
+        currentTier,
+        transactionAmount: amount,
+        limitAmount,
+        limitType,
+        reason: `Transaction amount ${amount} ${tierConfig.limits.currency ?? 'USD'} exceeds ${limitType} limit of ${limitAmount} ${tierConfig.limits.currency ?? 'USD'} for KYC tier '${currentTier}'`,
+        auditId,
+        timestamp,
+      };
+      this.logAuditEvent(auditId, 'tier_limit_blocked', userId, { amount, limitAmount, limitType, currentTier });
+      this.emitEvent({
+        type: 'aml.tier_limit_exceeded',
+        timestamp,
+        payload: { userId, amount, limitAmount, limitType, currentTier, auditId },
+        source: 'kyc-aml-manager',
+      });
+      return result;
+    }
+
+    this.logAuditEvent(auditId, 'tier_limit_allowed', userId, { amount, limitAmount, limitType, currentTier });
+    return {
+      allowed: true,
+      userId,
+      currentTier,
+      transactionAmount: amount,
+      limitAmount,
+      limitType,
+      auditId,
+      timestamp,
+    };
+  }
+
+  /**
+   * Freeze an account for compliance review.
+   * Frozen accounts are blocked from all trading operations.
+   */
+  freezeAccount(userId: string, reason: string, frozenBy: string): FrozenAccount {
+    const auditId = this.generateId('audit');
+    const frozen: FrozenAccount = {
+      userId,
+      frozenAt: new Date(),
+      frozenBy,
+      reason,
+      caseId: auditId,
+    };
+    this.frozenAccounts.set(userId, frozen);
+    this.logAuditEvent(auditId, 'account_frozen', userId, { reason, frozenBy });
+    this.emitEvent({
+      type: 'kyc.account_frozen',
+      timestamp: frozen.frozenAt,
+      payload: { userId, reason, frozenBy, caseId: auditId },
+      source: 'kyc-aml-manager',
+    });
+    return frozen;
+  }
+
+  /**
+   * Unfreeze an account after compliance review is complete.
+   */
+  unfreezeAccount(userId: string, unfrozenBy: string, resolution: string): void {
+    const frozen = this.frozenAccounts.get(userId);
+    if (!frozen) return;
+    this.frozenAccounts.delete(userId);
+    const auditId = this.generateId('audit');
+    this.logAuditEvent(auditId, 'account_unfrozen', userId, { unfrozenBy, resolution, originalCaseId: frozen.caseId });
+    this.emitEvent({
+      type: 'kyc.account_unfrozen',
+      timestamp: new Date(),
+      payload: { userId, unfrozenBy, resolution, caseId: frozen.caseId },
+      source: 'kyc-aml-manager',
+    });
+  }
+
+  /**
+   * Check whether an account is currently frozen.
+   */
+  isAccountFrozen(userId: string): boolean {
+    return this.frozenAccounts.has(userId);
+  }
+
+  /**
+   * Get frozen account details if frozen, undefined otherwise.
+   */
+  getFrozenAccount(userId: string): FrozenAccount | undefined {
+    return this.frozenAccounts.get(userId);
+  }
+
+  /**
+   * Retrieve audit log entries, optionally filtered by userId.
+   */
+  getAuditLog(userId?: string): Array<{ id: string; timestamp: Date; action: string; userId: string; details: Record<string, unknown> }> {
+    if (userId) {
+      return this.auditLog.filter((entry) => entry.userId === userId);
+    }
+    return [...this.auditLog];
+  }
+
+  // ============================================================================
   // Event System
   // ============================================================================
 
@@ -600,6 +905,10 @@ export class KycAmlManager {
 
   private generateId(prefix: string): string {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private logAuditEvent(id: string, action: string, userId: string, details: Record<string, unknown>): void {
+    this.auditLog.push({ id, timestamp: new Date(), action, userId, details });
   }
 
   private createAutoApprovalResult(application: KycApplication): KycResult {

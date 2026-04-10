@@ -152,6 +152,9 @@ import { FeeManager, DEFAULT_FEE_CONFIG } from './fee-manager';
 // Default Configuration
 // ============================================================================
 
+/** Null address sentinel used to detect un-configured owner/treasury. */
+const NULL_TON_ADDRESS = '0:0000000000000000000000000000000000000000000000000000000000000000';
+
 export const defaultTonFactoryConfig: TonFactoryConfig = {
   enabled: true,
   network: 'testnet',
@@ -229,6 +232,23 @@ export class DefaultTonFactoryService implements TonFactoryService {
     };
 
     this.enabled = this.config.enabled;
+
+    // Validate owner/treasury before constructing the factory manager.
+    // This surfaces mis-configuration at service startup rather than at
+    // the first deployment attempt.
+    const factoryCfg = this.config.factory;
+    if (!factoryCfg.owner || factoryCfg.owner === NULL_TON_ADDRESS) {
+      throw new Error(
+        'DefaultTonFactoryService: factory.owner must be set to a valid TON address. ' +
+        'Pass it via createTonFactoryService({ factory: { owner: "EQD...", treasury: "EQD..." } }).'
+      );
+    }
+    if (!factoryCfg.treasury || factoryCfg.treasury === NULL_TON_ADDRESS) {
+      throw new Error(
+        'DefaultTonFactoryService: factory.treasury must be set to a valid TON address. ' +
+        'Pass it via createTonFactoryService({ factory: { owner: "EQD...", treasury: "EQD..." } }).'
+      );
+    }
 
     // Initialize all components
     this.factory = new FactoryContractManager(this.config.factory);
