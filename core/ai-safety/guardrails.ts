@@ -22,6 +22,7 @@ import {
   AISafetyEvent,
   AISafetyEventCallback,
 } from './types';
+import { sanitizeStrategyName, sanitizeUserInput } from '../ai/sanitize';
 
 // ============================================================================
 // Interfaces
@@ -266,6 +267,17 @@ export class DefaultGuardrailsManager implements GuardrailsManager {
     const violations: RuleViolation[] = [];
     const warnings: RuleWarning[] = [];
     const recommendations: string[] = [];
+
+    // Input-stage sanitization: scrub user-controlled string fields before any
+    // further processing so that injection attempts in strategy names or
+    // description fields cannot influence rule evaluation or downstream prompts.
+    const sanitizedName = sanitizeStrategyName(strategy.name);
+    const sanitizedStrategy: StrategyValidationInput = {
+      ...strategy,
+      name: sanitizedName,
+      type: sanitizeUserInput(strategy.type, { maxLength: 100 }),
+    };
+    strategy = sanitizedStrategy;
 
     // Check if strategy is blocked
     if (this.blockedStrategies.has(strategy.id)) {
