@@ -29,9 +29,17 @@ import {
 // Default Configuration
 // ============================================================================
 
+/** Null address sentinel — must never be used as a real owner or treasury. */
+const NULL_TON_ADDRESS = '0:0000000000000000000000000000000000000000000000000000000000000000';
+
+/**
+ * Partial defaults for non-critical fields.
+ * `owner` and `treasury` are intentionally omitted — callers MUST provide them.
+ * @see FactoryContractManager constructor which enforces this at runtime.
+ */
 export const DEFAULT_FACTORY_CONFIG: FactoryConfig = {
-  owner: '0:0000000000000000000000000000000000000000000000000000000000000000',
-  treasury: '0:0000000000000000000000000000000000000000000000000000000000000000',
+  owner: NULL_TON_ADDRESS,
+  treasury: NULL_TON_ADDRESS,
   version: '1.0.0',
   deploymentFee: BigInt(100_000_000), // 0.1 TON
   protocolFeeBps: 100, // 1%
@@ -114,16 +122,29 @@ export class FactoryContractManager {
   constructor(config: Partial<FactoryConfig> = {}) {
     this.config = { ...DEFAULT_FACTORY_CONFIG, ...config };
 
-    // Grant owner full access
-    if (this.config.owner) {
-      this.accessControl.set(this.config.owner, {
-        role: 'owner',
-        address: this.config.owner,
-        permissions: ['deploy', 'pause', 'upgrade', 'admin', 'emergency'],
-        grantedBy: this.config.owner,
-        grantedAt: new Date(),
-      });
+    // Require explicit, non-null owner and treasury to prevent mis-configuration
+    // where funds or admin control would silently point to the burn address.
+    if (!this.config.owner || this.config.owner === NULL_TON_ADDRESS) {
+      throw new Error(
+        'FactoryContractManager: "owner" must be explicitly configured to a valid TON address. ' +
+        'Refusing to start with the null address as owner.'
+      );
     }
+    if (!this.config.treasury || this.config.treasury === NULL_TON_ADDRESS) {
+      throw new Error(
+        'FactoryContractManager: "treasury" must be explicitly configured to a valid TON address. ' +
+        'Refusing to start with the null address as treasury.'
+      );
+    }
+
+    // Grant owner full access
+    this.accessControl.set(this.config.owner, {
+      role: 'owner',
+      address: this.config.owner,
+      permissions: ['deploy', 'pause', 'upgrade', 'admin', 'emergency'],
+      grantedBy: this.config.owner,
+      grantedAt: new Date(),
+    });
   }
 
   // ============================================================================
@@ -536,7 +557,7 @@ export class FactoryContractManager {
 // ============================================================================
 
 export function createFactoryContractManager(
-  config?: Partial<FactoryConfig>
+  config: Partial<FactoryConfig> & { owner: TonAddress; treasury: TonAddress }
 ): FactoryContractManager {
   return new FactoryContractManager(config);
 }
