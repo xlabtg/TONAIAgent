@@ -1,0 +1,280 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus data source for TONAIAgent metrics",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" }
+  ],
+  "title": "TONAIAgent — Agent Overview",
+  "description": "Real-time agent status, trading performance, and circuit-breaker state (Issue #313)",
+  "tags": ["TONAIAgent", "agents", "trading"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "uid": "tonai-agent-overview",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Agents",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "tonaiagent_agents_active_total",
+          "legendFormat": "Active"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red", "value": 0 },
+            { "color": "yellow", "value": 1 },
+            { "color": "green", "value": 5 }
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Agent Error Rate (5 min)",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "rate(tonaiagent_agent_errors_total[5m]) / rate(tonaiagent_agent_requests_total[5m])",
+          "legendFormat": "Error Rate"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "unit": "percentunit",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": 0 },
+            { "color": "yellow", "value": 0.05 },
+            { "color": "red", "value": 0.20 }
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Circuit Breaker Status",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "tonaiagent_circuit_breaker_tripped",
+          "legendFormat": "Tripped"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "mappings": [
+          { "type": "value", "options": { "0": { "text": "CLOSED", "color": "green" }, "1": { "text": "OPEN", "color": "red" } } }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Portfolio Drawdown (1 h)",
+      "type": "gauge",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "tonaiagent_portfolio_drawdown_pct",
+          "legendFormat": "Drawdown %"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "unit": "percent",
+        "min": -30,
+        "max": 0,
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": -10 },
+            { "color": "yellow", "value": -20 },
+            { "color": "red", "value": -30 }
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "API Latency p99 (ms)",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, rate(tonaiagent_api_request_duration_ms_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "unit": "ms",
+        "colorMode": "background",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": 0 },
+            { "color": "yellow", "value": 2000 },
+            { "color": "red", "value": 5000 }
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Trade Volume vs Average",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "rate(tonaiagent_trades_total[5m])",
+          "legendFormat": "Current Volume"
+        },
+        {
+          "expr": "avg_over_time(rate(tonaiagent_trades_total[5m])[1h:5m])",
+          "legendFormat": "Rolling Avg (1 h)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Rolling Avg (1 h)" },
+            "properties": [{ "id": "custom.lineStyle", "value": { "fill": "dash" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "title": "Agent Error Rate Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "rate(tonaiagent_agent_errors_total[5m]) / rate(tonaiagent_agent_requests_total[5m])",
+          "legendFormat": "Error Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 0.05 },
+              { "color": "red", "value": 0.20 }
+            ]
+          },
+          "custom": { "thresholdsStyle": { "mode": "area" } }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Agent Status Table",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "tonaiagent_agent_status",
+          "legendFormat": "{{agent_id}}",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "rows" } },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": { "agent_id": "Agent ID", "status": "Status", "Value": "State" }
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Circuit Breaker Trips",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(tonaiagent_circuit_breaker_trips_total[5m])",
+          "legendFormat": "{{reason}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 10,
+      "title": "Key Management Errors",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(tonaiagent_key_management_errors_total[5m])",
+          "legendFormat": "Key Errors"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "fixedColor": "red", "mode": "fixed" }
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "agent_id",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(tonaiagent_agent_status, agent_id)",
+        "label": "Agent",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {}
+}
