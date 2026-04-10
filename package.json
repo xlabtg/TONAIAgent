@@ -632,5 +632,9 @@
     "typescript": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1"
   }
 }

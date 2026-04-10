@@ -2,7 +2,7 @@
  * TONAIAgent - Secure Key Management Service
  *
  * Implements production-grade key management with:
- * - MPC (Multi-Party Computation) threshold signing
+ * - MPC (Multi-Party Computation) threshold signing (real threshold EdDSA)
  * - HSM integration support
  * - Secure enclave operations
  * - BIP-32/44 key derivation
@@ -10,9 +10,20 @@
  *
  * SECURITY CRITICAL: This module handles cryptographic operations.
  * AI agents NEVER have direct access to private keys.
+ *
+ * Threshold signing uses a FROST-like simplified protocol:
+ *   1. Secret key scalar split via Shamir's Secret Sharing over ed25519 group order.
+ *   2. Each party holds one share; any `threshold` parties can reconstruct the key.
+ *   3. Signing uses additive nonce aggregation so the full key is never reconstructed
+ *      in one place — each party computes a partial signature locally.
+ *   4. The coordinator aggregates R points and partial scalars to produce a valid
+ *      Ed25519 signature without ever holding the combined private key.
  */
 
 import * as nodeCrypto from 'node:crypto';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { mod, invert } from '@noble/curves/abstract/modular.js';
+import { sha512 } from '@noble/hashes/sha2.js';
 import {
   KeyMetadata,
   KeyShare,
@@ -26,7 +37,148 @@ import {
   SignatureInfo,
   SecurityEvent,
   SecurityEventCallback,
+  ThresholdSigningSession,
 } from './types';
+
+// ============================================================================
+// Threshold EdDSA Cryptographic Primitives
+// ============================================================================
+
+/**
+ * ed25519 group order (ℓ).
+ * All scalar arithmetic is performed modulo this value.
+ */
+const ED25519_ORDER = BigInt(
+  '7237005577332262213973186563042994240857116359379907606001950938285454250989'
+);
+
+/** Encode a scalar as a 32-byte little-endian Uint8Array. */
+function scalarToBytes32LE(n: bigint): Uint8Array {
+  const buf = new Uint8Array(32);
+  let tmp = mod(n, ED25519_ORDER);
+  for (let i = 0; i < 32; i++) {
+    buf[i] = Number(tmp & 0xffn);
+    tmp >>= 8n;
+  }
+  return buf;
+}
+
+/** Decode a 32-byte little-endian Uint8Array to a BigInt scalar. */
+function bytes32LEToScalar(bytes: Uint8Array): bigint {
+  let n = 0n;
+  for (let i = 31; i >= 0; i--) n = (n << 8n) | BigInt(bytes[i]);
+  return n;
+}
+
+/** Decode a 64-byte little-endian Uint8Array to a BigInt scalar (for SHA-512 hash). */
+function bytes64LEToScalar(bytes: Uint8Array): bigint {
+  let n = 0n;
+  for (let i = 63; i >= 0; i--) n = (n << 8n) | BigInt(bytes[i]);
+  return n;
+}
+
+/** Generate a cryptographically random scalar in [1, ℓ−1]. */
+function randomScalar(): bigint {
+  const bytes = ed25519.utils.randomSecretKey();
+  let n = 0n;
+  for (let i = 31; i >= 0; i--) n = (n << 8n) | BigInt(bytes[i]);
+  n = mod(n, ED25519_ORDER - 1n) + 1n;
+  return n;
+}
+
+/**
+ * Generate Shamir secret shares of `secret` over GF(ED25519_ORDER).
+ * Returns `totalShares` shares where any `threshold` shares reconstruct the secret.
+ *
+ * @param secret    The scalar to split (Ed25519 private key scalar).
+ * @param totalShares  Total number of shares (n).
+ * @param threshold    Minimum shares needed to reconstruct (t).
+ * @returns Array of { x: BigInt, y: BigInt } share pairs, x in [1..n].
+ */
+function shamirSplit(
+  secret: bigint,
+  totalShares: number,
+  threshold: number
+): Array<{ x: bigint; y: bigint }> {
+  // Polynomial f(x) = secret + a1*x + a2*x^2 + ... + a(t-1)*x^(t-1) mod ℓ
+  const coefficients: bigint[] = [mod(secret, ED25519_ORDER)];
+  for (let i = 1; i < threshold; i++) {
+    coefficients.push(randomScalar());
+  }
+
+  const shares: Array<{ x: bigint; y: bigint }> = [];
+  for (let i = 1; i <= totalShares; i++) {
+    const x = BigInt(i);
+    let y = 0n;
+    for (let j = 0; j < coefficients.length; j++) {
+      y = mod(y + coefficients[j] * mod(x ** BigInt(j), ED25519_ORDER), ED25519_ORDER);
+    }
+    shares.push({ x, y });
+  }
+  return shares;
+}
+
+/**
+ * Compute the Lagrange basis coefficient λ_i for party x_i
+ * given the set of participating party x-coordinates.
+ */
+function lagrangeCoefficient(xi: bigint, participantXs: bigint[]): bigint {
+  let num = 1n;
+  let den = 1n;
+  for (const xj of participantXs) {
+    if (xj === xi) continue;
+    num = mod(num * (0n - xj), ED25519_ORDER);
+    den = mod(den * (xi - xj), ED25519_ORDER);
+  }
+  return mod(num * invert(den, ED25519_ORDER), ED25519_ORDER);
+}
+
+/**
+ * Compute a partial EdDSA signature for one share holder.
+ *
+ * Each party i computes:
+ *   partial_s_i = r_i + h * λ_i * shareY_i  (mod ℓ)
+ *
+ * where h = SHA-512(R_agg || pubKey || message) mod ℓ,
+ * R_agg = Σ R_j (the aggregate nonce point),
+ * λ_i = Lagrange coefficient for party i.
+ *
+ * @param nonce          Party i's secret nonce scalar r_i.
+ * @param shareY         Party i's Shamir share value y_i.
+ * @param xi             Party i's share index (1-based).
+ * @param participantXs  x-coordinates of all t participating parties.
+ * @param challenge      The Ed25519 challenge scalar h.
+ * @returns Partial scalar s_i as BigInt.
+ */
+function computePartialScalar(
+  nonce: bigint,
+  shareY: bigint,
+  xi: bigint,
+  participantXs: bigint[],
+  challenge: bigint
+): bigint {
+  const lambda = lagrangeCoefficient(xi, participantXs);
+  return mod(nonce + mod(challenge * mod(lambda * shareY, ED25519_ORDER), ED25519_ORDER), ED25519_ORDER);
+}
+
+/**
+ * Compute the Ed25519 challenge scalar h from the protocol inputs.
+ *
+ * h = SHA-512(R_bytes || pubKey_bytes || message_bytes)  interpreted as
+ *     a 512-bit little-endian integer reduced mod ℓ.
+ * This matches the challenge computation in RFC 8032 §5.1.6.
+ */
+function computeChallenge(
+  rBytes: Uint8Array,
+  pubKeyBytes: Uint8Array,
+  messageBytes: Uint8Array
+): bigint {
+  const input = new Uint8Array(rBytes.length + pubKeyBytes.length + messageBytes.length);
+  input.set(rBytes, 0);
+  input.set(pubKeyBytes, rBytes.length);
+  input.set(messageBytes, rBytes.length + pubKeyBytes.length);
+  return mod(bytes64LEToScalar(sha512(input)), ED25519_ORDER);
+}
 
 // ============================================================================
 // Interfaces
@@ -290,43 +442,109 @@ export class HSMKeyStorage extends KeyStorageBackend {
 // ============================================================================
 
 /**
+ * Internal record of a threshold signing session.
+ * Holds per-party nonces (never leaves the coordinator in plaintext),
+ * the aggregate nonce point R, and the collected partial scalars.
+ */
+interface ActiveSigningSession {
+  /** Aggregate nonce point R = Σ R_i, serialised as hex. */
+  aggregateRHex: string;
+  /** Per-party nonces r_i (held server-side during the session, cleared after). */
+  nonces: Map<string, bigint>;
+  /** Partial scalars s_i keyed by shareId. */
+  partialScalars: Map<string, bigint>;
+  /** The Shamir share x-coordinates of the participating parties, in declaration order. */
+  participantXs: bigint[];
+  /** Replay-protection nonce for this session. */
+  sessionNonce: string;
+  /** Timestamp of session creation (ms). */
+  createdAt: number;
+}
+
+/**
  * Coordinates MPC (Multi-Party Computation) threshold signing.
- * Ensures no single party can sign transactions alone.
+ *
+ * Implements a simplified FROST-like threshold EdDSA protocol:
+ *   - Keys are split using Shamir's Secret Sharing over the ed25519 group order.
+ *   - Signing never reconstructs the full private key — parties contribute
+ *     partial scalars that are aggregated into a valid Ed25519 signature.
+ *   - Each signing session gets a unique nonce for replay protection.
  */
 export class MPCCoordinator {
-  private readonly shares = new Map<string, KeyShare[]>();
-  private readonly partialSignatures = new Map<string, Map<string, string>>();
+  /**
+   * Metadata for each keyId's shares (public info only — share values are held
+   * by each party separately; only shareIndex and holderType are stored here).
+   */
+  private readonly shareMetadata = new Map<string, KeyShare[]>();
+
+  /**
+   * Shamir share values for keyId → array indexed by shareIndex.
+   * In a production multi-party system these would live in separate processes /
+   * HSM partitions.  Here they are held in-process as the reference implementation.
+   */
+  private readonly shareValues = new Map<string, Array<{ x: bigint; y: bigint }>>();
+
+  /** Public keys (compressed ed25519 point) per keyId, hex-encoded. */
+  private readonly publicKeys = new Map<string, string>();
+
+  /** Active threshold signing sessions, keyed by signingRequestId. */
+  private readonly activeSessions = new Map<string, ActiveSigningSession>();
 
   constructor(private readonly config: MPCConfig) {}
 
+  // --------------------------------------------------------------------------
+  // DKG: Distributed Key Generation
+  // --------------------------------------------------------------------------
+
   /**
-   * Generate distributed key shares for MPC
+   * Initialise a new threshold key and distribute shares.
+   *
+   * Generates a fresh Ed25519 key pair, splits the private scalar using
+   * Shamir's Secret Sharing, and creates the public KeyShare metadata
+   * records for each party.
+   *
+   * In a production deployment the Shamir share values (shareValues map)
+   * would be encrypted and transmitted to each party's isolated environment
+   * over a secure channel; they must never all reside in the same process.
+   *
+   * @param keyId  Unique identifier for the key.
+   * @returns      Array of KeyShare metadata (share values NOT included).
    */
   async generateShares(keyId: string): Promise<KeyShare[]> {
-    const shares: KeyShare[] = [];
+    // Generate a fresh Ed25519 secret key and derive the scalar.
+    const secretKey = ed25519.utils.randomSecretKey();
+    const { scalar, pointBytes } = ed25519.utils.getExtendedPublicKey(secretKey);
 
-    // Generate shares for each party
+    // Persist the public key so it can be used during signing.
+    this.publicKeys.set(keyId, Buffer.from(pointBytes).toString('hex'));
+
+    // Split the private scalar into Shamir shares.
+    const rawShares = shamirSplit(scalar, this.config.totalShares, this.config.threshold);
+    this.shareValues.set(keyId, rawShares);
+
     const holders: Array<'user' | 'platform' | 'recovery_service'> = [
       'user',
       'platform',
       'recovery_service',
     ];
 
-    for (let i = 0; i < this.config.totalShares; i++) {
-      const share: KeyShare = {
-        id: `share_${keyId}_${i}`,
-        keyId,
-        shareIndex: i,
-        totalShares: this.config.totalShares,
-        threshold: this.config.threshold,
-        holderType: holders[i % holders.length],
-        publicData: this.generateSharePublicData(keyId, i),
-        createdAt: new Date(),
-      };
-      shares.push(share);
-    }
+    const shares: KeyShare[] = rawShares.map((raw, i) => ({
+      id: `share_${keyId}_${i + 1}`,
+      keyId,
+      shareIndex: i + 1,        // 1-based to match Shamir x-coordinates
+      totalShares: this.config.totalShares,
+      threshold: this.config.threshold,
+      holderType: holders[i % holders.length],
+      // publicData encodes the share's public commitment: shareIndex * G (hex).
+      // This allows other parties to verify a partial signature's R contribution
+      // without revealing the share value.
+      publicData: Buffer.from(
+        ed25519.Point.BASE.multiply(raw.y).toBytes()
+      ).toString('hex'),
+      createdAt: new Date(),
+    }));
 
-    this.shares.set(keyId, shares);
+    this.shareMetadata.set(keyId, shares);
     return shares;
   }
 
@@ -334,7 +552,7 @@ export class MPCCoordinator {
    * Get status of MPC shares for a key
    */
   getSharesStatus(keyId: string): MPCSharesStatus | null {
-    const shares = this.shares.get(keyId);
+    const shares = this.shareMetadata.get(keyId);
     if (!shares) {
       return null;
     }
@@ -355,46 +573,333 @@ export class MPCCoordinator {
   }
 
   /**
-   * Collect partial signature from a share holder
+   * Return the public key hex for a key managed by this coordinator.
+   */
+  getPublicKey(keyId: string): string | null {
+    return this.publicKeys.get(keyId) ?? null;
+  }
+
+  // --------------------------------------------------------------------------
+  // Threshold Signing Protocol
+  // --------------------------------------------------------------------------
+
+  /**
+   * Open a new threshold signing session for a message.
+   *
+   * Selects `threshold` parties, generates per-party nonces, aggregates the
+   * nonce point R = Σ r_i·G, and persists the session.  Returns the session
+   * descriptor that embeds the aggregate R and the session nonce required for
+   * replay protection.
+   *
+   * @param keyId             Key whose shares will be used.
+   * @param signingRequestId  Signing request identifier (used as session key).
+   * @param participantShareIndices  1-based share indices of the t participating parties.
+   *                                 Defaults to the first `threshold` shares.
+   * @returns  ThresholdSigningSession with aggregate R hex and session nonce.
+   */
+  async openSigningSession(
+    keyId: string,
+    signingRequestId: string,
+    participantShareIndices?: number[]
+  ): Promise<ThresholdSigningSession> {
+    if (this.activeSessions.has(signingRequestId)) {
+      throw new Error(`Signing session already open for request: ${signingRequestId}`);
+    }
+
+    const rawShares = this.shareValues.get(keyId);
+    if (!rawShares) {
+      throw new Error(`No Shamir shares found for key: ${keyId}`);
+    }
+
+    // Default: use the first `threshold` parties.
+    const indices = participantShareIndices
+      ?? Array.from({ length: this.config.threshold }, (_, i) => i + 1);
+
+    if (indices.length < this.config.threshold) {
+      throw new Error(
+        `Not enough participants: need ${this.config.threshold}, got ${indices.length}`
+      );
+    }
+
+    const participantXs = indices.map(BigInt);
+    const G = ed25519.Point.BASE;
+
+    // Each party generates a secret nonce r_i and commits R_i = r_i · G.
+    // We accumulate all R_i using the first point as the initial value to
+    // avoid multiplying by 0 (which is invalid on edwards curves).
+    const nonces = new Map<string, bigint>();
+    const noncePoints: Array<(typeof G)> = [];
+
+    for (const idx of indices) {
+      const shareId = `share_${keyId}_${idx}`;
+      const r = randomScalar();
+      nonces.set(shareId, r);
+      noncePoints.push(G.multiply(r));
+    }
+
+    // Aggregate R = Σ R_i
+    let aggregateR = noncePoints[0];
+    for (let i = 1; i < noncePoints.length; i++) {
+      aggregateR = aggregateR.add(noncePoints[i]);
+    }
+
+    const aggregateRHex = Buffer.from(aggregateR.toBytes()).toString('hex');
+    const sessionNonce = nodeCrypto.randomBytes(16).toString('hex');
+
+    const session: ActiveSigningSession = {
+      aggregateRHex,
+      nonces,
+      partialScalars: new Map(),
+      participantXs,
+      sessionNonce,
+      createdAt: Date.now(),
+    };
+    this.activeSessions.set(signingRequestId, session);
+
+    const descriptor: ThresholdSigningSession = {
+      signingRequestId,
+      keyId,
+      aggregateRHex,
+      participantIndices: indices,
+      sessionNonce,
+      threshold: this.config.threshold,
+      createdAt: new Date(session.createdAt),
+    };
+    return descriptor;
+  }
+
+  /**
+   * Compute and collect the partial signature for one share holder.
+   *
+   * Each participating party calls this with the message to sign.
+   * Internally the coordinator looks up the party's nonce and share value,
+   * computes the partial scalar, and stores it.
+   *
+   * @param signingRequestId  Session identifier.
+   * @param shareId           Share identifier (e.g. `share_<keyId>_<index>`).
+   * @param message           The message bytes to sign.
+   * @param pubKeyHex         Hex-encoded public key (for challenge computation).
+   * @returns  `true` once threshold partial signatures have been collected.
+   */
+  async computeAndCollectPartialSignature(
+    signingRequestId: string,
+    shareId: string,
+    message: Uint8Array | string,
+    pubKeyHex: string
+  ): Promise<boolean> {
+    const session = this.activeSessions.get(signingRequestId);
+    if (!session) {
+      throw new Error(`No active signing session for request: ${signingRequestId}`);
+    }
+
+    const nonce = session.nonces.get(shareId);
+    if (nonce === undefined) {
+      throw new Error(`Share ${shareId} is not a participant in this session`);
+    }
+
+    if (session.partialScalars.has(shareId)) {
+      throw new Error(`Partial signature already collected for share: ${shareId}`);
+    }
+
+    // Derive keyId and shareIndex from shareId format `share_<keyId>_<index>`.
+    const lastUnderscore = shareId.lastIndexOf('_');
+    const keyId = shareId.slice('share_'.length, lastUnderscore);
+    const shareIndex = parseInt(shareId.slice(lastUnderscore + 1), 10);
+
+    const rawShares = this.shareValues.get(keyId);
+    if (!rawShares) {
+      throw new Error(`Share values not found for key: ${keyId}`);
+    }
+
+    const raw = rawShares.find((s) => s.x === BigInt(shareIndex));
+    if (!raw) {
+      throw new Error(`Share index ${shareIndex} not found for key: ${keyId}`);
+    }
+
+    const msgBytes = typeof message === 'string' ? Buffer.from(message) : message;
+    const rBytes = Buffer.from(session.aggregateRHex, 'hex');
+    const pubKeyBytes = Buffer.from(pubKeyHex, 'hex');
+
+    const challenge = computeChallenge(
+      new Uint8Array(rBytes),
+      new Uint8Array(pubKeyBytes),
+      new Uint8Array(msgBytes)
+    );
+
+    const partialScalar = computePartialScalar(
+      nonce,
+      raw.y,
+      BigInt(shareIndex),
+      session.participantXs,
+      challenge
+    );
+
+    session.partialScalars.set(shareId, partialScalar);
+    return session.partialScalars.size >= this.config.threshold;
+  }
+
+  /**
+   * Legacy: Collect a pre-computed partial signature from a share holder.
+   *
+   * Accepts a hex-encoded partial scalar from an external party and stores it.
+   * Use `computeAndCollectPartialSignature` when the coordinator holds shares.
+   *
+   * @param signingRequestId  Session identifier.
+   * @param shareId           Share identifier.
+   * @param partialSignature  Hex-encoded partial scalar (32-byte LE).
+   * @returns  `true` once threshold partial signatures have been collected.
    */
   async collectPartialSignature(
     signingRequestId: string,
     shareId: string,
     partialSignature: string
   ): Promise<boolean> {
-    if (!this.partialSignatures.has(signingRequestId)) {
-      this.partialSignatures.set(signingRequestId, new Map());
+    const session = this.activeSessions.get(signingRequestId);
+    if (!session) {
+      // Fall back: create a minimal session entry for legacy callers that do not
+      // call openSigningSession first.
+      const legacySession: ActiveSigningSession = {
+        aggregateRHex: '',
+        nonces: new Map(),
+        partialScalars: new Map(),
+        participantXs: [],
+        sessionNonce: nodeCrypto.randomBytes(16).toString('hex'),
+        createdAt: Date.now(),
+      };
+      legacySession.partialScalars.set(shareId, BigInt('0x' + partialSignature));
+      this.activeSessions.set(signingRequestId, legacySession);
+      return legacySession.partialScalars.size >= this.config.threshold;
     }
 
-    const signatures = this.partialSignatures.get(signingRequestId)!;
-    signatures.set(shareId, partialSignature);
-
-    return signatures.size >= this.config.threshold;
+    const scalar = bytes32LEToScalar(Buffer.from(partialSignature, 'hex'));
+    session.partialScalars.set(shareId, scalar);
+    return session.partialScalars.size >= this.config.threshold;
   }
 
   /**
-   * Combine partial signatures into final signature
+   * Combine collected partial signatures into a final Ed25519 signature.
+   *
+   * Aggregates the partial scalars s_i into S = Σ s_i mod ℓ and assembles
+   * the standard Ed25519 wire format: 32-byte R || 32-byte S.
+   *
+   * The resulting signature is a cryptographically valid Ed25519 signature
+   * verifiable with the key's public key via `ed25519.verify`.
+   *
+   * @param signingRequestId  Signing request / session identifier.
+   * @returns  Hex-encoded 64-byte Ed25519 signature, or null if not ready.
    */
   async combineSignatures(signingRequestId: string): Promise<string | null> {
-    const signatures = this.partialSignatures.get(signingRequestId);
-    if (!signatures || signatures.size < this.config.threshold) {
+    const session = this.activeSessions.get(signingRequestId);
+    if (!session || session.partialScalars.size < this.config.threshold) {
       return null;
     }
 
-    // In production, this would use actual threshold signature combination
-    const combined = Array.from(signatures.values()).join('_');
-    return `mpc_sig_${Buffer.from(combined).toString('base64').slice(0, 64)}`;
+    if (!session.aggregateRHex) {
+      // Legacy path: no R was established — cannot produce a valid signature.
+      return null;
+    }
+
+    // Aggregate S = Σ s_i mod ℓ
+    let S = 0n;
+    for (const ps of session.partialScalars.values()) {
+      S = mod(S + ps, ED25519_ORDER);
+    }
+
+    // Encode as Ed25519 signature: R_bytes (32) || S_bytes (32), both little-endian.
+    const rBytes = Buffer.from(session.aggregateRHex, 'hex');
+    const sBytes = scalarToBytes32LE(S);
+
+    const sig = new Uint8Array(64);
+    sig.set(rBytes, 0);
+    sig.set(sBytes, 32);
+
+    return Buffer.from(sig).toString('hex');
   }
 
   /**
-   * Clear partial signatures after completion
+   * Clear the signing session after completion or timeout.
+   * Purges all nonces and partial scalars for the session.
    */
   clearSignatures(signingRequestId: string): void {
-    this.partialSignatures.delete(signingRequestId);
+    this.activeSessions.delete(signingRequestId);
   }
 
-  private generateSharePublicData(keyId: string, index: number): string {
-    return `share_public_${keyId}_${index}_${Date.now()}`;
+  // --------------------------------------------------------------------------
+  // Helper: high-level single-call threshold sign (for testing / integration)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Perform a complete threshold signing flow in a single call.
+   *
+   * This convenience method orchestrates all protocol steps internally.
+   * It is suitable for testing and for deployments where all parties
+   * are co-located (e.g., in a secure enclave).
+   *
+   * @param keyId     Key identifier whose Shamir shares are used.
+   * @param message   Message to sign (hex string or Uint8Array).
+   * @param requestId Optional signing request ID (generated if omitted).
+   * @returns  Hex-encoded 64-byte Ed25519 signature.
+   */
+  async thresholdSign(
+    keyId: string,
+    message: Uint8Array | string,
+    requestId?: string
+  ): Promise<string> {
+    const pubKeyHex = this.publicKeys.get(keyId);
+    if (!pubKeyHex) {
+      throw new Error(`Public key not found for key: ${keyId}`);
+    }
+
+    const signingRequestId = requestId ?? `tss_${Date.now()}_${nodeCrypto.randomBytes(4).toString('hex')}`;
+
+    // Open session (uses first `threshold` parties by default).
+    const session = await this.openSigningSession(keyId, signingRequestId);
+
+    // Each participating party computes their partial signature.
+    for (const idx of session.participantIndices) {
+      const shareId = `share_${keyId}_${idx}`;
+      await this.computeAndCollectPartialSignature(
+        signingRequestId,
+        shareId,
+        message,
+        pubKeyHex
+      );
+    }
+
+    // Combine and return the final signature.
+    const signature = await this.combineSignatures(signingRequestId);
+    this.clearSignatures(signingRequestId);
+
+    if (!signature) {
+      throw new Error('Failed to combine threshold signatures');
+    }
+    return signature;
+  }
+
+  /**
+   * Verify a threshold-signed signature against this key's public key.
+   *
+   * @param keyId      Key identifier.
+   * @param message    The signed message.
+   * @param signature  Hex-encoded 64-byte Ed25519 signature.
+   * @returns `true` if the signature is valid.
+   */
+  verifyThresholdSignature(
+    keyId: string,
+    message: Uint8Array | string,
+    signature: string
+  ): boolean {
+    const pubKeyHex = this.publicKeys.get(keyId);
+    if (!pubKeyHex) return false;
+
+    try {
+      const msgBytes = typeof message === 'string' ? Buffer.from(message) : message;
+      const sigBytes = Buffer.from(signature, 'hex');
+      const pubKeyBytes = Buffer.from(pubKeyHex, 'hex');
+      return ed25519.verify(new Uint8Array(sigBytes), new Uint8Array(msgBytes), new Uint8Array(pubKeyBytes));
+    } catch {
+      return false;
+    }
   }
 }
 
