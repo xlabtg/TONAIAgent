@@ -3,7 +3,7 @@
  *
  * Implements production-grade key management with:
  * - MPC (Multi-Party Computation) threshold signing
- * - HSM integration support
+ * - HSM integration support (AWS KMS, Azure Key Vault, Mock for CI)
  * - Secure enclave operations
  * - BIP-32/44 key derivation
  * - Key rotation and lifecycle management
@@ -229,59 +229,515 @@ export class SoftwareKeyStorage extends KeyStorageBackend {
 }
 
 // ============================================================================
+// HSM Provider Adapters
+// ============================================================================
+
+/**
+ * Load an optional peer-dependency SDK at runtime.
+ * Using Function constructor prevents TypeScript from resolving the module
+ * at compile time, which avoids TS2307 "cannot find module" errors for
+ * optional dependencies that are only installed when needed.
+ *
+ * @param moduleName - npm package name to import
+ * @param installHint - human-readable install command shown in the error
+ */
+async function loadOptionalSdk(moduleName: string, installHint: string): Promise<Record<string, unknown>> {
+  try {
+    // Dynamic import — TypeScript sees a string variable, not a literal,
+    // so it does not attempt to resolve the module at compile time.
+    const mod = (await (new Function('m', 'return import(m)')(moduleName))) as Record<string, unknown>;
+    return mod;
+  } catch {
+    throw new Error(`${moduleName} is required. Install it with: ${installHint}`);
+  }
+}
+
+/**
+ * Internal interface for HSM provider back-ends.
+ * Each provider implements the low-level HSM calls so that
+ * HSMKeyStorage can stay provider-agnostic.
+ */
+interface HSMProviderAdapter {
+  generateKeyPair(keyId: string, algorithm: 'ed25519' | 'secp256k1'): Promise<{ publicKey: string }>;
+  sign(keyId: string, message: Buffer): Promise<Buffer>;
+  getPublicKey(keyId: string): Promise<Buffer | null>;
+  deleteKey(keyId: string): Promise<void>;
+  healthCheck(): Promise<boolean>;
+}
+
+// ============================================================================
+// Mock HSM Adapter (CI / local dev)
+// ============================================================================
+
+/**
+ * In-memory HSM adapter backed by node:crypto.
+ * Produces real cryptographic operations so that tests are meaningful,
+ * but stores keys only in RAM — never safe for production key material.
+ *
+ * Enabled by setting provider = 'mock' in HSMConfig.
+ */
+class MockHSMAdapter implements HSMProviderAdapter {
+  private readonly keys = new Map<
+    string,
+    { pub: nodeCrypto.KeyObject; priv: nodeCrypto.KeyObject; algorithm: string }
+  >();
+
+  async generateKeyPair(
+    keyId: string,
+    algorithm: 'ed25519' | 'secp256k1'
+  ): Promise<{ publicKey: string }> {
+    const pair =
+      algorithm === 'ed25519'
+        ? nodeCrypto.generateKeyPairSync('ed25519')
+        : nodeCrypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' });
+
+    this.keys.set(keyId, { pub: pair.publicKey, priv: pair.privateKey, algorithm });
+    const pubHex = pair.publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
+    return { publicKey: pubHex };
+  }
+
+  async sign(keyId: string, message: Buffer): Promise<Buffer> {
+    const entry = this.keys.get(keyId);
+    if (!entry) throw new Error(`MockHSM: key not found: ${keyId}`);
+
+    if (entry.algorithm === 'ed25519') {
+      return nodeCrypto.sign(null, message, entry.priv);
+    }
+    return nodeCrypto.createSign('SHA256').update(message).sign(entry.priv);
+  }
+
+  async getPublicKey(keyId: string): Promise<Buffer | null> {
+    const entry = this.keys.get(keyId);
+    if (!entry) return null;
+    return entry.pub.export({ type: 'spki', format: 'der' }) as Buffer;
+  }
+
+  async deleteKey(keyId: string): Promise<void> {
+    this.keys.delete(keyId);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    return true;
+  }
+}
+
+// ============================================================================
+// AWS KMS Adapter
+// ============================================================================
+
+/**
+ * AWS KMS adapter.
+ *
+ * Key type mapping:
+ *   ed25519   → ECC_NIST_P256 signing key (AWS KMS does not yet support Ed25519
+ *                natively; we use P-256 / ECDSA_SHA_256 as the closest managed
+ *                equivalent for TON deployments that cannot use native Ed25519).
+ *                For pure Ed25519 support, use AWS CloudHSM with PKCS#11.
+ *   secp256k1 → ECC_SECG_P256K1 / ECDSA_SHA_256 (native KMS support).
+ *
+ * The key ARN is stored as the key label using the provided keyLabel prefix
+ * combined with the application keyId, stored in a local registry since KMS
+ * does not have a lookup-by-alias-per-operation API for signing.
+ *
+ * Required env / config:
+ *   awsRegion, awsAccessKeyId, awsSecretAccessKey (or instance-profile IAM role)
+ */
+class AwsKmsAdapter implements HSMProviderAdapter {
+  // Map from application keyId → KMS Key ARN
+  private readonly keyRegistry = new Map<string, string>();
+  private kmsClient: unknown = null;
+
+  constructor(private readonly config: HSMConfig) {}
+
+  private async loadSdk(): Promise<Record<string, unknown>> {
+    return loadOptionalSdk('@aws-sdk/client-kms', 'npm install @aws-sdk/client-kms');
+  }
+
+  private async getClient(): Promise<{
+    send: (cmd: unknown) => Promise<unknown>;
+  }> {
+    if (this.kmsClient) return this.kmsClient as { send: (cmd: unknown) => Promise<unknown> };
+
+    const sdk = await this.loadSdk();
+    const KMSClient = sdk.KMSClient as new (cfg: Record<string, unknown>) => { send: (cmd: unknown) => Promise<unknown> };
+
+    const clientConfig: Record<string, unknown> = {
+      region: this.config.awsRegion ?? process.env.AWS_REGION ?? 'us-east-1',
+    };
+
+    if (this.config.awsKmsEndpoint) {
+      clientConfig.endpoint = this.config.awsKmsEndpoint;
+    }
+
+    if (this.config.awsAccessKeyId && this.config.awsSecretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId: this.config.awsAccessKeyId,
+        secretAccessKey: this.config.awsSecretAccessKey,
+        sessionToken: this.config.awsSessionToken,
+      };
+    }
+
+    this.kmsClient = new KMSClient(clientConfig);
+    return this.kmsClient as { send: (cmd: unknown) => Promise<unknown> };
+  }
+
+  async generateKeyPair(
+    keyId: string,
+    algorithm: 'ed25519' | 'secp256k1'
+  ): Promise<{ publicKey: string }> {
+    const [client, sdk] = await Promise.all([this.getClient(), this.loadSdk()]);
+    const CreateKeyCommand = sdk.CreateKeyCommand as new (input: Record<string, unknown>) => unknown;
+    const GetPublicKeyCommand = sdk.GetPublicKeyCommand as new (input: Record<string, unknown>) => unknown;
+
+    // Map algorithm to KMS key spec
+    const keySpec = algorithm === 'secp256k1' ? 'ECC_SECG_P256K1' : 'ECC_NIST_P256';
+
+    const createResp = (await client.send(
+      new CreateKeyCommand({
+        KeySpec: keySpec,
+        KeyUsage: 'SIGN_VERIFY',
+        Description: `TONAIAgent key: ${keyId}`,
+        Tags: [
+          { TagKey: 'tonaiagent:keyId', TagValue: keyId },
+          { TagKey: 'tonaiagent:algorithm', TagValue: algorithm },
+        ],
+      })
+    )) as { KeyMetadata?: { KeyId?: string; Arn?: string } };
+
+    const keyArn = createResp.KeyMetadata?.Arn;
+    if (!keyArn) throw new Error(`AWS KMS: failed to create key for keyId=${keyId}`);
+
+    this.keyRegistry.set(keyId, keyArn);
+
+    // Retrieve DER-encoded public key
+    const pubResp = (await client.send(
+      new GetPublicKeyCommand({ KeyId: keyArn })
+    )) as { PublicKey?: Uint8Array };
+
+    if (!pubResp.PublicKey)
+      throw new Error(`AWS KMS: could not retrieve public key for keyId=${keyId}`);
+
+    return { publicKey: Buffer.from(pubResp.PublicKey).toString('hex') };
+  }
+
+  async sign(keyId: string, message: Buffer): Promise<Buffer> {
+    const keyArn = this.keyRegistry.get(keyId);
+    if (!keyArn) throw new Error(`AWS KMS: unknown keyId=${keyId}. Was it generated via this adapter?`);
+
+    const [client, sdk] = await Promise.all([this.getClient(), this.loadSdk()]);
+    const SignCommand = sdk.SignCommand as new (input: Record<string, unknown>) => unknown;
+
+    const resp = (await client.send(
+      new SignCommand({
+        KeyId: keyArn,
+        Message: message,
+        MessageType: 'RAW',
+        SigningAlgorithm: 'ECDSA_SHA_256',
+      })
+    )) as { Signature?: Uint8Array };
+
+    if (!resp.Signature) throw new Error(`AWS KMS: signing failed for keyId=${keyId}`);
+    return Buffer.from(resp.Signature);
+  }
+
+  async getPublicKey(keyId: string): Promise<Buffer | null> {
+    const keyArn = this.keyRegistry.get(keyId);
+    if (!keyArn) return null;
+
+    const [client, sdk] = await Promise.all([this.getClient(), this.loadSdk()]);
+    const GetPublicKeyCommand = sdk.GetPublicKeyCommand as new (input: Record<string, unknown>) => unknown;
+
+    const resp = (await client.send(
+      new GetPublicKeyCommand({ KeyId: keyArn })
+    )) as { PublicKey?: Uint8Array };
+
+    return resp.PublicKey ? Buffer.from(resp.PublicKey) : null;
+  }
+
+  async deleteKey(keyId: string): Promise<void> {
+    const keyArn = this.keyRegistry.get(keyId);
+    if (!keyArn) return;
+
+    const [client, sdk] = await Promise.all([this.getClient(), this.loadSdk()]);
+    const ScheduleKeyDeletionCommand = sdk.ScheduleKeyDeletionCommand as new (input: Record<string, unknown>) => unknown;
+
+    // Minimum pending-window is 7 days per AWS policy
+    await client.send(
+      new ScheduleKeyDeletionCommand({ KeyId: keyArn, PendingWindowInDays: 7 })
+    );
+    this.keyRegistry.delete(keyId);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      const [client, sdk] = await Promise.all([this.getClient(), this.loadSdk()]);
+      const ListKeysCommand = sdk.ListKeysCommand as new (input: Record<string, unknown>) => unknown;
+      await client.send(new ListKeysCommand({ Limit: 1 }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// ============================================================================
+// Azure Key Vault Adapter
+// ============================================================================
+
+/**
+ * Azure Key Vault adapter.
+ *
+ * Ed25519 is not supported by Azure Key Vault as of 2024; the adapter maps
+ * it to P-256 (EC / ES256).  secp256k1 is also unsupported natively — we
+ * use P-256K (if the preview flag is enabled) and fall back to P-256.
+ *
+ * Required config / env:
+ *   azureKeyVaultUrl (e.g. https://<vault>.vault.azure.net)
+ *   azureTenantId, azureClientId, azureClientSecret
+ *   OR use DefaultAzureCredential (managed identity / env vars)
+ */
+class AzureKeyVaultAdapter implements HSMProviderAdapter {
+  // Map from application keyId → Azure key name (must be 1-127 chars, alphanumeric + dashes)
+  private readonly keyNames = new Map<string, string>();
+  private cryptoClient: unknown = null;
+  private keyClient: unknown = null;
+
+  constructor(private readonly config: HSMConfig) {}
+
+  /** Sanitise an arbitrary key ID to a valid Azure Key Vault name. */
+  private toAzureKeyName(keyId: string): string {
+    // Replace anything that is not alphanumeric or dash with dash, then truncate
+    return keyId.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 127);
+  }
+
+  private async getClients(): Promise<{
+    keyClient: { createKey: (...args: unknown[]) => Promise<unknown>; deleteKey: (name: string) => Promise<unknown>; listPropertiesOfKeys: () => AsyncIterable<unknown> };
+    cryptoClient: (keyName: string) => { sign: (alg: string, digest: Uint8Array) => Promise<{ result: Uint8Array }>; getKey: () => Promise<{ key?: { x?: Uint8Array; y?: Uint8Array } }> };
+  }> {
+    if (this.cryptoClient && this.keyClient) {
+      return {
+        keyClient: this.keyClient as never,
+        cryptoClient: this.cryptoClient as never,
+      };
+    }
+
+    const [kvSdk, identitySdk] = await Promise.all([
+      loadOptionalSdk('@azure/keyvault-keys', 'npm install @azure/keyvault-keys @azure/identity'),
+      loadOptionalSdk('@azure/identity', 'npm install @azure/keyvault-keys @azure/identity'),
+    ]);
+
+    const KeyClient = kvSdk.KeyClient as new (url: string, credential: unknown) => unknown;
+    const CryptographyClient = kvSdk.CryptographyClient as new (url: string, credential: unknown) => unknown;
+    const ClientSecretCredential = identitySdk.ClientSecretCredential as new (tenant: string, client: string, secret: string) => unknown;
+    const DefaultAzureCredential = identitySdk.DefaultAzureCredential as new () => unknown;
+
+    const vaultUrl = this.config.azureKeyVaultUrl ?? process.env.AZURE_KEY_VAULT_URL;
+    if (!vaultUrl) throw new Error('Azure Key Vault: azureKeyVaultUrl is required');
+
+    const credential =
+      this.config.azureTenantId && this.config.azureClientId && this.config.azureClientSecret
+        ? new ClientSecretCredential(
+            this.config.azureTenantId,
+            this.config.azureClientId,
+            this.config.azureClientSecret
+          )
+        : new DefaultAzureCredential();
+
+    const keyClientInstance = new KeyClient(vaultUrl, credential);
+    const cryptoClientFactory = (keyName: string) =>
+      new CryptographyClient(`${vaultUrl}/keys/${keyName}`, credential);
+
+    this.keyClient = keyClientInstance;
+    this.cryptoClient = cryptoClientFactory;
+
+    return { keyClient: keyClientInstance as never, cryptoClient: cryptoClientFactory as never };
+  }
+
+  async generateKeyPair(
+    keyId: string,
+    algorithm: 'ed25519' | 'secp256k1'
+  ): Promise<{ publicKey: string }> {
+    const { keyClient } = await this.getClients();
+    const azureName = this.toAzureKeyName(keyId);
+
+    // Azure Key Vault does not support Ed25519 or secp256k1 natively;
+    // fall back to P-256 (prime256v1) which provides equivalent security level.
+    const keyType = 'EC';
+    const crv = algorithm === 'secp256k1' ? 'P-256K' : 'P-256';
+
+    const key = (await (keyClient as { createKey: (name: string, type: string, opts: Record<string, unknown>) => Promise<{ key?: { x?: Uint8Array; y?: Uint8Array } }> }).createKey(
+      azureName,
+      keyType,
+      { curve: crv }
+    )) as { key?: { x?: Uint8Array; y?: Uint8Array } };
+
+    this.keyNames.set(keyId, azureName);
+
+    // Encode the uncompressed public key as 04 || x || y
+    const x = key.key?.x;
+    const y = key.key?.y;
+    if (!x || !y) throw new Error(`Azure Key Vault: could not retrieve public key coords for ${keyId}`);
+
+    const uncompressed = Buffer.concat([Buffer.from([0x04]), Buffer.from(x), Buffer.from(y)]);
+    return { publicKey: uncompressed.toString('hex') };
+  }
+
+  async sign(keyId: string, message: Buffer): Promise<Buffer> {
+    const azureName = this.keyNames.get(keyId);
+    if (!azureName) throw new Error(`Azure Key Vault: unknown keyId=${keyId}`);
+
+    const { cryptoClient } = await this.getClients();
+    const client = (cryptoClient as (name: string) => { sign: (alg: string, digest: Uint8Array) => Promise<{ result: Uint8Array }> })(azureName);
+
+    // Azure signs over a pre-hashed digest
+    const digest = nodeCrypto.createHash('SHA256').update(message).digest();
+    const result = await client.sign('ES256', digest);
+    return Buffer.from(result.result);
+  }
+
+  async getPublicKey(keyId: string): Promise<Buffer | null> {
+    const azureName = this.keyNames.get(keyId);
+    if (!azureName) return null;
+
+    const { cryptoClient } = await this.getClients();
+    const client = (cryptoClient as (name: string) => { getKey: () => Promise<{ key?: { x?: Uint8Array; y?: Uint8Array } }> })(azureName);
+    const key = await client.getKey();
+
+    const x = key.key?.x;
+    const y = key.key?.y;
+    if (!x || !y) return null;
+
+    return Buffer.concat([Buffer.from([0x04]), Buffer.from(x), Buffer.from(y)]);
+  }
+
+  async deleteKey(keyId: string): Promise<void> {
+    const azureName = this.keyNames.get(keyId);
+    if (!azureName) return;
+
+    const { keyClient } = await this.getClients();
+    await (keyClient as { deleteKey: (name: string) => Promise<void> }).deleteKey(azureName);
+    this.keyNames.delete(keyId);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      const { keyClient } = await this.getClients();
+      // listPropertiesOfKeys returns an async iterable; just try to get the first item
+      const iter = (keyClient as { listPropertiesOfKeys: () => AsyncIterable<unknown> }).listPropertiesOfKeys();
+      for await (const _item of iter) { break; }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// ============================================================================
 // HSM Key Storage Adapter
 // ============================================================================
 
 /**
  * HSM-based key storage for production use.
- * Supports AWS CloudHSM, Azure HSM, Thales Luna, and YubiHSM.
+ *
+ * Supported providers:
+ *   - 'aws_kms'      — AWS KMS (recommended for cloud deployments)
+ *   - 'aws_cloudhsm' — AWS CloudHSM via KMS custom key store (same SDK)
+ *   - 'azure_hsm'    — Azure Key Vault (Managed HSM or Premium tier)
+ *   - 'mock'         — In-memory mock for CI / local dev without real hardware
+ *
+ * Set `NODE_HSM_PROVIDER` env var or pass `provider` in config to select.
+ * See docs/hsm-setup.md for detailed setup instructions per provider.
  */
 export class HSMKeyStorage extends KeyStorageBackend {
   readonly type: KeyStorageType = 'hsm';
 
+  private readonly adapter: HSMProviderAdapter;
+
   constructor(private readonly config: HSMConfig) {
     super();
+
+    const provider = config.provider ?? process.env.NODE_HSM_PROVIDER ?? 'mock';
+
+    switch (provider) {
+      case 'mock':
+        if (process.env.NODE_ENV === 'production' && !config.mockAllowProduction) {
+          throw new Error(
+            'HSMKeyStorage mock provider is not allowed in production. ' +
+              'Configure a real HSM provider (aws_kms, azure_hsm, etc.).'
+          );
+        }
+        this.adapter = new MockHSMAdapter();
+        break;
+
+      case 'aws_kms':
+      case 'aws_cloudhsm':
+        this.adapter = new AwsKmsAdapter(config);
+        break;
+
+      case 'azure_hsm':
+        this.adapter = new AzureKeyVaultAdapter(config);
+        break;
+
+      case 'thales_luna':
+      case 'yubihsm':
+        throw new Error(
+          `HSM provider '${provider}' is not yet implemented. ` +
+            `Use 'aws_kms', 'azure_hsm', or 'mock' for CI. ` +
+            `Contributions welcome — see docs/hsm-setup.md.`
+        );
+
+      default:
+        throw new Error(`Unknown HSM provider: '${provider as string}'.`);
+    }
   }
 
   async generateKeyPair(
     keyId: string,
-    _algorithm: 'ed25519' | 'secp256k1'
+    algorithm: 'ed25519' | 'secp256k1'
   ): Promise<{ publicKey: string }> {
-    // In production, this would communicate with actual HSM
-    // For now, return a placeholder that indicates HSM is required
-    throw new Error(
-      `HSM key generation requires actual HSM integration. ` +
-        `Provider: ${this.config.provider}, KeyId: ${keyId}`
-    );
+    return this.adapter.generateKeyPair(keyId, algorithm);
   }
 
-  async sign(_keyId: string, _message: string): Promise<string> {
-    throw new Error(
-      `HSM signing requires actual HSM integration. Provider: ${this.config.provider}`
-    );
+  async sign(keyId: string, message: string): Promise<string> {
+    const msgBuf = Buffer.from(message);
+    const sig = await this.adapter.sign(keyId, msgBuf);
+    return sig.toString('hex');
   }
 
-  async verify(_keyId: string, _message: string, _signature: string): Promise<boolean> {
-    throw new Error(
-      `HSM verification requires actual HSM integration. Provider: ${this.config.provider}`
-    );
+  async verify(keyId: string, message: string, signature: string): Promise<boolean> {
+    try {
+      const pubBuf = await this.adapter.getPublicKey(keyId);
+      if (!pubBuf) return false;
+
+      const msgBuf = Buffer.from(message);
+      const sigBuf = Buffer.from(signature, 'hex');
+
+      // Import the DER-encoded SubjectPublicKeyInfo as a node:crypto KeyObject
+      const pubKey = nodeCrypto.createPublicKey({ key: pubBuf, format: 'der', type: 'spki' });
+
+      // Determine algorithm from key type
+      const keyType = pubKey.asymmetricKeyType;
+      if (keyType === 'ed25519') {
+        return nodeCrypto.verify(null, msgBuf, pubKey, sigBuf);
+      }
+      // EC keys (P-256, P-256K) — ECDSA with SHA-256
+      return nodeCrypto.createVerify('SHA256').update(msgBuf).verify(pubKey, sigBuf);
+    } catch {
+      return false;
+    }
   }
 
-  async getPublicKey(_keyId: string): Promise<string | null> {
-    throw new Error(
-      `HSM public key retrieval requires actual HSM integration. Provider: ${this.config.provider}`
-    );
+  async getPublicKey(keyId: string): Promise<string | null> {
+    const buf = await this.adapter.getPublicKey(keyId);
+    return buf ? buf.toString('hex') : null;
   }
 
-  async deleteKey(_keyId: string): Promise<void> {
-    throw new Error(
-      `HSM key deletion requires actual HSM integration. Provider: ${this.config.provider}`
-    );
+  async deleteKey(keyId: string): Promise<void> {
+    await this.adapter.deleteKey(keyId);
   }
 
   async healthCheck(): Promise<boolean> {
-    // In production, would check actual HSM connectivity
-    return false;
+    return this.adapter.healthCheck();
   }
 }
 
