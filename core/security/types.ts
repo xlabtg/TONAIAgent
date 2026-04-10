@@ -129,11 +129,29 @@ export interface DKGResult {
 }
 
 export interface HSMConfig {
-  provider: 'aws_cloudhsm' | 'azure_hsm' | 'thales_luna' | 'yubihsm';
+  provider: 'aws_kms' | 'aws_cloudhsm' | 'azure_hsm' | 'thales_luna' | 'yubihsm' | 'mock';
   endpoint?: string;
   clusterId?: string;
   keyLabel?: string;
   operationTimeout: number;
+
+  // AWS KMS / CloudHSM
+  awsRegion?: string;
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
+  awsSessionToken?: string;
+  /** Custom KMS endpoint URL (for local mock/testing). */
+  awsKmsEndpoint?: string;
+
+  // Azure Key Vault
+  azureKeyVaultUrl?: string;
+  azureTenantId?: string;
+  azureClientId?: string;
+  azureClientSecret?: string;
+
+  // Mock HSM (CI / local dev without real hardware)
+  /** When provider is 'mock', use in-memory storage only. Never use in production. */
+  mockAllowProduction?: boolean;
 }
 
 export interface SecureEnclaveConfig {
