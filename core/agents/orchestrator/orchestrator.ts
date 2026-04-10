@@ -19,6 +19,12 @@
  * - Demo mode: full simulation with no real funds
  */
 
+import {
+  KycAmlManager,
+  KYC_ENFORCEMENT_DEFAULTS,
+  type KycEnforcementConfig,
+} from '../../../services/regulatory/kyc-aml';
+
 import type {
   AgentEnvironment,
   AgentMetadata,
@@ -111,6 +117,10 @@ export const DEFAULT_ORCHESTRATOR_CONFIG: AgentOrchestratorConfig = {
     maxCreationsPerUserPerHour: 5,
     encryptStoredKeys: false, // disabled in demo/test; enable in production
     enableAuditLog: true,
+  },
+  kycEnforcement: {
+    enabled: false, // disabled by default — set to true to enforce KYC on agent creation
+    mode: 'testnet',
   },
 };
 
@@ -210,6 +220,9 @@ function failureResult(durationMs: number, error: string): SubsystemResult {
 export class AgentOrchestrator {
   private readonly config: AgentOrchestratorConfig;
 
+  /** KYC/AML manager for compliance enforcement */
+  private readonly kycAmlManager: KycAmlManager;
+
   /** In-memory agent store (production: replace with database) */
   private readonly agents: Map<string, AgentMetadata> = new Map();
 
@@ -231,12 +244,17 @@ export class AgentOrchestrator {
   private failureCount = 0;
   private totalCreationTimeMs = 0;
 
-  constructor(config: Partial<AgentOrchestratorConfig> = {}) {
+  constructor(config: Partial<AgentOrchestratorConfig> = {}, kycAmlManager?: KycAmlManager) {
     this.config = {
       ...DEFAULT_ORCHESTRATOR_CONFIG,
       ...config,
       security: { ...DEFAULT_ORCHESTRATOR_CONFIG.security, ...config.security },
+      kycEnforcement: {
+        enabled: config.kycEnforcement?.enabled ?? DEFAULT_ORCHESTRATOR_CONFIG.kycEnforcement!.enabled,
+        mode: config.kycEnforcement?.mode ?? DEFAULT_ORCHESTRATOR_CONFIG.kycEnforcement!.mode,
+      },
     };
+    this.kycAmlManager = kycAmlManager ?? new KycAmlManager();
   }
 
   // ============================================================================
@@ -280,6 +298,24 @@ export class AgentOrchestrator {
 
     // Capacity checks
     this.checkCapacity(input.userId);
+
+    // KYC enforcement gate — skip for demo strategy regardless of enforcement config
+    const kycCfg = this.config.kycEnforcement;
+    const isDemoStrategy = input.strategy === 'demo';
+    if (kycCfg?.enabled && !isDemoStrategy) {
+      const enforcementConfig: KycEnforcementConfig = KYC_ENFORCEMENT_DEFAULTS[kycCfg.mode];
+      const kycResult = await this.kycAmlManager.enforceKycForAgentCreation(
+        input.userId,
+        enforcementConfig,
+      );
+      if (!kycResult.allowed) {
+        throw new AgentOrchestratorError(
+          kycResult.reason ?? 'KYC verification required before creating trading agents',
+          'KYC_REQUIRED',
+          { userId: input.userId, currentTier: kycResult.currentTier, requiredTier: kycResult.requiredTier, auditId: kycResult.auditId },
+        );
+      }
+    }
 
     const startTime = Date.now();
     const agentName = input.name ?? generateAgentName(input.userId, input.strategy);

@@ -32,6 +32,7 @@ import {
 } from './jurisdiction';
 
 import { KycAmlManager, createKycAmlManager, KycAmlManagerConfig } from './kyc-aml';
+import { SanctionsScreener, createSanctionsScreener, SanctionsScreenerConfig } from './sanctions';
 
 import {
   AiGovernanceManager,
@@ -54,6 +55,7 @@ export {
   createKycAmlManager,
   createAiGovernanceManager,
   createRegulatoryRiskEngine,
+  createSanctionsScreener,
 };
 
 // Re-export classes
@@ -62,7 +64,15 @@ export {
   KycAmlManager,
   AiGovernanceManager,
   RegulatoryRiskEngine,
+  SanctionsScreener,
 };
+
+// Re-export sanctions types
+export type { SanctionsScreenerConfig, SanctionsScreeningResult, EntitySanctionsResult, SanctionsMatch, SanctionsList } from './sanctions';
+
+// Re-export KYC enforcement types
+export type { KycEnforcementConfig, KycEnforcementResult, TierLimitCheckResult, FrozenAccount, KycEnforcementMode } from './kyc-aml';
+export { KYC_ENFORCEMENT_DEFAULTS } from './kyc-aml';
 
 // ============================================================================
 // Regulatory Manager - Unified Interface
