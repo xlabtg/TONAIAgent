@@ -3204,4 +3204,198 @@ body {
 
 .equity-pnl.positive { color: var(--positive); }
 .equity-pnl.negative { color: var(--negative); }
+
+/* ============================================================
+   Simulation Mode Banner (Issue #314)
+   ============================================================ */
+.simulation-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  background: rgba(255, 159, 67, 0.15);
+  border: 1px solid rgba(255, 159, 67, 0.4);
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+  margin: 0 var(--s4) var(--s3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.simulation-banner.live-mode-banner {
+  background: rgba(234, 84, 85, 0.12);
+  border-color: rgba(234, 84, 85, 0.4);
+  color: var(--negative);
+}
+
+.simulation-banner-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+.simulation-banner-text {
+  flex: 1;
+  letter-spacing: 0.02em;
+}
+
+.simulation-switch-btn {
+  flex-shrink: 0;
+  background: rgba(255, 159, 67, 0.2);
+  border: 1px solid rgba(255, 159, 67, 0.5);
+  border-radius: var(--r-full);
+  color: var(--warning);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background var(--ease);
+  white-space: nowrap;
+}
+
+.simulation-switch-btn:hover {
+  background: rgba(255, 159, 67, 0.35);
+}
+
+.simulation-switch-btn.switch-to-sim-btn {
+  background: rgba(234, 84, 85, 0.15);
+  border-color: rgba(234, 84, 85, 0.5);
+  color: var(--negative);
+}
+
+.simulation-switch-btn.switch-to-sim-btn:hover {
+  background: rgba(234, 84, 85, 0.3);
+}
+
+/* ============================================================
+   Live Trading Confirmation Modal (Issue #314)
+   ============================================================ */
+.live-trading-modal-sheet {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.live-trading-title {
+  color: var(--negative) !important;
+}
+
+.live-trading-warning {
+  background: rgba(234, 84, 85, 0.1);
+  border: 1px solid rgba(234, 84, 85, 0.3);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  margin: var(--s3) var(--s4);
+  padding: var(--s3) var(--s4);
+}
+
+.live-trading-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: 0 var(--s4) var(--s4);
+}
+
+.live-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.live-checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--negative);
+  cursor: pointer;
+}
+
+.live-trading-actions {
+  display: flex;
+  gap: var(--s3);
+  padding: 0 var(--s4) var(--s4);
+}
+
+.live-trading-actions .secondary-btn,
+.live-trading-actions .danger-btn {
+  flex: 1;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-md);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--ease);
+  border: none;
+}
+
+.live-trading-actions .secondary-btn {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+}
+
+.live-trading-actions .danger-btn {
+  background: var(--negative);
+  color: #fff;
+}
+
+.live-trading-actions .danger-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.live-trading-actions .danger-btn:not(:disabled):hover {
+  background: #d63031;
+}
+
+/* ============================================================
+   Onboarding Risk Warning Box (Issue #314)
+   ============================================================ */
+.risk-warning-box {
+  background: rgba(255, 159, 67, 0.1);
+  border: 1px solid rgba(255, 159, 67, 0.35);
+  border-radius: var(--r-md);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s3);
+  text-align: left;
+}
+
+.risk-warning-title {
+  color: var(--warning);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin-bottom: var(--s2);
+}
+
+.risk-warning-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.risk-warning-list li {
+  color: var(--text);
+  font-size: var(--text-sm);
+  padding-left: var(--s3);
+  position: relative;
+}
+
+.risk-warning-list li::before {
+  content: '\2022';
+  color: var(--warning);
+  position: absolute;
+  left: 0;
+}
+
+.demo-notice-link {
+  color: var(--link);
+  text-decoration: underline;
+}
 .equity-pnl.neutral  { color: var(--hint); }
