@@ -634,6 +634,8 @@
     }
   },
   "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
     "zod": "^3.25.76"
   }
 }

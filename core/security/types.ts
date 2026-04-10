@@ -60,6 +60,74 @@ export interface MPCConfig {
   keyDerivationEnabled: boolean;
 }
 
+// ============================================================================
+// Threshold Signing Types (DKG / TSS)
+// ============================================================================
+
+/**
+ * Descriptor returned when a threshold signing session is opened.
+ * Contains the aggregate nonce commitment R and the session nonce
+ * used for replay protection.
+ */
+export interface ThresholdSigningSession {
+  /** The signing request this session belongs to. */
+  signingRequestId: string;
+  /** Key identifier whose Shamir shares are used. */
+  keyId: string;
+  /**
+   * Aggregate nonce point R = Σ r_i·G, hex-encoded (32 bytes).
+   * This is the R component of the final Ed25519 signature (R, S).
+   */
+  aggregateRHex: string;
+  /** 1-based share indices of the participating parties. */
+  participantIndices: number[];
+  /**
+   * Replay-protection nonce unique to this signing session.
+   * Parties must include this in their partial signature requests
+   * to prevent replay attacks.
+   */
+  sessionNonce: string;
+  /** Minimum number of participants required (= MPCConfig.threshold). */
+  threshold: number;
+  /** When the session was opened. */
+  createdAt: Date;
+}
+
+/**
+ * A Shamir share of an Ed25519 private key scalar, held by one party.
+ * The x-coordinate identifies the party; y is the share value (mod ℓ).
+ *
+ * NOTE: In a production deployment the `yHex` field must be encrypted
+ * at rest and transmitted over a secure channel to the share holder's
+ * isolated environment.  It must never be logged or exposed in plaintext.
+ */
+export interface ShamirShareValue {
+  /** 1-based x-coordinate of this share. */
+  x: number;
+  /**
+   * Shamir share value y = f(x) mod ℓ, hex-encoded 32-byte little-endian.
+   * SENSITIVE: must be protected as a private key.
+   */
+  yHex: string;
+}
+
+/**
+ * DKG (Distributed Key Generation) result returned after generating
+ * a threshold key.
+ */
+export interface DKGResult {
+  /** Key identifier. */
+  keyId: string;
+  /** Compressed Ed25519 public key, hex-encoded (32 bytes). */
+  publicKeyHex: string;
+  /** Shamir share values for each party.  Distribute securely. */
+  shares: ShamirShareValue[];
+  /** Threshold required for signing. */
+  threshold: number;
+  /** Total number of shares. */
+  totalShares: number;
+}
+
 export interface HSMConfig {
   provider: 'aws_kms' | 'aws_cloudhsm' | 'azure_hsm' | 'thales_luna' | 'yubihsm' | 'mock';
   endpoint?: string;
