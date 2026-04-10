@@ -14,7 +14,7 @@ export default [
     ],
   },
   {
-    files: ['core/**/*.ts', 'apps/**/*.ts', 'extended/**/*.ts', 'services/**/*.ts', 'connectors/**/*.ts', 'packages/**/*.ts'],
+    files: ['config/**/*.ts', 'core/**/*.ts', 'apps/**/*.ts', 'extended/**/*.ts', 'services/**/*.ts', 'connectors/**/*.ts', 'packages/**/*.ts'],
     plugins: {
       '@typescript-eslint': tseslint,
     },
