@@ -1,11 +1,13 @@
 /**
  * TONAIAgent - Observability Layer
  *
- * Public exports for the Observability module (Issue #275).
+ * Public exports for the Observability module (Issue #275, #313).
  *
  * The Observability layer provides:
  * - Structured JSON logging with contextual metadata
  * - Metrics collection for trading, agents, marketplace, and system
+ * - Circuit breaker: auto-pause all agents if thresholds are breached (Issue #313)
+ * - Multi-channel alerting: console, Telegram, PagerDuty, OpsGenie, webhook (Issue #313)
  *
  * Usage:
  *   import { createLogger, createMetricsCollector } from './observability';
@@ -19,6 +21,17 @@
  *   const metrics = createMetricsCollector();
  *   metrics.trading.recordSuccess(120, 5);
  *   const snapshot = metrics.snapshot();
+ *
+ *   // Circuit breaker (Issue #313)
+ *   const cb = createCircuitBreaker(emergencyController);
+ *   cb.onTrip(event => log.warn('Circuit tripped', event));
+ *   await cb.checkAndTrip(currentMetrics);
+ *
+ *   // Multi-channel alerting (Issue #313)
+ *   const alerting = createAlertingManager({
+ *     telegram: { botToken: '...', chatId: '-100...' },
+ *   });
+ *   await alerting.send(alertEvent);
  */
 
 // Logging
@@ -62,3 +75,36 @@ export type {
   SystemMetrics,
   AllMetrics,
 } from './metrics';
+
+// Circuit Breaker (Issue #313)
+export {
+  TradingCircuitBreaker,
+  createCircuitBreaker,
+  DEFAULT_CIRCUIT_BREAKER_THRESHOLDS,
+} from './circuit-breaker';
+
+export type {
+  CircuitBreakerMetrics,
+  CircuitBreakerThresholds,
+  TripSeverity,
+  TripReason,
+  CircuitTripEvent,
+  TripHandler,
+  TripUnsubscribe,
+} from './circuit-breaker';
+
+// Multi-Channel Alerting (Issue #313)
+export {
+  AlertingManager,
+  createAlertingManager,
+} from './alerting';
+
+export type {
+  TelegramConfig,
+  PagerDutyConfig,
+  OpsGenieConfig,
+  WebhookConfig,
+  AlertingConfig,
+  ChannelDeliveryResult,
+  AlertDeliveryResult,
+} from './alerting';
