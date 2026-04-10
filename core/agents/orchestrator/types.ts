@@ -229,6 +229,11 @@ export interface AgentOrchestratorConfig {
   defaultDemoBudgetTon: number;
   /** Security configuration */
   security: OrchestratorSecurityConfig;
+  /** KYC/AML enforcement configuration. Defaults to testnet settings when omitted. */
+  kycEnforcement?: {
+    enabled: boolean;
+    mode: 'testnet' | 'mainnet';
+  };
 }
 
 /** Security configuration for the orchestrator */
@@ -337,7 +342,9 @@ export type AgentOrchestratorErrorCode =
   | 'PERSISTENCE_FAILED'
   | 'SECURITY_SETUP_FAILED'
   | 'RATE_LIMIT_EXCEEDED'
-  | 'ORCHESTRATOR_DISABLED';
+  | 'ORCHESTRATOR_DISABLED'
+  | 'KYC_REQUIRED'
+  | 'ACCOUNT_FROZEN';
 
 /** Structured error for orchestrator operations */
 export class AgentOrchestratorError extends Error {
