@@ -237,15 +237,25 @@
               <span class="confirm-value demo-mode">Demo Mode</span>
             </div>
           </div>
+          <div class="risk-warning-box">
+            <div class="risk-warning-title">&#9888;&#65039; Risk Disclosure</div>
+            <ul class="risk-warning-list">
+              <li>AI agents can and do lose money</li>
+              <li>Past simulation results do not guarantee live performance</li>
+              <li>Only invest what you can afford to lose entirely</li>
+            </ul>
+          </div>
           <p class="demo-notice">
-            Your agent will run in demo mode with simulated trades. No real funds required.
+            Your agent will start in <strong>simulation mode</strong> &mdash; no real funds required.
+            You can switch to live trading later after reviewing the
+            <a href="#" onclick="return false;" class="demo-notice-link">security guide</a>.
           </p>
           <div class="onboarding-nav">
             <button class="onboarding-btn secondary" onclick="Onboarding.goToStep('strategy')">
               Back
             </button>
             <button class="onboarding-btn primary" id="start-agent-btn">
-              Start Agent
+              Start Agent in Simulation
             </button>
           </div>
         </div>

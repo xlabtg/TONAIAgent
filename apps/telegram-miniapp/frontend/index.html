@@ -105,6 +105,13 @@
           </button>
         </header>
 
+        <!-- Simulation Mode Banner -->
+        <div id="simulation-mode-banner" class="simulation-banner">
+          <span class="simulation-banner-icon">&#9888;&#65039;</span>
+          <span class="simulation-banner-text">SIMULATION MODE &mdash; No real funds at risk</span>
+          <button class="simulation-switch-btn" id="switch-to-live-btn">Switch to Live</button>
+        </div>
+
         <!-- Portfolio Value Card -->
         <div class="portfolio-hero">
           <div class="portfolio-label">Total Portfolio Value</div>
@@ -946,6 +953,41 @@
         </div>
       </div>
 
+      <!-- ============================== -->
+      <!-- Live Trading Confirmation Modal -->
+      <!-- ============================== -->
+      <div id="live-trading-modal" class="modal hidden">
+        <div class="modal-overlay" id="live-trading-modal-overlay"></div>
+        <div class="modal-sheet live-trading-modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-header">
+            <h2 class="modal-title live-trading-title">&#9888;&#65039; Enable Live Trading</h2>
+          </div>
+          <p class="live-trading-warning">
+            You are about to enable <strong>LIVE TRADING</strong>.<br>
+            Real funds will be used. Transactions on the blockchain are <strong>irreversible</strong>.
+          </p>
+          <div class="live-trading-checklist">
+            <label class="live-check-item">
+              <input type="checkbox" id="live-check-1" class="live-checkbox" />
+              <span>I understand I may lose money, including my entire investment</span>
+            </label>
+            <label class="live-check-item">
+              <input type="checkbox" id="live-check-2" class="live-checkbox" />
+              <span>I have verified my wallet address is correct</span>
+            </label>
+            <label class="live-check-item">
+              <input type="checkbox" id="live-check-3" class="live-checkbox" />
+              <span>I have set appropriate risk limits and reviewed the security guide</span>
+            </label>
+          </div>
+          <div class="live-trading-actions">
+            <button class="secondary-btn" id="cancel-live-trading-btn">Cancel</button>
+            <button class="danger-btn" id="confirm-live-trading-btn" disabled>Enable Live Trading</button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -962,6 +1004,8 @@
   <script src="components/marketplace.js"></script>
   <script src="components/backtesting.js"></script>
   <script src="components/analytics.js"></script>
+  <!-- Security: simulation mode banner, live trading confirmation, risk warnings -->
+  <script src="components/security.js"></script>
   <!-- Production extensions: i18n, wallet, safe-area, demo/live mode -->
   <script src="production.js"></script>
 </body>
