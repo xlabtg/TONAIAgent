@@ -240,11 +240,106 @@ Results are cached for 24 hours. Addresses are rarely removed from sanctions lis
 
 ### Integrating with external providers
 
-In production, replace the internal implementation in `SanctionsScreener.screenAddress()` with a call to your chosen provider:
+Configure live providers via `SanctionsScreenerConfig`. API keys must be loaded
+from `SecretsLoader` — never from `process.env` directly.
 
-- **Chainalysis KYT** — on-chain AML, real-time crypto transaction screening
-- **ComplyAdvantage** — KYC/AML data, entity screening, adverse media
-- **Elliptic** — crypto AML screening, wallet risk scoring
+#### Chainalysis KYT (on-chain address screening)
+
+```typescript
+import { createSanctionsScreener } from './services/regulatory/sanctions';
+import { createSecretsLoader } from './config/secrets';
+
+const secrets = createSecretsLoader({ backend: { provider: 'env' } });
+await secrets.load();
+
+const screener = createSanctionsScreener({
+  provider: 'chainalysis',
+  chainalysis: {
+    apiKey: await secrets.get('CHAINALYSIS_API_KEY'),
+  },
+  failClosed: true,   // block trade when provider is unreachable
+});
+```
+
+Required env var: `CHAINALYSIS_API_KEY`
+
+**Estimated cost:** Chainalysis KYT charges per-address screening call. Expect ~$0.01–$0.05 per call. At 10 000 screenings/month ≈ $100–$500/month depending on plan tier. Contact Chainalysis for volume pricing.
+
+#### OpenSanctions (entity name screening)
+
+```typescript
+const screener = createSanctionsScreener({
+  openSanctions: {
+    apiKey: await secrets.get('OPENSANCTIONS_API_KEY'),
+    minScore: 80,   // minimum fuzzy-match score (0-100)
+  },
+});
+```
+
+Required env var: `OPENSANCTIONS_API_KEY`
+
+**Estimated cost:** OpenSanctions offers a free bulk data download tier and a paid API. API calls are ~$0.001–$0.01 each. Bulk monthly snapshots are available from ~$250/month.
+
+#### Provider selection rationale
+
+| Need | Recommended provider |
+|------|---------------------|
+| On-chain crypto address screening | **Chainalysis KYT** (primary) |
+| Entity / name list screening (OFAC, EU, UN, UK HMT) | **OpenSanctions** (primary) |
+| Alternative on-chain screening | Elliptic |
+| Alternative name screening | ComplyAdvantage |
+
+Use Chainalysis for all blockchain-address checks and OpenSanctions for KYC name/entity checks. Both should be enabled in production.
+
+### Fail-closed policy
+
+When `failClosed: true` (the default):
+- If Chainalysis KYT is unreachable during address screening, the screener returns `isMatch: true` with `providerError: true` — blocking the trade.
+- If OpenSanctions is unreachable during entity screening, the screener returns `isMatch: true` with `providerError: true`.
+- The event `aml.transaction_blocked` is emitted with `reason: 'provider_error'`.
+
+When `failClosed: false`:
+- The screener falls back to the internal in-memory list. This means trades may pass if the provider is down and the address/entity is not in the local list.
+- **Only appropriate for development/testnet environments.**
+
+### Scheduled list downloader
+
+For supplementary local screening (OFAC SDN, EU, UN, UK HMT name lists):
+
+```typescript
+import { createListDownloader } from './services/regulatory/providers/list-downloader';
+
+const downloader = createListDownloader({
+  storagePath: '/data/sanctions',
+  staleAlertThresholdMs: 48 * 60 * 60 * 1000,  // 48 hours
+  onStaleAlert: (list, lastSuccessAt) => {
+    alertOpsTeam(`Sanctions list ${list} stale since ${lastSuccessAt}`);
+  },
+});
+
+// Run daily via cron
+await downloader.refreshAll();
+
+// Load results into the screener
+for (const list of ['ofac_sdn', 'eu_consolidated', 'un_security_council', 'uk_hm_treasury']) {
+  const entries = downloader.toSanctionsEntries(list);
+  screener.loadSanctionsList(list, entries);
+  screener.setListVersion(downloader.getSnapshot(list)?.version ?? 'unknown');
+}
+```
+
+The downloader stores a versioned, SHA-256-checksummed JSON snapshot for each list in `storagePath`. On startup call `downloader.loadFromDisk()` to restore the last good snapshot without waiting for a network download. The `onStaleAlert` callback fires when a list has not been successfully refreshed within `staleAlertThresholdMs` (default 48h).
+
+### Data flow
+
+```
+[Chainalysis KYT] ──┐
+                     ├──► SanctionsScreener ──► result (isMatch / riskScore)
+[OpenSanctions]  ──┤         │
+                     │         └──► audit log entry on positive hit
+[ListDownloader] ──┘              └──► aml.transaction_blocked event
+     (OFAC/EU/UN/UK)
+```
 
 ---
 
