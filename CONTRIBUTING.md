@@ -272,6 +272,21 @@ npm test -- --grep "strategy-engine"
 npm test -- --coverage
 ```
 
+### Running Contract Tests
+
+Smart contract tests live in `contracts/tests/` and use the [Blueprint](https://github.com/ton-org/blueprint) test runner together with `@ton/sandbox`. They are intentionally excluded from the main vitest suite because they require the Tact compiler toolchain and compiled contract wrappers.
+
+**Locally:**
+
+```bash
+# From the repository root
+npx blueprint test --chdir contracts
+```
+
+**In CI:**
+
+A dedicated workflow (`.github/workflows/contracts.yml`) runs `npx blueprint test` inside the `contracts/` directory on every pull request that modifies `contracts/**` and on every push to `main`. This job is a required status check on the `main` branch protection rules, so contract regressions block merges automatically.
+
 ### Writing Tests
 
 - Write tests for all new functionality
