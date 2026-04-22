@@ -57,6 +57,10 @@ function makeOrchestrator(config: Parameters<typeof createAgentOrchestrator>[0] 
       encryptStoredKeys: false,
       enableAuditLog: true,
     },
+    // Issue #330: defaults flipped to ON; opt out here so the orchestrator
+    // tests stay focused on orchestration behaviour rather than KYC fixtures.
+    // The compliance defaults themselves are covered in tests/regulatory/.
+    kycEnforcement: { enabled: false, mode: 'testnet' },
     ...config,
   });
 }
@@ -667,7 +671,12 @@ describe('AgentOrchestratorApi', () => {
   let api: AgentOrchestratorApi;
 
   beforeEach(() => {
-    api = createAgentOrchestratorApi({ security: { maxCreationsPerUserPerHour: 0, encryptStoredKeys: false, enableAuditLog: false } });
+    api = createAgentOrchestratorApi({
+      security: { maxCreationsPerUserPerHour: 0, encryptStoredKeys: false, enableAuditLog: false },
+      // Issue #330: opt out of the now-default-on KYC gate so the API tests
+      // remain focused on routing rather than KYC fixtures.
+      kycEnforcement: { enabled: false, mode: 'testnet' },
+    });
   });
 
   // POST /agents

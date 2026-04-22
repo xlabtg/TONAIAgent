@@ -26,6 +26,51 @@ All limits are denominated in USD equivalent.
 
 ## Configuring Enforcement
 
+### Default-on enforcement (Issue #330)
+
+Both compliance gates default to **enabled** so that any deployment which does
+not explicitly opt out runs in the safe, mainnet-compliant configuration:
+
+| Gate                     | Code surface                                            | Env opt-out                  |
+|--------------------------|---------------------------------------------------------|------------------------------|
+| KYC on agent creation    | `DEFAULT_ORCHESTRATOR_CONFIG.kycEnforcement.enabled`    | `KYC_ENFORCEMENT_ENABLED=false` |
+| AML on every trade       | `DEFAULT_CONFIG.enforceAmlChecks` (execution engine)    | `AML_ENFORCEMENT_ENABLED=false` |
+
+Resolution rule: a flag is treated as **enabled** unless its env var is set to
+the case-insensitive literal `"false"`. Any other value (including unset)
+resolves to enabled. This biases the system toward safe-by-default behaviour
+for production / mainnet operation.
+
+#### Opt-out procedure for lower environments
+
+Local development and unit tests may opt out by exporting the variables before
+starting the process:
+
+```bash
+# Local dev / unit tests only — never set in production!
+export KYC_ENFORCEMENT_ENABLED=false
+export AML_ENFORCEMENT_ENABLED=false
+npm test
+```
+
+The values are also documented in `.env.example`.
+
+#### Production / mainnet enforcement
+
+Two automated guards refuse to operate when either gate has been disabled:
+
+1. **Deploy-time** — `scripts/deploy-mainnet.ts` calls
+   `assertComplianceGatesEnabled()` and aborts with a clear error message
+   before any contract deployment if either env var resolves to `false`.
+2. **Startup-time** — when `NODE_ENV=production`, `MVPPlatform.start()` runs
+   the same assertion and exits with `process.exit(1)` after logging a
+   `FATAL` error if either gate is disabled.
+
+Both helpers live in `services/regulatory/compliance-flags.ts` and may be
+reused from any other production entry point.
+
+### Per-instance overrides
+
 Enforcement is controlled via `KycEnforcementConfig`:
 
 ```typescript
