@@ -74,6 +74,16 @@ export type { SanctionsScreenerConfig, SanctionsScreeningResult, EntitySanctions
 export type { KycEnforcementConfig, KycEnforcementResult, TierLimitCheckResult, FrozenAccount, KycEnforcementMode } from './kyc-aml';
 export { KYC_ENFORCEMENT_DEFAULTS } from './kyc-aml';
 
+// Re-export compliance enforcement flags (Issue #330)
+export {
+  KYC_ENFORCEMENT_ENV_VAR,
+  AML_ENFORCEMENT_ENV_VAR,
+  isKycEnforcementEnabled,
+  isAmlEnforcementEnabled,
+  assertComplianceGatesEnabled,
+} from './compliance-flags';
+export type { ComplianceGateAssertion } from './compliance-flags';
+
 // ============================================================================
 // Regulatory Manager - Unified Interface
 // ============================================================================

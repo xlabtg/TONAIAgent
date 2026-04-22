@@ -18,6 +18,7 @@ import { createPortfolioAnalyticsDashboard } from '../../core/portfolio/analytic
 import { createAgentControlApi, createAgentManager, createDemoRegistry } from '../../core/agents/control';
 import { createDemoAgentBundle } from '../../examples/demo-agent';
 import type { AnalyticsPeriod } from '../../core/portfolio/analytics';
+import { assertComplianceGatesEnabled } from '../../services/regulatory/compliance-flags';
 
 import { BASELINE_PRICES, MVP_ASSETS } from '../../core/market-data/base';
 
@@ -129,6 +130,18 @@ export class MVPPlatform {
   /** Start all platform sub-components */
   start(): void {
     if (this.running) return;
+
+    // Issue #330: refuse to start in production with compliance gates disabled.
+    // KYC/AML enforcement defaults to ON; an operator must explicitly export
+    // KYC_ENFORCEMENT_ENABLED=false / AML_ENFORCEMENT_ENABLED=false to opt out
+    // (allowed only outside production).
+    if (process.env.NODE_ENV === 'production') {
+      const compliance = assertComplianceGatesEnabled();
+      if (!compliance.ok) {
+        console.error(`FATAL: ${compliance.message}`);
+        process.exit(1);
+      }
+    }
 
     // Initialize strategy engine with built-in strategies
     this.strategyLoader.loadBuiltIns();

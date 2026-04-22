@@ -345,8 +345,12 @@ describe('AgentOrchestrator — KYC gate on createAgent', () => {
     expect(result.status).toBe('active');
   });
 
-  it('allows agent creation when enforcement is disabled (default)', async () => {
-    const orchestrator = new AgentOrchestrator();
+  it('allows agent creation when enforcement is explicitly disabled', async () => {
+    // Issue #330: defaults are now ON, so we explicitly opt out here
+    // to verify the orchestrator still passes through when disabled.
+    const orchestrator = new AgentOrchestrator({
+      kycEnforcement: { enabled: false, mode: 'testnet' },
+    });
     const result = await orchestrator.createAgent({
       userId: 'user_no_kyc_noforce',
       strategy: 'trading',
@@ -436,7 +440,8 @@ describe('DefaultExecutionEngine — AML checks', () => {
     expect(result.error).toMatch(/AML/i);
   });
 
-  it('skips AML check when enforceAmlChecks is false (default)', async () => {
+  it('skips AML check when enforceAmlChecks is explicitly disabled', async () => {
+    // Issue #330: defaults are now ON, so we explicitly opt out here.
     const registry = createConnectorRegistry();
     const engine = createExecutionEngine(registry, { enforceAmlChecks: false });
 
