@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tact-lang/tact/main/src/config/configSchema.json",
+  "projects": [
+    {
+      "name": "AgentWallet",
+      "path": "agent-wallet.tact",
+      "output": "./build/AgentWallet",
+      "options": {}
+    },
+    {
+      "name": "AgentFactory",
+      "path": "agent-factory.tact",
+      "output": "./build/AgentFactory",
+      "options": {}
+    },
+    {
+      "name": "StrategyExecutor",
+      "path": "strategy-executor.tact",
+      "output": "./build/StrategyExecutor",
+      "options": {}
+    }
+  ]
+}

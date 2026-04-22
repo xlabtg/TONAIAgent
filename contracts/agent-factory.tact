@@ -105,6 +105,21 @@ struct UpgradeProposal {
     migrationNotes: String;
 }
 
+/// Factory configuration returned by the `config` getter.
+struct FactoryConfig {
+    deploymentFee: Int as coins;
+    protocolFeeBps: Int as uint16;
+    maxAgentsPerUser: Int as uint8;
+    acceptingDeployments: Bool;
+}
+
+/// Factory statistics returned by the `stats` getter.
+struct FactoryStats {
+    totalAgentsDeployed: Int as uint64;
+    totalFeesCollected: Int as coins;
+    version: Int as uint16;
+}
+
 // ---------------------------------------------------------------------------
 // Contract
 // ---------------------------------------------------------------------------
@@ -247,13 +262,15 @@ contract AgentFactory with Deployable, Ownable {
     receive(msg: ProposeUpgrade) {
         self.requireOwner();
         self.upgradeNonce = self.upgradeNonce + 1;
+        // Proposer counts as the first approval; auto-execute if threshold is 1.
+        let autoExecuted: Bool = msg.approvalsRequired <= 1;
         self.upgradeProposals.set(self.upgradeNonce, UpgradeProposal{
             proposalId: self.upgradeNonce,
             newCodeHash: msg.newCodeHash,
             upgradeType: msg.upgradeType,
             approvalsRequired: msg.approvalsRequired,
             approvalCount: 1,   // proposer auto-approves
-            executed: false,
+            executed: autoExecuted,
             createdAt: now(),
             migrationNotes: msg.migrationNotes
         });
@@ -278,17 +295,21 @@ contract AgentFactory with Deployable, Ownable {
 
     // ---- views ----
 
-    get fun stats(): (Int, Int, Int) {
-        return (self.totalAgentsDeployed, self.totalFeesCollected, self.version);
+    get fun stats(): FactoryStats {
+        return FactoryStats{
+            totalAgentsDeployed: self.totalAgentsDeployed,
+            totalFeesCollected: self.totalFeesCollected,
+            version: self.version
+        };
     }
 
-    get fun config(): (Int, Int, Int, Bool) {
-        return (
-            self.deploymentFee,
-            self.protocolFeeBps,
-            self.maxAgentsPerUser,
-            self.acceptingDeployments
-        );
+    get fun config(): FactoryConfig {
+        return FactoryConfig{
+            deploymentFee: self.deploymentFee,
+            protocolFeeBps: self.protocolFeeBps,
+            maxAgentsPerUser: self.maxAgentsPerUser,
+            acceptingDeployments: self.acceptingDeployments
+        };
     }
 
     get fun userAgentCount(ownerAddress: Address): Int {

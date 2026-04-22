@@ -7,17 +7,17 @@
  *   npx blueprint test contracts/tests/strategy-executor.spec.ts
  */
 
-import { Blockchain, SandboxContract, TreasuryWallet } from '@ton/sandbox';
+import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano } from '@ton/core';
 import { StrategyExecutor } from '../wrappers/StrategyExecutor';
 import '@ton/test-utils';
 
 describe('StrategyExecutor', () => {
   let blockchain: Blockchain;
-  let owner: SandboxContract<TreasuryWallet>;
-  let orchestrator: SandboxContract<TreasuryWallet>;
-  let agentWallet: SandboxContract<TreasuryWallet>;
-  let attacker: SandboxContract<TreasuryWallet>;
+  let owner: SandboxContract<TreasuryContract>;
+  let orchestrator: SandboxContract<TreasuryContract>;
+  let agentWallet: SandboxContract<TreasuryContract>;
+  let attacker: SandboxContract<TreasuryContract>;
   let executor: SandboxContract<StrategyExecutor>;
 
   const STRATEGY_ID = 1001n;
@@ -59,10 +59,10 @@ describe('StrategyExecutor', () => {
         strategyId: id,
         agentWallet: agentWallet.address,
         strategyType: 'dca',
-        riskLevel: 0,                   // RISK_LOW
+        riskLevel: 0n,                   // RISK_LOW
         maxPositionNano: toNano('10'),
         maxLossNano: toNano('50'),
-        maxExecutions: 0,               // unlimited
+        maxExecutions: 0n,               // unlimited
         expiresAt: 0n,                  // never
       }
     );
@@ -92,10 +92,10 @@ describe('StrategyExecutor', () => {
         strategyId: 2002n,
         agentWallet: agentWallet.address,
         strategyType: 'arb',
-        riskLevel: 1,
+        riskLevel: 1n,
         maxPositionNano: toNano('5'),
         maxLossNano: toNano('20'),
-        maxExecutions: 10,
+        maxExecutions: 10n,
         expiresAt: 0n,
       }
     );
@@ -112,10 +112,10 @@ describe('StrategyExecutor', () => {
         strategyId: 9999n,
         agentWallet: agentWallet.address,
         strategyType: 'evil',
-        riskLevel: 3,
+        riskLevel: 3n,
         maxPositionNano: toNano('100'),
         maxLossNano: toNano('100'),
-        maxExecutions: 0,
+        maxExecutions: 0n,
         expiresAt: 0n,
       }
     );
@@ -133,10 +133,10 @@ describe('StrategyExecutor', () => {
         strategyId: 3003n,
         agentWallet: agentWallet.address,
         strategyType: 'dca',
-        riskLevel: 0,
+        riskLevel: 0n,
         maxPositionNano: toNano('5'),
         maxLossNano: toNano('20'),
-        maxExecutions: 0,
+        maxExecutions: 0n,
         expiresAt: 0n,
       }
     );
@@ -282,10 +282,10 @@ describe('StrategyExecutor', () => {
         strategyId: 4004n,
         agentWallet: agentWallet.address,
         strategyType: 'limited',
-        riskLevel: 0,
+        riskLevel: 0n,
         maxPositionNano: toNano('5'),
         maxLossNano: toNano('100'),
-        maxExecutions: 3,
+        maxExecutions: 3n,
         expiresAt: 0n,
       }
     );
