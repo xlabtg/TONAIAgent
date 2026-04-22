@@ -258,9 +258,33 @@ Before mainnet deployment, the following must be addressed:
 
 ---
 
+---
+
+## v1 vs v2 Architecture
+
+This document describes the **v1** simplified FROST-like protocol used for
+testnet and low-value operations. The **v2** hardened implementation is
+documented in [docs/mpc-architecture-v2.md](./mpc-architecture-v2.md).
+
+| Property | v1 (this doc) | v2 |
+|----------|--------------|-----|
+| Coordinator role | Orchestrates AND holds nonces | Orchestrates only (no nonces) |
+| Binding factor | Missing | ρ_i = H(i, m, B) per FROST §4.2 |
+| Nonce commitment | None (single nonce per party) | Two nonces per party (d_i, e_i) |
+| Share isolation | All shares in same process | Each share held by MPCSigner |
+| Wagner's attack | Partially vulnerable | Mitigated via binding factor |
+| Attack testing | Basic error paths | Full attack test suite |
+
+**Migration**: v1 keys should be rotated to v2 shares before mainnet.
+See [docs/mpc-architecture-v2.md](./mpc-architecture-v2.md) for the
+migration path and `scripts/` for the rotation helper.
+
+---
+
 ## References
 
 - [FROST: Flexible Round-Optimized Schnorr Threshold Signatures](https://eprint.iacr.org/2020/852.pdf)
 - [RFC 8032: Edwards-Curve Digital Signature Algorithm (EdDSA)](https://www.rfc-editor.org/rfc/rfc8032)
 - [@noble/curves documentation](https://github.com/paulmillr/noble-curves)
 - [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_secret_sharing)
+- [MPC Architecture v2](./mpc-architecture-v2.md)

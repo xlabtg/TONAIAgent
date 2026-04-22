@@ -11,6 +11,9 @@
  * - Replay protection: session nonce uniqueness
  * - Error paths: insufficient shares, duplicate partial sigs, unknown sessions
  * - Integration with SecureKeyManager / SoftwareKeyStorage pipeline
+ * - MPCCoordinatorV2 (FROST with binding factors): basic correctness check
+ *
+ * For full attack-resistance tests see: tests/security/mpc-attacks.test.ts
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -20,6 +23,7 @@ import {
   createKeyManager,
   SecureKeyManager,
 } from '../../core/security/key-management';
+import { MPCCoordinatorV2 } from '../../core/security/mpc/coordinator.js';
 import type { MPCConfig } from '../../core/security/types';
 
 // ============================================================================
@@ -607,5 +611,53 @@ describe('Threshold EdDSA cryptographic properties', () => {
     // All public keys should be distinct (fresh key material each time)
     const unique = new Set(results);
     expect(unique.size).toBe(5);
+  });
+});
+
+// ============================================================================
+// MPCCoordinatorV2 — Basic correctness (FROST with binding factors)
+// Full attack-resistance tests: tests/security/mpc-attacks.test.ts
+// ============================================================================
+
+describe('MPCCoordinatorV2: basic correctness', () => {
+  const keyId = 'v2_basic_key';
+
+  it('should generate shares and produce a valid Ed25519 signature', async () => {
+    const coord = new MPCCoordinatorV2(make2of3Config());
+    await coord.generateShares(keyId);
+    const pubKeyHex = coord.getPublicKey(keyId)!;
+    expect(pubKeyHex).toHaveLength(64);
+
+    const message = Buffer.from('MPCCoordinatorV2 test');
+    const sig = await coord.thresholdSign(keyId, message, 'v2_req_1');
+
+    expect(sig).toHaveLength(128); // 64-byte Ed25519 signature
+    const valid = ed25519.verify(
+      new Uint8Array(Buffer.from(sig, 'hex')),
+      new Uint8Array(message),
+      new Uint8Array(Buffer.from(pubKeyHex, 'hex'))
+    );
+    expect(valid).toBe(true);
+  });
+
+  it('should verify using verifyThresholdSignature helper', async () => {
+    const coord = new MPCCoordinatorV2(make2of3Config());
+    await coord.generateShares(keyId + '_verify');
+    const message = Buffer.from('verify v2');
+
+    const sig = await coord.thresholdSign(keyId + '_verify', message, 'v2_verify_req');
+    expect(coord.verifyThresholdSignature(keyId + '_verify', message, sig)).toBe(true);
+  });
+
+  it('should produce different signatures for same message (fresh nonces)', async () => {
+    const coord = new MPCCoordinatorV2(make2of3Config());
+    await coord.generateShares(keyId + '_fresh');
+    const message = Buffer.from('same message v2');
+
+    const sig1 = await coord.thresholdSign(keyId + '_fresh', message, 'v2_fresh_1');
+    const sig2 = await coord.thresholdSign(keyId + '_fresh', message, 'v2_fresh_2');
+
+    // R bytes (first 32 bytes / 64 hex chars) must differ across sessions
+    expect(sig1.slice(0, 64)).not.toBe(sig2.slice(0, 64));
   });
 });
