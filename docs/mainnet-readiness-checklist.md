@@ -102,7 +102,31 @@
 
 ---
 
-## Section 7 — Final Acknowledgment
+## Section 7 — Compliance Gates (Issue #330)
+
+These platform-level checks must be verified by the operator before mainnet
+deploy in addition to the per-user items above.
+
+- [ ] **KYC enforcement gate is enabled (effective value)**
+  `DEFAULT_ORCHESTRATOR_CONFIG.kycEnforcement.enabled` resolves to `true`.
+  In env terms: `KYC_ENFORCEMENT_ENABLED` is **unset** or set to any value
+  other than the literal `"false"`. The mainnet deploy script
+  (`scripts/deploy-mainnet.ts`) refuses to proceed otherwise.
+
+- [ ] **AML enforcement gate is enabled (effective value)**
+  `DEFAULT_CONFIG.enforceAmlChecks` (execution engine) resolves to `true`.
+  In env terms: `AML_ENFORCEMENT_ENABLED` is **unset** or set to any value
+  other than the literal `"false"`. The mainnet deploy script
+  (`scripts/deploy-mainnet.ts`) refuses to proceed otherwise.
+
+- [ ] **Production startup assertion verified**
+  `MVPPlatform.start()` running with `NODE_ENV=production` emits no `FATAL`
+  compliance error and does not exit. See
+  [docs/regulatory-compliance.md](./regulatory-compliance.md#default-on-enforcement-issue-330).
+
+---
+
+## Section 8 — Final Acknowledgment
 
 Before enabling live trading, confirm each statement:
 

@@ -32,6 +32,7 @@
 import { TonClient, WalletContractV4, internal } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { toNano, Address } from '@ton/core';
+import { assertComplianceGatesEnabled } from '../services/regulatory/compliance-flags';
 
 // Uncomment after running `npx blueprint build`:
 // import { AgentFactory } from '../contracts/wrappers/AgentFactory';
@@ -49,6 +50,14 @@ async function main() {
       'Mainnet deployment requires NETWORK=mainnet environment variable. ' +
       'This is an intentional safety gate — do not bypass it.'
     );
+  }
+
+  // ---- Hard-gate: refuse to deploy with KYC/AML enforcement disabled ----
+  // See Issue #330: silently disabled compliance gates are a critical exposure
+  // for a regulated financial product. Both flags must resolve to true here.
+  const compliance = assertComplianceGatesEnabled();
+  if (!compliance.ok) {
+    throw new Error(`Mainnet deploy refused — ${compliance.message}`);
   }
 
   // ---- 1. Validate environment ----

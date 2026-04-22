@@ -24,6 +24,7 @@ import {
   KYC_ENFORCEMENT_DEFAULTS,
   type KycEnforcementConfig,
 } from '../../../services/regulatory/kyc-aml';
+import { isKycEnforcementEnabled } from '../../../services/regulatory/compliance-flags';
 
 import type {
   AgentEnvironment,
@@ -119,7 +120,11 @@ export const DEFAULT_ORCHESTRATOR_CONFIG: AgentOrchestratorConfig = {
     enableAuditLog: true,
   },
   kycEnforcement: {
-    enabled: false, // disabled by default — set to true to enforce KYC on agent creation
+    // Default ON for safety. Opt out by setting KYC_ENFORCEMENT_ENABLED=false
+    // in lower environments (local dev, unit tests). Production / mainnet
+    // deploys must keep the gate enabled — see scripts/deploy-mainnet.ts and
+    // services/regulatory/compliance-flags.ts.
+    enabled: isKycEnforcementEnabled(),
     mode: 'testnet',
   },
 };
