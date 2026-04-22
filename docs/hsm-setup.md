@@ -7,14 +7,15 @@ This guide explains how to configure Hardware Security Module (HSM) key storage 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Provider Selection](#provider-selection)
-3. [AWS KMS Setup](#aws-kms-setup)
-4. [Azure Key Vault Setup](#azure-key-vault-setup)
-5. [Mock HSM (CI / Local Dev)](#mock-hsm-ci--local-dev)
-6. [Health Check & Readiness Probe](#health-check--readiness-probe)
-7. [Key Rotation](#key-rotation)
-8. [Environment Variables Reference](#environment-variables-reference)
-9. [Troubleshooting](#troubleshooting)
+2. [Key Registry (Persistence)](#key-registry-persistence)
+3. [Provider Selection](#provider-selection)
+4. [AWS KMS Setup](#aws-kms-setup)
+5. [Azure Key Vault Setup](#azure-key-vault-setup)
+6. [Mock HSM (CI / Local Dev)](#mock-hsm-ci--local-dev)
+7. [Health Check & Readiness Probe](#health-check--readiness-probe)
+8. [Key Rotation](#key-rotation)
+9. [Environment Variables Reference](#environment-variables-reference)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -61,6 +62,119 @@ TONAIAgent uses an HSM (or equivalent cloud KMS) to ensure that **private key ma
 | Future: YubiHSM 2, Thales Luna, AWS CloudHSM PKCS#11 | Ed25519 ✅ | Hardware-backed TON custody (see [Future Providers](#future-providers)) |
 
 The runtime guard makes this decision enforced by code rather than documentation: attempting to generate `ed25519` on AWS KMS throws, and attempting to `createSigningRequest` against an Ed25519 key without MPC shares on an HSM that cannot produce Ed25519 also throws.
+
+---
+
+## Key Registry (Persistence)
+
+### The Problem
+
+`AwsKmsAdapter` and `AzureKeyVaultAdapter` previously maintained the mapping from
+application-level `keyId` to the KMS ARN / Azure key name in an **in-memory `Map`**.
+If the process restarted, this mapping was destroyed.  Every existing key then became
+inaccessible — even though the key material remained intact inside the HSM — because
+there was no way to route signing requests to the correct ARN.  For a production wallet
+service this could render user funds un-spendable.
+
+Issue [#343](https://github.com/xlabtg/TONAIAgent/issues/343) introduced a pluggable
+`KeyRegistry` interface and three backends to fix this.
+
+### Architecture
+
+```
+AwsKmsAdapter / AzureKeyVaultAdapter
+         │
+         │ reads/writes
+         ▼
+    KeyRegistry  ◄──── NODE_HSM_REGISTRY=postgres|file|memory
+         │
+    ┌────┴─────────────────────┐
+    │  MemoryKeyRegistry       │  (dev/CI — NOT production)
+    │  FileKeyRegistry         │  (single-node staging)
+    │  PostgresKeyRegistry     │  (recommended for production)
+    └──────────────────────────┘
+```
+
+### Backend Selection
+
+Set `NODE_HSM_REGISTRY` (or pass `registryType` in `HSMConfig`):
+
+| Value      | Suitable for | Notes |
+|------------|-------------|-------|
+| `memory`   | Dev / CI    | Lost on restart. Warns in `NODE_ENV=production` |
+| `file`     | Single-node staging | Atomic writes; survives restarts |
+| `postgres` | Production  | Transactional; multi-node safe |
+
+```bash
+# Staging
+NODE_HSM_REGISTRY=file
+NODE_HSM_REGISTRY_FILE=/var/lib/tonaiagent/hsm-registry.json
+
+# Production
+NODE_HSM_REGISTRY=postgres
+NODE_HSM_REGISTRY_PG_URL=postgres://user:pass@host:5432/tonaiagent
+NODE_HSM_REGISTRY_PG_TABLE=hsm_key_registry   # default
+```
+
+Or in TypeScript config:
+
+```typescript
+const manager = createKeyManager({
+  storageType: 'hsm',
+  hsm: {
+    provider: 'aws_kms',
+    operationTimeout: 10000,
+    awsRegion: 'us-east-1',
+    registryType: 'postgres',   // 'file' | 'postgres' | 'memory'
+  },
+});
+```
+
+### Postgres Schema
+
+The Postgres backend creates the table automatically on first use:
+
+```sql
+CREATE TABLE IF NOT EXISTS hsm_key_registry (
+  key_id       TEXT        PRIMARY KEY,
+  provider_ref TEXT        NOT NULL,
+  provider     TEXT        NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ
+);
+```
+
+The `provider_ref` column stores the KMS ARN or Azure key name.  The ARN itself is
+not secret (IAM policies protect access), but you may wish to restrict SELECT access
+on this table to the TONAIAgent service account only.
+
+### Migration from In-Memory Mappings
+
+If you were running with the old in-memory registry and have a JSON backup of your
+key mappings, use the migration utility:
+
+```typescript
+import { migrateFromJsonFile } from 'core/security/hsm/registry/migrate';
+
+// backup.json format:
+// { "entries": [{ "keyId": "...", "providerRef": "arn:...", "provider": "aws_kms" }] }
+await migrateFromJsonFile('./backup.json');
+```
+
+Or from the command line:
+
+```bash
+NODE_HSM_REGISTRY=postgres NODE_HSM_REGISTRY_PG_URL=postgres://... \
+  node -e "require('./core/security/hsm/registry/migrate').migrateFromJsonFile('./backup.json')"
+```
+
+### Disaster Recovery
+
+- **Postgres**: Standard PostgreSQL backup (pg_dump) captures the registry.  
+  Restore procedure: restore DB, restart TONAIAgent — the ARN lookups resume automatically.
+- **File**: Back up `NODE_HSM_REGISTRY_FILE` alongside other service data.  
+  Copy to the new host; set `NODE_HSM_REGISTRY_FILE` to its path.
+- **Memory** (dev only): No DR — registry is ephemeral by design.
 
 ---
 
@@ -306,6 +420,11 @@ Schedule periodic rotation using a cron job or your infrastructure's secret rota
 | `AZURE_CLIENT_SECRET` | Azure | Service principal client secret |
 | `AWS_KMS_TEST` | CI | Set to `true` to run AWS KMS integration tests |
 | `AZURE_KV_TEST` | CI | Set to `true` to run Azure Key Vault integration tests |
+| `NODE_HSM_REGISTRY` | all | Key registry backend: `postgres` \| `file` \| `memory` (default) |
+| `NODE_HSM_REGISTRY_FILE` | file | Path to the JSON registry file (default: `./hsm-key-registry.json`) |
+| `NODE_HSM_REGISTRY_PG_URL` | postgres | PostgreSQL connection string |
+| `NODE_HSM_REGISTRY_PG_TABLE` | postgres | Registry table name (default: `hsm_key_registry`) |
+| `NODE_HSM_REGISTRY_ALLOW_MEMORY_IN_PROD` | memory | Set to `true` to suppress the in-memory production warning |
 
 ---
 
@@ -349,4 +468,6 @@ Verify `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` are set, 
 - **Thales Luna**: Enterprise HSM. Requires vendor PKCS#11 library.
 - **AWS CloudHSM (direct PKCS#11)**: Full Ed25519 support without KMS custom key store overhead.
 
-Contributions are welcome — implement the `HSMProviderAdapter` interface in `core/security/key-management.ts` and add tests in `tests/security/hsm-integration.test.ts`.
+Contributions are welcome — implement the `HSMProviderAdapter` interface (see
+`core/security/hsm/aws-kms.ts` for the canonical example), pass a `KeyRegistry`
+to the constructor, and add tests in `tests/security/hsm-integration.test.ts`.

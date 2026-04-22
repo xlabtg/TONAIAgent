@@ -152,6 +152,14 @@ export interface HSMConfig {
   // Mock HSM (CI / local dev without real hardware)
   /** When provider is 'mock', use in-memory storage only. Never use in production. */
   mockAllowProduction?: boolean;
+
+  /**
+   * Key registry backend used to persist the keyId → provider reference mapping.
+   * Defaults to the NODE_HSM_REGISTRY env var, which defaults to 'memory'.
+   * Set to 'postgres' or 'file' for production to survive process restarts.
+   * See core/security/hsm/registry/ for backend details.
+   */
+  registryType?: 'postgres' | 'file' | 'memory';
 }
 
 export interface SecureEnclaveConfig {
