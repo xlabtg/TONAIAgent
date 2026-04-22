@@ -256,6 +256,12 @@ export class SecretsLoader {
         loadedAt: now,
         expiresAt: new Date(now.getTime() + this.cacheTtlMs),
       };
+
+      const keyCount = Object.values(secrets).filter((v) => v !== undefined && v !== '').length;
+      const auditRegistered = this.auditCallbacks.length > 0;
+      console.info(
+        `[SecretsLoader] secrets loaded via ${this.backend.provider}, ${keyCount} keys, audit callback registered: ${auditRegistered}`
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.loadError = message;

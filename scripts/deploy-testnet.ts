@@ -27,32 +27,38 @@
 import { TonClient, WalletContractV4, internal } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { toNano, Address } from '@ton/core';
+import { initConfig } from '../config/index.js';
 
 // Uncomment after running `npx blueprint build`:
 // import { AgentFactory } from '../contracts/wrappers/AgentFactory';
 // import { StrategyExecutor } from '../contracts/wrappers/StrategyExecutor';
 
 const TESTNET_RPC = 'https://testnet.toncenter.com/api/v2/jsonRPC';
-const TESTNET_API_KEY = process.env.TON_TESTNET_API_KEY ?? '';
 
 async function main() {
+  // ---- 0. Load secrets and config before any business logic ----
+  await initConfig({ strictMode: false });
+
   // ---- 1. Validate environment ----
-  const mnemonic = process.env.TON_MNEMONIC;
+  // TON_TESTNET_API_KEY is non-secret config; read directly from env
+  const TESTNET_API_KEY = process.env['TON_TESTNET_API_KEY'] ?? '';
+
+  const mnemonic = process.env['TON_MNEMONIC'];
   if (!mnemonic) {
     throw new Error('TON_MNEMONIC environment variable is required');
   }
 
-  const ownerAddress = process.env.FACTORY_OWNER_ADDRESS;
+  const ownerAddress = process.env['FACTORY_OWNER_ADDRESS'];
   if (!ownerAddress) {
     throw new Error('FACTORY_OWNER_ADDRESS environment variable is required');
   }
 
-  const treasuryAddress = process.env.FACTORY_TREASURY_ADDRESS;
+  const treasuryAddress = process.env['FACTORY_TREASURY_ADDRESS'];
   if (!treasuryAddress) {
     throw new Error('FACTORY_TREASURY_ADDRESS environment variable is required');
   }
 
-  const orchestratorAddress = process.env.STRATEGY_ORCHESTRATOR_ADDRESS;
+  const orchestratorAddress = process.env['STRATEGY_ORCHESTRATOR_ADDRESS'];
   if (!orchestratorAddress) {
     throw new Error('STRATEGY_ORCHESTRATOR_ADDRESS environment variable is required');
   }
