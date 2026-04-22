@@ -65,6 +65,10 @@ export class PostgresKeyRegistry implements KeyRegistry {
     // installed only when the postgres backend is actually used.
     let pg: { Pool: new (config: { connectionString: string }) => PgPool };
     try {
+      // pg is an optional peer dependency — @ts-ignore so tsc does not error
+      // when it is not installed in the current project.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       pg = (await import('pg')) as typeof pg;
     } catch {
       throw new Error(
