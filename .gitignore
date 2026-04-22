@@ -39,6 +39,11 @@ coverage/
 
 # Lock files (library - let consumers manage their own)
 package-lock.json
+# Exception: contracts/ has its own package and needs the lock file for CI
+!contracts/package-lock.json
 
 # Build artifacts
 *.zip
+
+# Tact compiler output (generated during CI)
+contracts/build/

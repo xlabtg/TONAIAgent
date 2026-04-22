@@ -30,6 +30,17 @@ const MAX_BPS: Int = 10000;
 const MIN_TON_RESERVE: Int = ton("0.05");
 
 // ---------------------------------------------------------------------------
+// Structs
+// ---------------------------------------------------------------------------
+
+/// Spending limits returned by the `limits` getter.
+struct WalletLimits {
+    maxTradeSizeNano: Int as coins;
+    dailyLimitNano: Int as coins;
+    timeLockSeconds: Int as uint32;
+}
+
+// ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------
 
@@ -116,8 +127,9 @@ contract AgentWallet with Deployable, Ownable {
     dailySpent: Int as coins;
     dayStart: Int as uint64;           // Unix timestamp of current day window
 
-    // Allowed DEXes (address -> Bool)
+    // Allowed DEXes (address -> Bool) and a flag to activate the whitelist
     allowedDexes: map<Address, Bool>;
+    whitelistActive: Bool;              // true once any DEX is added
 
     // Pending time-locked withdrawals
     pendingWithdrawals: map<Int, PendingWithdrawal>;
@@ -145,6 +157,7 @@ contract AgentWallet with Deployable, Ownable {
         self.dayStart = now();
         self.withdrawalNonce = 0;
         self.isPaused = false;
+        self.whitelistActive = false;
     }
 
     // ---- receive TON ----
@@ -215,12 +228,11 @@ contract AgentWallet with Deployable, Ownable {
             "AgentWallet: daily limit exceeded"
         );
 
-        // If allowedDexes is non-empty, enforce whitelist
-        let isAllowed: Bool? = self.allowedDexes.get(msg.to);
-        require(
-            isAllowed == null || isAllowed!! == true,
-            "AgentWallet: DEX not in whitelist"
-        );
+        // If the whitelist is active, enforce it: only explicitly allowed DEXes pass.
+        if (self.whitelistActive) {
+            let isAllowed: Bool? = self.allowedDexes.get(msg.to);
+            require(isAllowed != null && isAllowed!!, "AgentWallet: DEX not in whitelist");
+        }
 
         require(
             myBalance() - msg.amount >= MIN_TON_RESERVE,
@@ -252,6 +264,7 @@ contract AgentWallet with Deployable, Ownable {
         self.requireOwner();
         if (msg.allowed) {
             self.allowedDexes.set(msg.dex, true);
+            self.whitelistActive = true;
         } else {
             self.allowedDexes.del(msg.dex);
         }
@@ -304,8 +317,12 @@ contract AgentWallet with Deployable, Ownable {
         return self.safeAddress;
     }
 
-    get fun limits(): (Int, Int, Int) {
-        return (self.maxTradeSizeNano, self.dailyLimitNano, self.timeLockSeconds);
+    get fun limits(): WalletLimits {
+        return WalletLimits{
+            maxTradeSizeNano: self.maxTradeSizeNano,
+            dailyLimitNano: self.dailyLimitNano,
+            timeLockSeconds: self.timeLockSeconds
+        };
     }
 
     get fun paused(): Bool {

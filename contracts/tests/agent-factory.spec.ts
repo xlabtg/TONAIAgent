@@ -7,22 +7,22 @@
  *   npx blueprint test contracts/tests/agent-factory.spec.ts
  */
 
-import { Blockchain, SandboxContract, TreasuryWallet } from '@ton/sandbox';
+import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano } from '@ton/core';
 import { AgentFactory } from '../wrappers/AgentFactory';
 import '@ton/test-utils';
 
 describe('AgentFactory', () => {
   let blockchain: Blockchain;
-  let owner: SandboxContract<TreasuryWallet>;
-  let treasury: SandboxContract<TreasuryWallet>;
-  let user1: SandboxContract<TreasuryWallet>;
-  let user2: SandboxContract<TreasuryWallet>;
-  let attacker: SandboxContract<TreasuryWallet>;
+  let owner: SandboxContract<TreasuryContract>;
+  let treasury: SandboxContract<TreasuryContract>;
+  let user1: SandboxContract<TreasuryContract>;
+  let user2: SandboxContract<TreasuryContract>;
+  let attacker: SandboxContract<TreasuryContract>;
   let factory: SandboxContract<AgentFactory>;
 
   const DEPLOY_FEE = toNano('0.1');   // 0.1 TON
-  const MAX_AGENTS = 3;
+  const MAX_AGENTS = 3n;
 
   beforeEach(async () => {
     blockchain = await Blockchain.create();
@@ -38,7 +38,7 @@ describe('AgentFactory', () => {
         owner.address,
         treasury.address,
         DEPLOY_FEE,
-        100,          // 1% protocol fee
+        100n,         // 1% protocol fee
         MAX_AGENTS
       )
     );
@@ -60,11 +60,11 @@ describe('AgentFactory', () => {
   // ---- initial state ----
 
   it('should initialise with correct configuration', async () => {
-    const [fee, bps, maxAgents, accepting] = await factory.getConfig();
-    expect(fee).toBe(DEPLOY_FEE);
-    expect(bps).toBe(100n);
-    expect(maxAgents).toBe(BigInt(MAX_AGENTS));
-    expect(accepting).toBe(true);
+    const config = await factory.getConfig();
+    expect(config.deploymentFee).toBe(DEPLOY_FEE);
+    expect(config.protocolFeeBps).toBe(100n);
+    expect(config.maxAgentsPerUser).toBe(MAX_AGENTS);
+    expect(config.acceptingDeployments).toBe(true);
   });
 
   // ---- deploy agent ----
@@ -81,7 +81,7 @@ describe('AgentFactory', () => {
         safeAddress: user1.address,
         maxTradeSizeNano: toNano('10'),
         dailyLimitNano: toNano('50'),
-        timeLockSeconds: 0,
+        timeLockSeconds: 0n,
         referrer: null,
       }
     );
@@ -98,8 +98,8 @@ describe('AgentFactory', () => {
       success: true,
     });
 
-    const [totalDeployed] = await factory.getStats();
-    expect(totalDeployed).toBe(1n);
+    const stats = await factory.getStats();
+    expect(stats.totalAgentsDeployed).toBe(1n);
   });
 
   it('should reject deployment when fee is insufficient', async () => {
@@ -114,7 +114,7 @@ describe('AgentFactory', () => {
         safeAddress: user1.address,
         maxTradeSizeNano: toNano('10'),
         dailyLimitNano: toNano('50'),
-        timeLockSeconds: 0,
+        timeLockSeconds: 0n,
         referrer: null,
       }
     );
@@ -125,7 +125,7 @@ describe('AgentFactory', () => {
     const agentAddr = await blockchain.treasury('bulk_agent');
 
     // Deploy MAX_AGENTS agents for user1
-    for (let i = 0; i < MAX_AGENTS; i++) {
+    for (let i = 0n; i < MAX_AGENTS; i++) {
       const r = await factory.send(
         user1.getSender(),
         { value: DEPLOY_FEE + toNano('0.05') },
@@ -136,7 +136,7 @@ describe('AgentFactory', () => {
           safeAddress: user1.address,
           maxTradeSizeNano: toNano('10'),
           dailyLimitNano: toNano('50'),
-          timeLockSeconds: 0,
+          timeLockSeconds: 0n,
           referrer: null,
         }
       );
@@ -154,7 +154,7 @@ describe('AgentFactory', () => {
         safeAddress: user1.address,
         maxTradeSizeNano: toNano('10'),
         dailyLimitNano: toNano('50'),
-        timeLockSeconds: 0,
+        timeLockSeconds: 0n,
         referrer: null,
       }
     );
@@ -165,7 +165,7 @@ describe('AgentFactory', () => {
     const agentAddr = await blockchain.treasury('shared_agent');
 
     for (const user of [user1, user2]) {
-      for (let i = 0; i < MAX_AGENTS; i++) {
+      for (let i = 0n; i < MAX_AGENTS; i++) {
         const r = await factory.send(
           user.getSender(),
           { value: DEPLOY_FEE + toNano('0.05') },
@@ -176,7 +176,7 @@ describe('AgentFactory', () => {
             safeAddress: user.address,
             maxTradeSizeNano: toNano('10'),
             dailyLimitNano: toNano('50'),
-            timeLockSeconds: 0,
+            timeLockSeconds: 0n,
             referrer: null,
           }
         );
@@ -184,8 +184,8 @@ describe('AgentFactory', () => {
       }
     }
 
-    const [totalDeployed] = await factory.getStats();
-    expect(totalDeployed).toBe(BigInt(MAX_AGENTS * 2));
+    const stats = await factory.getStats();
+    expect(stats.totalAgentsDeployed).toBe(MAX_AGENTS * 2n);
   });
 
   // ---- pause / resume ----
@@ -198,8 +198,8 @@ describe('AgentFactory', () => {
       { value: toNano('0.05') },
       { $$type: 'SetAcceptingDeployments', accepting: false }
     );
-    const [, , , accepting] = await factory.getConfig();
-    expect(accepting).toBe(false);
+    const config1 = await factory.getConfig();
+    expect(config1.acceptingDeployments).toBe(false);
 
     // Deployment while paused should fail
     const result = await factory.send(
@@ -212,7 +212,7 @@ describe('AgentFactory', () => {
         safeAddress: user1.address,
         maxTradeSizeNano: toNano('10'),
         dailyLimitNano: toNano('50'),
-        timeLockSeconds: 0,
+        timeLockSeconds: 0n,
         referrer: null,
       }
     );
@@ -224,8 +224,8 @@ describe('AgentFactory', () => {
       { value: toNano('0.05') },
       { $$type: 'SetAcceptingDeployments', accepting: true }
     );
-    const [, , , acceptingAfter] = await factory.getConfig();
-    expect(acceptingAfter).toBe(true);
+    const config2 = await factory.getConfig();
+    expect(config2.acceptingDeployments).toBe(true);
   });
 
   it('non-owner cannot pause', async () => {
@@ -246,8 +246,8 @@ describe('AgentFactory', () => {
       { value: toNano('0.05') },
       { $$type: 'SetDeploymentFee', fee: newFee }
     );
-    const [fee] = await factory.getConfig();
-    expect(fee).toBe(newFee);
+    const config = await factory.getConfig();
+    expect(config.deploymentFee).toBe(newFee);
   });
 
   it('non-owner cannot update deployment fee', async () => {
@@ -268,8 +268,8 @@ describe('AgentFactory', () => {
       {
         $$type: 'ProposeUpgrade',
         newCodeHash: BigInt('0xdeadbeef'),
-        upgradeType: 0,
-        approvalsRequired: 1,
+        upgradeType: 0n,
+        approvalsRequired: 1n,
         migrationNotes: 'v1.1.0 patch',
       }
     );
@@ -288,8 +288,8 @@ describe('AgentFactory', () => {
       {
         $$type: 'ProposeUpgrade',
         newCodeHash: BigInt('0x1234'),
-        upgradeType: 0,
-        approvalsRequired: 1,
+        upgradeType: 0n,
+        approvalsRequired: 1n,
         migrationNotes: '',
       }
     );

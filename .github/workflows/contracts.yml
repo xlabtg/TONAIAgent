@@ -1,0 +1,42 @@
+# TON AI Agent - Contract Tests
+#
+# Runs Blueprint smart contract tests on pull requests that touch contracts/
+# and on every push to main. Uses the Tact compiler version pinned in
+# contracts/package.json.
+
+name: Contract Tests
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts.yml'
+  push:
+    branches: [main]
+
+jobs:
+  blueprint-test:
+    name: Blueprint / Tact
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile Tact contracts
+        run: npx tact --config tact.config.json
+
+      - name: Run contract tests
+        run: npm test
