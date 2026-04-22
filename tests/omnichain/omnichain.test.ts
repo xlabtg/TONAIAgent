@@ -153,12 +153,22 @@ describe('ChangeNowClient', () => {
 
   describe('currency operations', () => {
     it('should get currency from cache', async () => {
+      const mockCurrencies = [{ ticker: 'btc', name: 'Bitcoin', image: '', isFiat: false, isStable: false }];
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockCurrencies,
+      }));
+
       // First call to populate cache
       await client.getCurrencies();
 
-      // Second call should use cache
+      // Second call should use cache (no additional fetch calls)
+      const fetchCallCount = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
       const result = await client.getCurrency('btc');
-      expect(result.success).toBeDefined();
+      expect(result.success).toBe(true);
+      expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchCallCount);
+
+      vi.unstubAllGlobals();
     });
   });
 
