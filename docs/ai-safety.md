@@ -30,6 +30,7 @@ The TONAIAgent AI Safety Framework ensures that autonomous agents operate reliab
 8. [Configuration](#configuration)
 9. [API Reference](#api-reference)
 10. [Best Practices](#best-practices)
+11. [Adding a New AI Call](#adding-a-new-ai-call)
 
 ---
 
@@ -1359,10 +1360,98 @@ async function weeklySafetyAudit() {
 
 ---
 
+---
+
+## Adding a New AI Call
+
+> **Mandatory**: every call that sends a message array to an LLM **must** use `PromptBuilder`. Direct string concatenation into the `system` role is forbidden and will be caught by the `local/no-ai-prompt-concat` ESLint rule.
+
+### Step-by-step guide
+
+#### 1. Define a static system prompt
+
+Add a new file under `core/ai/prompts/`:
+
+```typescript
+// core/ai/prompts/my-feature.ts
+export const MY_FEATURE_SYSTEM_PROMPT = `You are a … assistant for TONAIAgent.
+…static instructions only — no user data here…`;
+```
+
+Re-export it from `core/ai/prompts/index.ts`:
+
+```typescript
+export { MY_FEATURE_SYSTEM_PROMPT } from './my-feature';
+```
+
+System prompts are **reviewed like code** — they go through the normal PR process.
+
+#### 2. Add a typed builder method to `PromptBuilder`
+
+Open `core/ai/prompt-builder.ts` and add:
+
+```typescript
+export interface MyFeatureParams {
+  userField: string;   // user-controlled — will be sanitized
+  enumField: 'a' | 'b'; // enum — safe as-is
+}
+
+// Inside the PromptBuilder class:
+buildMyFeaturePrompt(params: MyFeatureParams): Message[] {
+  return [
+    {
+      role: 'system',
+      content: MY_FEATURE_SYSTEM_PROMPT, // static — zero user data
+    },
+    {
+      role: 'user',
+      content: JSON.stringify({
+        userField: sanitizeUserInput(params.userField),
+        enumField: params.enumField,
+      }),
+    },
+  ];
+}
+```
+
+Rules:
+- The `system` role **only** receives a constant imported from `core/ai/prompts/`.
+- Every user-controlled string must pass through a `sanitize*` helper before being embedded as a JSON value in the `user` role.
+- Numeric and enum fields are safe without sanitization.
+
+#### 3. Use the singleton at the call site
+
+```typescript
+import { promptBuilder } from '../../core/ai/prompt-builder';
+
+const messages = promptBuilder.buildMyFeaturePrompt({ userField, enumField });
+const response = await aiService.complete({ messages });
+```
+
+#### 4. Write a regression test
+
+Add a test file at `tests/ai/call-sites/my-feature-prompt.test.ts` that:
+- Verifies the system message equals the static constant.
+- Feeds each injection string from `tests/ai/prompt-injection.test.ts` through the full path and asserts the system prompt is unchanged.
+- Verifies the user message parses as valid JSON.
+
+#### 5. Register the call site in the audit doc
+
+Add a row to [docs/ai-call-sites.md](./ai-call-sites.md).
+
+### Why this matters
+
+`PromptBuilder` enforces the invariant that **user data can never appear in the `system` role**. A model receiving user-controlled text in a `system` message treats it as privileged instructions and may follow injected commands (OWASP LLM01 — Prompt Injection). By serialising all user data as a JSON payload in the `user` role, the model sees it as structured data, not as instructions.
+
+See [OWASP LLM Top 10 — LLM01](https://owasp.org/www-project-top-10-for-large-language-model-applications/) and the re-audit report §7 for the threat model.
+
+---
+
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.2.0 | 2026-04-22 | Added PromptBuilder adoption guide and ESLint enforcement (issue #348) |
 | 0.1.0 | 2026-02-20 | Initial release with full AI safety framework |
 
 ---
