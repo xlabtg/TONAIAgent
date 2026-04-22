@@ -27,6 +27,7 @@ import {
 } from './types';
 import { ConnectorRegistry, isTerminalOrderStatus } from './connector';
 import { KycAmlManager } from '../../../services/regulatory/kyc-aml';
+import { isAmlEnforcementEnabled } from '../../../services/regulatory/compliance-flags';
 
 // ============================================================================
 // Execution Engine Configuration
@@ -53,7 +54,15 @@ export interface ExecutionEngineConfig {
   enforceAmlChecks: boolean;
 }
 
-const DEFAULT_CONFIG: ExecutionEngineConfig = {
+/**
+ * Default execution engine configuration.
+ *
+ * `enforceAmlChecks` defaults to **on** so that any deployment which does not
+ * explicitly opt out runs in the safe, mainnet-compliant configuration. Opt
+ * out by setting `AML_ENFORCEMENT_ENABLED=false` for local dev / unit tests
+ * (see services/regulatory/compliance-flags.ts).
+ */
+export const DEFAULT_CONFIG: ExecutionEngineConfig = {
   defaultSlippageTolerance: 0.5,
   maxRetryAttempts: 3,
   retryDelayMs: 1000,
@@ -62,7 +71,7 @@ const DEFAULT_CONFIG: ExecutionEngineConfig = {
   enableCrossSplitting: false,
   splitThresholdUSD: 10000,
   simulationMode: false,
-  enforceAmlChecks: false, // disabled by default; enable in production
+  enforceAmlChecks: isAmlEnforcementEnabled(),
 };
 
 // ============================================================================
