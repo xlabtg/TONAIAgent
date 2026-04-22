@@ -142,6 +142,163 @@ describe('HSMKeyStorage — MockHSMAdapter', () => {
       expect(await storage.verify('x-key-B', 'cross test', sig)).toBe(false);
     });
   });
+
+  describe('supportsAlgorithm capability (mock)', () => {
+    it('reports Ed25519 support', () => {
+      expect(storage.supportsAlgorithm('ed25519')).toBe(true);
+    });
+
+    it('reports secp256k1 support', () => {
+      expect(storage.supportsAlgorithm('secp256k1')).toBe(true);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HSMKeyStorage — Ed25519 capability check (issue #332)
+// ---------------------------------------------------------------------------
+
+describe('HSMKeyStorage — Ed25519 TON-compatibility guard (#332)', () => {
+  it('AWS KMS adapter reports Ed25519 unsupported and secp256k1 supported', () => {
+    // Construct storage with aws_kms provider but do not call KMS (no network);
+    // we are testing the capability metadata only.
+    const storage = new HSMKeyStorage({
+      provider: 'aws_kms',
+      operationTimeout: 5000,
+      awsRegion: 'us-east-1',
+    });
+    expect(storage.supportsAlgorithm('ed25519')).toBe(false);
+    expect(storage.supportsAlgorithm('secp256k1')).toBe(true);
+  });
+
+  it('Azure Key Vault adapter reports both algorithms unsupported', () => {
+    const storage = new HSMKeyStorage({
+      provider: 'azure_hsm',
+      operationTimeout: 5000,
+      azureKeyVaultUrl: 'https://example.vault.azure.net',
+    });
+    expect(storage.supportsAlgorithm('ed25519')).toBe(false);
+    expect(storage.supportsAlgorithm('secp256k1')).toBe(false);
+  });
+
+  it('rejects Ed25519 key generation on AWS KMS at the storage layer', async () => {
+    const storage = new HSMKeyStorage({
+      provider: 'aws_kms',
+      operationTimeout: 5000,
+      awsRegion: 'us-east-1',
+    });
+    await expect(storage.generateKeyPair('ton-key', 'ed25519')).rejects.toThrow(
+      /does not support algorithm 'ed25519'/
+    );
+  });
+
+  it('rejects Ed25519 key generation on Azure Key Vault at the storage layer', async () => {
+    const storage = new HSMKeyStorage({
+      provider: 'azure_hsm',
+      operationTimeout: 5000,
+      azureKeyVaultUrl: 'https://example.vault.azure.net',
+    });
+    await expect(storage.generateKeyPair('ton-key', 'ed25519')).rejects.toThrow(
+      /does not support algorithm 'ed25519'/
+    );
+  });
+
+  it('SecureKeyManager refuses to generate Ed25519 keys on AWS KMS without MPC', async () => {
+    const manager = createKeyManager({
+      storageType: 'hsm',
+      hsm: {
+        provider: 'aws_kms',
+        operationTimeout: 5000,
+        awsRegion: 'us-east-1',
+      },
+    });
+
+    await expect(
+      manager.generateKey('user_ton_blocked', 'signing', { algorithm: 'ed25519' })
+    ).rejects.toThrow(/does not natively support 'ed25519'/);
+  });
+
+  it('SecureKeyManager allows Ed25519 on AWS KMS when mpcEnabled=true', async () => {
+    const manager = createKeyManager({
+      storageType: 'hsm',
+      hsm: {
+        provider: 'aws_kms',
+        operationTimeout: 5000,
+        awsRegion: 'us-east-1',
+      },
+    });
+
+    // With MPC enabled, HSM is used for auxiliary storage only; the MPC
+    // coordinator produces the Ed25519 signature.
+    const key = await manager.generateKey('user_ton_mpc', 'signing', {
+      algorithm: 'ed25519',
+      mpcEnabled: true,
+      mpcConfig: {
+        threshold: 2,
+        totalShares: 3,
+        recoveryEnabled: true,
+        recoveryThreshold: 2,
+        keyDerivationEnabled: true,
+      },
+    });
+
+    expect(key.algorithm).toBe('ed25519');
+    expect(key.status).toBe('active');
+  });
+
+  it('SecureKeyManager allows secp256k1 on AWS KMS (auxiliary key path)', async () => {
+    const manager = createKeyManager({
+      storageType: 'hsm',
+      hsm: {
+        provider: 'aws_kms',
+        operationTimeout: 5000,
+        awsRegion: 'us-east-1',
+      },
+    });
+
+    // We cannot call a real KMS endpoint in CI, so we only assert that the
+    // capability check itself does not reject the request. The downstream
+    // network call will fail, which is expected — the guard-layer behavior
+    // is the subject under test.
+    await expect(
+      manager.generateKey('user_secp_ok', 'signing', { algorithm: 'secp256k1' })
+    ).rejects.not.toThrow(/does not natively support/);
+  });
+
+  it('createSigningRequest refuses Ed25519 on HSM without MPC shares', async () => {
+    // Use the mock provider for setup, then swap supportsAlgorithm to simulate
+    // a non-Ed25519-capable backend. Easier: use an AWS KMS-configured manager
+    // but note the key won't actually have been generated (blocked earlier).
+    // Instead, test via a manager where the key exists but MPC is absent.
+    //
+    // Use MockHSM in a way that pretends it can't do Ed25519 by monkey-patching
+    // the exposed method. This is purely a unit-level guard verification.
+    const manager = createKeyManager({
+      storageType: 'hsm',
+      hsm: makeMockHSMConfig(),
+    });
+
+    const key = await manager.generateKey('user_sig_guard', 'signing', {
+      algorithm: 'ed25519',
+    });
+
+    // Simulate the backend losing Ed25519 capability (as would be the case if
+    // the key were migrated to an AWS-backed store).
+    interface ManagerInternals {
+      storage: { supportsAlgorithm: (alg: string) => boolean };
+    }
+    const mgr = manager as unknown as ManagerInternals;
+    const original = mgr.storage.supportsAlgorithm;
+    mgr.storage.supportsAlgorithm = (alg: string) => alg !== 'ed25519';
+
+    try {
+      await expect(
+        manager.createSigningRequest(key.id, 'hello', {})
+      ).rejects.toThrow(/no MPC shares are configured/);
+    } finally {
+      mgr.storage.supportsAlgorithm = original;
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -291,18 +448,20 @@ describe.skipIf(!AZURE_KV_TEST)('HSMKeyStorage — AzureKeyVaultAdapter (real Ke
     expect(await storage.healthCheck()).toBe(true);
   });
 
-  it('generates a P-256 key and retrieves public key', async () => {
-    const { publicKey } = await storage.generateKeyPair('ci-azure-test-p256', 'ed25519');
-    expect(publicKey).toBeTruthy();
-    const retrieved = await storage.getPublicKey('ci-azure-test-p256');
-    expect(retrieved).toBe(publicKey);
+  // Note: Azure Key Vault does not natively support Ed25519 (the algorithm
+  // TON blockchain requires), nor secp256k1. The capability guard added in
+  // issue #332 blocks key generation for both algorithms so that the HSM
+  // path cannot silently produce TON-incompatible P-256 signatures.
+  // TON signing on Azure-hosted infrastructure must go through MPCCoordinator.
+  it('rejects Ed25519 key generation (TON-incompatibility guard)', async () => {
+    await expect(
+      storage.generateKeyPair('ci-azure-reject-ed25519', 'ed25519')
+    ).rejects.toThrow(/does not support algorithm 'ed25519'/);
   });
 
-  it('sign and verify round-trip', async () => {
-    const kid = 'ci-azure-test-sign';
-    await storage.generateKeyPair(kid, 'ed25519');
-    const message = 'Azure Key Vault test message';
-    const sig = await storage.sign(kid, message);
-    expect(await storage.verify(kid, message, sig)).toBe(true);
+  it('rejects secp256k1 key generation (Azure does not support it natively)', async () => {
+    await expect(
+      storage.generateKeyPair('ci-azure-reject-secp256k1', 'secp256k1')
+    ).rejects.toThrow(/does not support algorithm 'secp256k1'/);
   });
 });

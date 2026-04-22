@@ -19,7 +19,7 @@ The team has made **significant, genuine progress** on all 9 areas. The critical
 
 | # | Fix Area | PR | Status | Verdict |
 |---|----------|----|--------|---------|
-| 1 | HSM Key Management | #323 | ⚠️ Partial | Ed25519/TON incompatibility unresolved |
+| 1 | HSM Key Management | #323, #332/#333 | ✅ Resolved | Option B applied — MPC-only for TON, HSM capability-guarded |
 | 2 | MPC Threshold Signatures | #322 | ⚠️ Partial | Centralized coordinator — not true distributed MPC |
 | 3 | TON Smart Contracts | #321 | ⚠️ Partial | Contracts implemented but not deployed or externally audited |
 | 4 | API Input Validation | #320 | ✅ Implemented | Orphaned — no HTTP server integration |
@@ -29,7 +29,7 @@ The team has made **significant, genuine progress** on all 9 areas. The critical
 | 8 | Monitoring & Incident Response | #316 | ✅ Implemented | No metric collection wiring |
 | 9 | Security Documentation | #324 | ✅ Implemented | Client-side only — no server enforcement |
 
-**Remaining Critical Issues:** 1 (Ed25519 HSM incompatibility with TON)  
+**Remaining Critical Issues:** 0 (Ed25519/TON incompatibility resolved via #332/#333 — Option B)  
 **Remaining High Issues:** 3 (MPC centralized, contracts not audited/deployed, KYC/AML defaults off)  
 **Remaining Medium Issues:** 5 (secrets not integrated, PromptBuilder not wired, monitoring not wired, client-side sim mode, rate limiter in-memory)
 
@@ -87,11 +87,11 @@ The implementation correctly:
 
 | Severity | Finding |
 |----------|---------|
-| 🔴 Critical | **Ed25519/TON incompatibility**: AWS KMS and Azure Key Vault do not natively support Ed25519. The adapters fall back to P-256 / ECDSA-SHA-256. TON blockchain requires Ed25519 signatures. HSM-backed production signing cannot produce TON-valid signatures. |
+| ✅ Resolved | **Ed25519/TON incompatibility** (#332, PR #333): AWS KMS and Azure Key Vault cannot produce native Ed25519. A `supportsAlgorithm` capability check now fails fast at key-generation and signing time; TON signing is routed exclusively through `MPCCoordinator`, and HSM adapters are used only for auxiliary (non-TON) keys. See the resolution notes under NEW-02 below. |
 | 🟠 High | **In-memory key registry**: `AwsKmsAdapter` keeps `Map<string, string>` (app keyId → KMS ARN) in RAM. This mapping is lost on restart, requiring manual re-mapping or re-generation. |
 | 🟡 Medium | **Real cloud tests skip in CI**: 6 real-cloud tests gated behind `AWS_KMS_TEST=true` / `AZURE_KV_TEST=true`. Cloud HSM integrations are never exercised in automated CI. |
 
-**Verdict:** ⚠️ Partially Implemented — The Ed25519 incompatibility is a **blocker for TON mainnet HSM-backed custody**. Requires either: (a) a custom HSM appliance (YubiHSM 2, Thales) that supports Ed25519, or (b) a signing service shim that bridges P-256 KMS keys to Ed25519 via key wrapping.
+**Verdict:** ✅ Resolved for TON custody (Option B adopted). HSM remains usable for `secp256k1` (AWS KMS) and future Ed25519-capable hardware. Remaining HSM gaps (in-memory registry, CI gating) are tracked separately.
 
 ---
 
@@ -118,7 +118,7 @@ The implementation correctly:
 | 🟠 High | **Centralized coordinator architecture**: The `MPCCoordinator` server holds all party nonces in memory. A true distributed MPC would have parties never reveal nonces to a single server. The current design reconstructs the equivalent of a single-server signing scheme. |
 | 🟠 High | **Missing binding factor (FROST security property)**: The implementation is described as "simplified FROST-like." Full FROST includes binding factors per signer that prevent certain rogue-key and Wagner's attack variants. Without binding factors, the scheme is weaker than advertised. |
 | 🟡 Medium | **Key reconstruction possible at coordinator**: `shamirSplit` / `lagrangeCoefficient` logic allows full private key reconstruction when ≥ threshold shares are held by the coordinator. |
-| 🟡 Medium | **Ed25519 vs P-256 divergence**: MPC uses Ed25519 (correct for TON), but HSM (#323) falls back to P-256. These are incompatible systems with no bridging strategy. |
+| ✅ Resolved | **Ed25519 vs P-256 divergence** (#332, PR #333): MPC remains the TON signing path (Ed25519). HSM no longer silently falls back to P-256 for Ed25519 requests — key generation and signing now fail fast when routed to an HSM that cannot produce the requested algorithm. |
 
 **Verdict:** ⚠️ Partially Implemented — The signature placeholder is replaced with real crypto, which is the primary blocker resolved. However, the centralization model means this is not "MPC" in the academic/security sense — it is a threshold signing scheme with a trusted coordinator. For a self-custody financial product, this distinction matters.
 
@@ -340,19 +340,27 @@ The KYC and AML enforcement code was merged with both gates disabled. This was a
 
 ---
 
-### NEW-02: HSM + MPC Architecture Gap (Ed25519 vs P-256)
+### NEW-02: HSM + MPC Architecture Gap (Ed25519 vs P-256) — ✅ Resolved (Issue #332, PR #333)
 
-**Severity:** 🟠 High  
+**Severity:** 🟠 High → ✅ Resolved via Option B (MPC-only for TON)
 **Cross-cutting issue:** PR #322 + PR #323
 
-TON blockchain requires Ed25519 signatures. The MPC implementation (PR #322) correctly uses Ed25519. However, both AWS KMS and Azure Key Vault (the cloud HSM providers in PR #323) do not support Ed25519 natively — they fall back to P-256. This creates a fundamental incompatibility: **the HSM path cannot produce TON-compatible signatures**.
+TON blockchain requires Ed25519 signatures. The MPC implementation (PR #322) correctly uses Ed25519. However, both AWS KMS and Azure Key Vault (the cloud HSM providers in PR #323) do not support Ed25519 natively — they previously fell back to P-256. This created a fundamental incompatibility: **the HSM path could not produce TON-compatible signatures**.
 
-The fix options are:
+The fix options evaluated were:
 1. Use hardware HSMs that support Ed25519 (YubiHSM 2, Thales Luna) — requires physical hardware or cloud-based alternatives
 2. Use the MPC path exclusively for TON signing (HSM for non-TON operations)
 3. Implement an Ed25519 key wrapping scheme where the HSM stores and protects a P-256 key that encrypts the Ed25519 private key (reduces the security benefit of HSM but maintains key confidentiality)
 
-**Recommendation:** Explicitly document which custody path (MPC vs. HSM) is the intended production path for TON transactions, and ensure the chosen path produces valid Ed25519 signatures.
+**Decision (Option B):** Issue #332 / PR #333 adopts **Option B** — MPC is the canonical TON custody path, HSM remains available for auxiliary (non-TON) keys.
+
+**Implementation:**
+- Every `HSMProviderAdapter` now exposes `supportsAlgorithm(alg): boolean`. `MockHSMAdapter` returns `true` for both algorithms; `AwsKmsAdapter` returns `true` only for `secp256k1`; `AzureKeyVaultAdapter` returns `false` for both.
+- `HSMKeyStorage.generateKeyPair` and `SecureKeyManager.generateKey` **fail fast** when an unsupported algorithm is requested, unless MPC is enabled.
+- `SecureKeyManager.createSigningRequest` refuses to route an Ed25519 signing request through an HSM that cannot produce Ed25519 when no MPC shares exist for the key.
+- `docs/hsm-setup.md`, `docs/mpc-architecture.md`, and `docs/security.md` document the final topology.
+
+**Result:** The HSM path can no longer silently produce TON-incompatible signatures. TON transactions are signed exclusively by the MPC coordinator (Ed25519 native). A future hardware HSM adapter (YubiHSM 2, CloudHSM PKCS#11) can relax this constraint by returning `true` from `supportsAlgorithm('ed25519')`.
 
 ---
 
@@ -373,7 +381,7 @@ The following **must** be completed before real-fund mainnet deployment:
 
 | # | Requirement | Status | Owner |
 |---|-------------|--------|-------|
-| 1 | Resolve Ed25519 HSM path for TON signing | ❌ Open | Security Engineering |
+| 1 | Resolve Ed25519 HSM path for TON signing | ✅ Closed (#332, PR #333 — Option B: MPC-only for TON, HSM capability-guarded) | Security Engineering |
 | 2 | External audit of Tact smart contracts | ❌ Open | Smart Contract Team |
 | 3 | Deploy and test contracts on TON testnet | ❌ Open | Smart Contract Team |
 | 4 | Enable KYC/AML by default (or add deploy-time assertions) | ❌ Open | Compliance Team |
@@ -425,8 +433,9 @@ The following are **complete** and do not block mainnet:
 | Software key storage | AES-256-GCM + Ed25519 | ✅ Secure (fixed in #302, blocked in prod) |
 | Threshold signatures | Ed25519 / FROST-lite | ✅ Valid signatures, ⚠️ centralized |
 | HSM (mock) | `node:crypto` Ed25519 | ✅ Secure, dev only |
-| HSM (AWS KMS) | ECDSA P-256 | ❌ TON-incompatible |
-| HSM (Azure KV) | ECDSA P-256 | ❌ TON-incompatible |
+| HSM (AWS KMS) | `secp256k1` native; Ed25519 blocked by capability guard (#332) | ✅ Safe — cannot produce TON-incompatible signatures |
+| HSM (Azure KV) | No TON-compatible algorithms; blocked by capability guard (#332) | ✅ Safe — cannot produce TON-incompatible signatures |
+| TON transaction signing | Ed25519 via MPCCoordinator (Option B, #332) | ✅ TON-compatible; HSM path for auxiliary keys only |
 
 ### C. References
 

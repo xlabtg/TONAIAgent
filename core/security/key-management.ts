@@ -280,6 +280,19 @@ export abstract class KeyStorageBackend {
   abstract deleteKey(keyId: string): Promise<void>;
 
   abstract healthCheck(): Promise<boolean>;
+
+  /**
+   * Whether this backend can produce signatures natively for the given
+   * algorithm. TON requires Ed25519; some HSM providers (AWS KMS, Azure
+   * Key Vault) cannot produce Ed25519 signatures, so callers must check
+   * compatibility before routing TON signing requests to the backend.
+   *
+   * Defaults to `true` — subclasses that can fail for specific algorithms
+   * (notably `HSMKeyStorage`) should override.
+   */
+  supportsAlgorithm(_algorithm: 'ed25519' | 'secp256k1'): boolean {
+    return true;
+  }
 }
 
 // ============================================================================
@@ -408,6 +421,12 @@ async function loadOptionalSdk(moduleName: string, installHint: string): Promise
  * Internal interface for HSM provider back-ends.
  * Each provider implements the low-level HSM calls so that
  * HSMKeyStorage can stay provider-agnostic.
+ *
+ * `supportsAlgorithm` is used as a runtime capability check. TON mainnet
+ * signing requires Ed25519; providers that cannot produce native Ed25519
+ * signatures (AWS KMS, Azure Key Vault as of 2024) must return `false`
+ * for 'ed25519' so that the key manager can fail fast instead of silently
+ * producing TON-incompatible P-256 signatures. See issue #332.
  */
 interface HSMProviderAdapter {
   generateKeyPair(keyId: string, algorithm: 'ed25519' | 'secp256k1'): Promise<{ publicKey: string }>;
@@ -415,6 +434,7 @@ interface HSMProviderAdapter {
   getPublicKey(keyId: string): Promise<Buffer | null>;
   deleteKey(keyId: string): Promise<void>;
   healthCheck(): Promise<boolean>;
+  supportsAlgorithm(algorithm: 'ed25519' | 'secp256k1'): boolean;
 }
 
 // ============================================================================
@@ -469,6 +489,11 @@ class MockHSMAdapter implements HSMProviderAdapter {
   }
 
   async healthCheck(): Promise<boolean> {
+    return true;
+  }
+
+  supportsAlgorithm(_algorithm: 'ed25519' | 'secp256k1'): boolean {
+    // node:crypto natively supports both Ed25519 and secp256k1.
     return true;
   }
 }
@@ -630,6 +655,13 @@ class AwsKmsAdapter implements HSMProviderAdapter {
       return false;
     }
   }
+
+  supportsAlgorithm(algorithm: 'ed25519' | 'secp256k1'): boolean {
+    // AWS KMS does not natively support Ed25519 — it can only produce
+    // ECDSA P-256 signatures, which TON cannot verify. Native secp256k1
+    // (ECC_SECG_P256K1) is fully supported.
+    return algorithm === 'secp256k1';
+  }
 }
 
 // ============================================================================
@@ -782,6 +814,15 @@ class AzureKeyVaultAdapter implements HSMProviderAdapter {
       return false;
     }
   }
+
+  supportsAlgorithm(_algorithm: 'ed25519' | 'secp256k1'): boolean {
+    // Azure Key Vault does not natively support Ed25519 or secp256k1;
+    // both would be silently mapped to P-256 variants, which TON cannot verify.
+    // Treat the adapter as unable to produce TON-compatible signatures for any
+    // of our declared algorithms — operators can still use it for auxiliary
+    // non-TON keys via a different code path.
+    return false;
+  }
 }
 
 // ============================================================================
@@ -802,6 +843,8 @@ class AzureKeyVaultAdapter implements HSMProviderAdapter {
  */
 export class HSMKeyStorage extends KeyStorageBackend {
   readonly type: KeyStorageType = 'hsm';
+  /** The configured HSM provider name, exposed for capability-check error messages. */
+  readonly providerName: string;
 
   private readonly adapter: HSMProviderAdapter;
 
@@ -809,6 +852,7 @@ export class HSMKeyStorage extends KeyStorageBackend {
     super();
 
     const provider = config.provider ?? process.env.NODE_HSM_PROVIDER ?? 'mock';
+    this.providerName = provider;
 
     switch (provider) {
       case 'mock':
@@ -847,7 +891,19 @@ export class HSMKeyStorage extends KeyStorageBackend {
     keyId: string,
     algorithm: 'ed25519' | 'secp256k1'
   ): Promise<{ publicKey: string }> {
+    if (!this.adapter.supportsAlgorithm(algorithm)) {
+      throw new Error(
+        `HSM provider '${this.providerName}' does not support algorithm '${algorithm}'. ` +
+          `TON signing requires Ed25519 — route TON keys through MPCCoordinator ` +
+          `or use an Ed25519-capable HSM (YubiHSM 2, AWS CloudHSM via PKCS#11, ` +
+          `Thales Luna). See docs/hsm-setup.md and docs/mpc-architecture.md.`
+      );
+    }
     return this.adapter.generateKeyPair(keyId, algorithm);
+  }
+
+  supportsAlgorithm(algorithm: 'ed25519' | 'secp256k1'): boolean {
+    return this.adapter.supportsAlgorithm(algorithm);
   }
 
   async sign(keyId: string, message: string): Promise<string> {
@@ -1480,8 +1536,27 @@ export class SecureKeyManager implements KeyManagementService {
     const algorithm = config?.algorithm ?? 'ed25519';
     const storageType = config?.storageType ?? this.storage.type;
 
-    // Generate key pair - publicKey is stored in secure storage
-    await this.storage.generateKeyPair(keyId, algorithm);
+    // Fail-fast capability check (NEW-02 / issue #332):
+    // TON requires Ed25519 signatures. If the caller requests a TON-compatible
+    // key but the configured backend cannot produce native Ed25519 signatures
+    // (e.g. AWS KMS / Azure Key Vault fall back to P-256), refuse to create the
+    // key unless the key will be managed via MPC threshold signing instead.
+    if (!this.storage.supportsAlgorithm(algorithm) && !config?.mpcEnabled) {
+      throw new Error(
+        `Cannot generate '${algorithm}' key on storage backend '${this.storage.type}': ` +
+          `the backend does not natively support '${algorithm}'. ` +
+          `For TON signing, enable MPC (set mpcEnabled: true) or configure an ` +
+          `Ed25519-capable HSM. See docs/hsm-setup.md and docs/mpc-architecture.md.`
+      );
+    }
+
+    // Generate key pair - publicKey is stored in secure storage.
+    // When MPC is enabled for an algorithm the backend cannot produce natively,
+    // the backend is used only for auxiliary storage and the MPC coordinator
+    // produces the actual Ed25519 signatures.
+    if (this.storage.supportsAlgorithm(algorithm)) {
+      await this.storage.generateKeyPair(keyId, algorithm);
+    }
 
     // Create metadata
     const metadata: KeyMetadata = {
@@ -1676,6 +1751,21 @@ export class SecureKeyManager implements KeyManagementService {
     const messageHash = Buffer.from(message).toString('base64');
 
     const mpcStatus = this.mpcCoordinator.getSharesStatus(keyId);
+
+    // Fail-fast routing guard (NEW-02 / issue #332):
+    // Never send an Ed25519 signing request to a backend that would silently
+    // fall back to a TON-incompatible algorithm (AWS KMS / Azure Key Vault
+    // map Ed25519 to P-256). If MPC shares exist, the coordinator handles
+    // signing natively and this check is bypassed.
+    if (!mpcStatus && !this.storage.supportsAlgorithm(key.algorithm)) {
+      throw new Error(
+        `Cannot sign '${key.algorithm}' request with key ${keyId}: ` +
+          `storage backend '${this.storage.type}' does not natively support ` +
+          `'${key.algorithm}' and no MPC shares are configured. ` +
+          `For TON signing, route this key through MPCCoordinator ` +
+          `(generateMPCShares) or migrate to an Ed25519-capable HSM.`
+      );
+    }
 
     const request: SigningRequest = {
       id: requestId,

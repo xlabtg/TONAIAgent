@@ -1,5 +1,17 @@
 # MPC Threshold Signature Architecture
 
+> **TON custody path (issue #332):** MPC is the **canonical production path for
+> TON transaction signing**. TON requires Ed25519 signatures, and the
+> cloud HSM adapters bundled with TONAIAgent (AWS KMS, Azure Key Vault) cannot
+> produce native Ed25519 today. `SecureKeyManager.createSigningRequest` and
+> `HSMKeyStorage.generateKeyPair` enforce this at runtime via the
+> `supportsAlgorithm` capability check, so Ed25519 keys cannot accidentally be
+> routed to a non-Ed25519-capable HSM. HSM adapters remain useful for auxiliary
+> (non-TON) keys — session tokens, encryption keys, `secp256k1` material — and
+> for future hardware appliances (YubiHSM 2, Thales Luna, AWS CloudHSM via
+> PKCS#11) that do natively support Ed25519. See
+> [docs/hsm-setup.md](./hsm-setup.md) for the runtime split.
+
 ## Overview
 
 TONAIAgent uses a **2-of-3 threshold EdDSA scheme** to protect user funds.

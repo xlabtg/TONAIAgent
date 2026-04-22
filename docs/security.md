@@ -4,6 +4,37 @@
 
 The TONAIAgent Security Layer provides production-grade security and key management for autonomous agents operating on the TON blockchain. The system ensures complete separation between AI decision-making and private key access, following zero-trust architecture principles.
 
+### TON Signing Topology (issue #332)
+
+TON blockchain requires **Ed25519** signatures. The bundled cloud HSM
+adapters (AWS KMS, Azure Key Vault) cannot produce native Ed25519 signatures
+today, so all TON transaction signing goes through the **MPC coordinator**.
+HSM adapters remain available for auxiliary, non-TON keys.
+
+```
+       ┌──────────────────────────────────────────────┐
+       │              SecureKeyManager                │
+       └──────────────┬───────────────────────────────┘
+                      │  createSigningRequest(keyId)
+                      │
+        ┌─────────────┴─────────────┐
+        │                           │
+  TON (Ed25519)                Auxiliary
+        │                    (secp256k1, etc.)
+        ▼                           ▼
+  MPCCoordinator            HSMKeyStorage
+  (Ed25519 native)          (AWS KMS secp256k1,
+                             mock for dev/CI,
+                             future YubiHSM for Ed25519)
+```
+
+The routing is enforced by code: every `KeyStorageBackend` implements
+`supportsAlgorithm(alg)`, and `SecureKeyManager.generateKey` /
+`createSigningRequest` refuse to place an Ed25519 key on a backend that
+does not natively support it unless MPC is active. See
+[docs/mpc-architecture.md](./mpc-architecture.md) and
+[docs/hsm-setup.md](./hsm-setup.md).
+
 ### Key Features
 
 - **Secure Key Management**: MPC, HSM, and BIP-32/44 key derivation
