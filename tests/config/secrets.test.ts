@@ -545,3 +545,184 @@ describe('initSecrets', () => {
     }
   });
 });
+
+// ============================================================================
+// Startup log line
+// ============================================================================
+
+describe('SecretsLoader — startup log line', () => {
+  it('logs a startup summary after successful load', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const restore = setEnv({ GROQ_API_KEY: 'log-test-key', JWT_SECRET: 'log-test-secret' });
+
+    try {
+      const loader = createSecretsLoader({
+        backend: { provider: 'env' },
+        auditLog: false,
+        strictMode: false,
+      });
+      await loader.load();
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[SecretsLoader] secrets loaded via env,')
+      );
+      const call = infoSpy.mock.calls[0]?.[0] as string;
+      expect(call).toMatch(/\d+ keys/);
+      expect(call).toContain('audit callback registered: false');
+    } finally {
+      infoSpy.mockRestore();
+      restore();
+    }
+  });
+
+  it('includes audit callback registered: true when a callback is registered before load', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const restore = setEnv({ GROQ_API_KEY: 'cb-key' });
+
+    try {
+      const loader = createSecretsLoader({
+        backend: { provider: 'env' },
+        auditLog: true,
+        strictMode: false,
+      });
+      loader.onAudit(() => undefined);
+      await loader.load();
+
+      const call = infoSpy.mock.calls[0]?.[0] as string;
+      expect(call).toContain('audit callback registered: true');
+    } finally {
+      infoSpy.mockRestore();
+      restore();
+    }
+  });
+});
+
+// ============================================================================
+// Strict mode — missing secret is fatal in production
+// ============================================================================
+
+describe('SecretsLoader — strict mode (production behaviour)', () => {
+  it('getRequired throws a clear error for missing secret — dev or prod', async () => {
+    const restore = setEnv({ JWT_SECRET: undefined });
+
+    try {
+      const loader = makeEnvLoader({ strictMode: false });
+      await loader.load();
+
+      await expect(loader.getRequired('JWT_SECRET')).rejects.toThrow(
+        "Required secret 'JWT_SECRET' is not set"
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('load() throws in strict mode when backend is unreachable', async () => {
+    const loader = createSecretsLoader({
+      backend: {
+        provider: 'vault',
+        endpoint: 'http://unreachable-vault:8200',
+        secretPath: 'secret/tonaiagent',
+        token: 'bad-token',
+      },
+      strictMode: true,
+    });
+
+    await expect(loader.load()).rejects.toThrow('[SecretsLoader] Failed to load secrets');
+  });
+
+  it('load() warns and continues in non-strict mode when backend is unreachable', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      const loader = createSecretsLoader({
+        backend: {
+          provider: 'vault',
+          endpoint: 'http://unreachable-vault:8200',
+          secretPath: 'secret/tonaiagent',
+          token: 'bad-token',
+        },
+        strictMode: false,
+        auditLog: false,
+      });
+
+      await expect(loader.load()).resolves.toBeUndefined();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[SecretsLoader] Warning: could not load secrets from backend')
+      );
+
+      const health = loader.getHealth();
+      expect(health.healthy).toBe(false);
+      expect(health.loaded).toBe(false);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+});
+
+// ============================================================================
+// AWS integration test (gated by AWS_SECRETS_TEST=true)
+// ============================================================================
+
+describe.skipIf(process.env['AWS_SECRETS_TEST'] !== 'true')(
+  'SecretsLoader — AWS integration (requires AWS_SECRETS_TEST=true)',
+  () => {
+    it('loads secrets from AWS Secrets Manager', async () => {
+      const region = process.env['AWS_REGION'];
+      const secretId = process.env['SECRETS_ID'] ?? `tonaiagent/${process.env['NODE_ENV'] ?? 'test'}/secrets`;
+
+      if (!region) {
+        throw new Error('AWS_REGION must be set when AWS_SECRETS_TEST=true');
+      }
+
+      const loader = createSecretsLoader({
+        backend: { provider: 'aws', region, secretId },
+        strictMode: true,
+        auditLog: false,
+      });
+
+      await loader.load();
+
+      const health = loader.getHealth();
+      expect(health.healthy).toBe(true);
+      expect(health.provider).toBe('aws');
+      expect(health.loaded).toBe(true);
+    });
+  }
+);
+
+// ============================================================================
+// Vault integration test (gated by VAULT_TEST=true)
+// ============================================================================
+
+describe.skipIf(process.env['VAULT_TEST'] !== 'true')(
+  'SecretsLoader — Vault integration (requires VAULT_TEST=true)',
+  () => {
+    it('loads secrets from HashiCorp Vault', async () => {
+      const endpoint = process.env['VAULT_ADDR'];
+      const secretPath = process.env['VAULT_SECRET_PATH'] ?? 'secret/tonaiagent';
+      const token = process.env['VAULT_TOKEN'];
+
+      if (!endpoint) {
+        throw new Error('VAULT_ADDR must be set when VAULT_TEST=true');
+      }
+      if (!token) {
+        throw new Error('VAULT_TOKEN must be set when VAULT_TEST=true');
+      }
+
+      const loader = createSecretsLoader({
+        backend: { provider: 'vault', endpoint, secretPath, token },
+        strictMode: true,
+        auditLog: false,
+      });
+
+      await loader.load();
+
+      const health = loader.getHealth();
+      expect(health.healthy).toBe(true);
+      expect(health.provider).toBe('vault');
+      expect(health.loaded).toBe(true);
+    });
+  }
+);

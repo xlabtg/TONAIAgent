@@ -119,8 +119,14 @@ export class DefaultChangeNowClient implements ChangeNowClient {
   private readonly cacheDurationMs = 5 * 60 * 1000; // 5 minutes
 
   constructor(config: ChangeNowClientConfig = {}) {
+    if (!config.apiKey && process.env['CHANGENOW_API_KEY']) {
+      console.warn(
+        '[SecretsLoader] Deprecation: CHANGENOW_API_KEY read directly from process.env. ' +
+          'Pass apiKey via config or load it through the SecretsLoader before constructing ChangeNowClient.'
+      );
+    }
     this.config = {
-      apiKey: config.apiKey || process.env.CHANGENOW_API_KEY || '',
+      apiKey: config.apiKey || process.env['CHANGENOW_API_KEY'] || '',
       apiVersion: config.apiVersion || 'v1',
       baseUrl: config.baseUrl || 'https://api.changenow.io',
       timeoutMs: config.timeoutMs || 30000,
