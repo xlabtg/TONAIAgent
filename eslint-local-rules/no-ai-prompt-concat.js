@@ -33,7 +33,7 @@ const AI_SDK_PACKAGES = [
 
 /** Returns true when the source file imports any AI SDK package. */
 function fileImportsAiSdk(context) {
-  const program = context.getSourceCode().ast;
+  const program = (context.sourceCode ?? context.getSourceCode()).ast;
   return program.body.some((node) => {
     if (node.type !== 'ImportDeclaration') return false;
     return AI_SDK_PACKAGES.some((pkg) => node.source.value.startsWith(pkg));
