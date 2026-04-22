@@ -44,11 +44,23 @@ TONAIAgent uses an HSM (or equivalent cloud KMS) to ensure that **private key ma
 
 | Provider      | Ed25519 | secp256k1 | Notes |
 |---------------|---------|-----------|-------|
-| AWS KMS       | ✗ (P-256 used) | ✓ (ECC_SECG_P256K1) | CloudHSM PKCS#11 supports Ed25519 |
-| Azure Key Vault | ✗ (P-256 used) | ✓ (P-256K preview) | Managed HSM required for secp256k1 |
-| Mock (dev/CI) | ✓ | ✓ | node:crypto — real crypto, no hardware |
+| AWS KMS       | ✗ blocked by capability guard | ✓ native (`ECC_SECG_P256K1`) | CloudHSM PKCS#11 supports Ed25519 |
+| Azure Key Vault | ✗ blocked by capability guard | ✗ blocked by capability guard | Managed HSM — no TON-compatible algorithms today |
+| Mock (dev/CI) | ✓ | ✓ | `node:crypto` — real crypto, no hardware |
 
-> **TON Note:** TON uses Ed25519 natively. For cloud deployments, P-256/ECDSA is used as a managed-HSM-safe alternative with equivalent security. For full Ed25519 support, use AWS CloudHSM with PKCS#11 or a YubiHSM 2 (see [Future Providers](#future-providers)).
+> **TON signing topology (issue #332):** TON blockchain requires **Ed25519** signatures. AWS KMS and Azure Key Vault cannot produce native Ed25519 today — earlier revisions of these adapters silently fell back to P-256, which is **not TON-verifiable**. Every `HSMProviderAdapter` now exposes a `supportsAlgorithm(alg)` capability, and both `HSMKeyStorage.generateKeyPair` and `SecureKeyManager.generateKey` **fail fast** when an Ed25519 key is requested on a provider that does not support it. Production TON signing must go through [`MPCCoordinator`](./mpc-architecture.md); HSM adapters remain available for auxiliary (non-TON) keys such as session tokens or `secp256k1` material.
+
+### TON Custody Decision (issue #332)
+
+| Path | Algorithm | Who uses it |
+|------|-----------|-------------|
+| MPC (PR #322) | Ed25519 ✅ | **All TON transactions** |
+| HSM mock (PR #323) | Ed25519 ✅ | CI / local dev only (`NODE_ENV !== production`) |
+| HSM AWS KMS (PR #323) | `secp256k1` only | Auxiliary keys (session tokens, non-TON signing) |
+| HSM Azure Key Vault (PR #323) | ✗ | Not supported for TON or auxiliary keys — use AWS KMS or MPC |
+| Future: YubiHSM 2, Thales Luna, AWS CloudHSM PKCS#11 | Ed25519 ✅ | Hardware-backed TON custody (see [Future Providers](#future-providers)) |
+
+The runtime guard makes this decision enforced by code rather than documentation: attempting to generate `ed25519` on AWS KMS throws, and attempting to `createSigningRequest` against an Ed25519 key without MPC shares on an HSM that cannot produce Ed25519 also throws.
 
 ---
 
