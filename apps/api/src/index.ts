@@ -1,37 +1,27 @@
 /**
  * TONAIAgent — API Server Entry Point
  *
- * Initializes secrets and configuration before any business logic runs,
- * then starts the HTTP server.
- *
  * Startup order:
  *   1. initConfig() — loads secrets from backend, wires audit callback
  *   2. Compliance gate check (production only)
- *   3. HTTP server bind
+ *   3. HTTP server bind (Fastify with full middleware stack)
  *   4. /readyz probe begins returning 200
  */
 
-import http from 'http';
 import { initConfig, appConfig } from '../../../config/index.js';
-import { createLogger } from '../../../services/observability/logger.js';
-import { assertComplianceGatesEnabled } from '../../../services/regulatory/compliance-flags.js';
+import { createServer } from './server.js';
 import type { SecretAuditEvent } from '../../../config/secrets.types.js';
-import { metricsHandler } from '../../../core/observability/prometheus-exporter.js';
+import { assertComplianceGatesEnabled } from '../../../services/regulatory/compliance-flags.js';
+import { createLogger } from '../../../services/observability/logger.js';
 
 const logger = createLogger('api-server');
 
-// ============================================================================
-// Readiness state
-// ============================================================================
-
-let secretsReady = false;
-
-// ============================================================================
-// Startup
-// ============================================================================
+const HOST = process.env['HOST'] ?? '0.0.0.0';
+const LOG_LEVEL = (process.env['LOG_LEVEL'] ?? 'info') as
+  | 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent';
 
 async function main(): Promise<void> {
-  // ---- 1. Load secrets and application config ----
+  // ── 1. Load secrets and application config ──────────────────────────────────
   await initConfig({
     strictMode: process.env['NODE_ENV'] === 'production',
   });
@@ -46,9 +36,7 @@ async function main(): Promise<void> {
     });
   });
 
-  secretsReady = true;
-
-  // ---- 2. Compliance gate (production only) ----
+  // ── 2. Compliance gate (production only) ────────────────────────────────────
   if (process.env['NODE_ENV'] === 'production') {
     const compliance = assertComplianceGatesEnabled();
     if (!compliance.ok) {
@@ -57,76 +45,30 @@ async function main(): Promise<void> {
     }
   }
 
-  // ---- 3. Start HTTP server ----
-  const port = appConfig.port;
+  // ── 3. Build and start Fastify HTTP server ──────────────────────────────────
+  const port = parseInt(process.env['PORT'] ?? String(appConfig.port ?? 3000), 10);
+  const app = await createServer({ logLevel: LOG_LEVEL });
 
-  const server = http.createServer((req, res) => {
-    // Readiness probe — checked by load balancers before sending traffic
-    if (req.method === 'GET' && req.url === '/readyz') {
-      const secretsHealth = appConfig.secrets.getHealth();
-
-      if (!secretsReady || !secretsHealth.healthy) {
-        res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            status: 'not_ready',
-            secrets: secretsHealth,
-          })
-        );
-        return;
-      }
-
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          status: 'ready',
-          secrets: secretsHealth,
-        })
-      );
-      return;
-    }
-
-    // Liveness probe
-    if (req.method === 'GET' && req.url === '/healthz') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'alive' }));
-      return;
-    }
-
-    // Prometheus metrics
-    if (req.method === 'GET' && req.url === '/metrics') {
-      void metricsHandler(req, res);
-      return;
-    }
-
-    // All other routes — placeholder until full router is wired (issue #08)
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+  await app.listen({ port, host: HOST });
+  logger.info(`API server listening on http://${HOST}:${port}`, {
+    nodeEnv: appConfig.nodeEnv,
+    tonNetwork: appConfig.tonNetwork,
   });
 
-  server.listen(port, () => {
-    logger.info(`API server listening on port ${port}`, {
-      nodeEnv: appConfig.nodeEnv,
-      tonNetwork: appConfig.tonNetwork,
-    });
-  });
-
-  // ---- 4. Graceful shutdown ----
-  const shutdown = (signal: string) => {
+  // ── 4. Graceful shutdown ────────────────────────────────────────────────────
+  const shutdown = async (signal: string) => {
     logger.info(`Received ${signal} — shutting down`);
-    server.close(() => {
-      logger.info('HTTP server closed');
-      process.exit(0);
-    });
+    await app.close();
+    logger.info('HTTP server closed');
+    process.exit(0);
   };
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
 main().catch((err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
-  // Use console.error here because logger may not be initialized yet
   console.error(`[api-server] Fatal startup error: ${message}`);
   process.exit(1);
 });
