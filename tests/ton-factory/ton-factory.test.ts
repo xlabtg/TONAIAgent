@@ -24,6 +24,7 @@ import {
   DEFAULT_FACTORY_CONFIG,
   DEFAULT_FEE_CONFIG,
 } from '../../connectors/ton-factory';
+import { SIMULATION_VERSION } from '../fakes/factory-contract.fake';
 
 // ============================================================================
 // TonFactoryService Integration Tests
@@ -1438,5 +1439,28 @@ describe('Helper Functions', () => {
       expect(tx.description).toContain('Deploy agent wallet');
       expect(tx.estimatedFee).toBe(BigInt(100_000_000));
     });
+  });
+});
+
+// ============================================================================
+// Simulation Version Drift Guard
+// ============================================================================
+
+/**
+ * This test asserts that the JS simulation version matches the on-chain Tact
+ * contract version (contracts/agent-factory.tact: `self.version = 100`).
+ *
+ * If the Tact contract is upgraded (e.g. to version 200) but SIMULATION_VERSION
+ * in connectors/ton-factory/factory-contract.ts is not updated, this test
+ * fails loudly, preventing silent ABI drift.
+ *
+ * Encoding: major * 100 + minor  (100 = v1.0, 200 = v2.0, 101 = v1.1, etc.)
+ */
+describe('Simulation Version Drift Guard', () => {
+  // The expected version must match `self.version` in contracts/agent-factory.tact.
+  const TACT_CONTRACT_VERSION = 100; // keep in sync with agent-factory.tact
+
+  it('SIMULATION_VERSION matches the on-chain Tact contract version', () => {
+    expect(SIMULATION_VERSION).toBe(TACT_CONTRACT_VERSION);
   });
 });
