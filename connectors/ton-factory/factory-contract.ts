@@ -24,6 +24,7 @@ import {
   TonFactoryEventHandler,
   Unsubscribe,
 } from './types';
+import { Address, beginCell } from '@ton/core';
 
 // ============================================================================
 // Default Configuration
@@ -74,17 +75,38 @@ export function deriveContractAddress(
   return `${workchain}:${hexHash}`;
 }
 
+// DeployAgent opcode — CRC-32 of the message name, matching contracts/wrappers/AgentFactory.ts
+const DEPLOY_AGENT_OPCODE = 0x7c9a3b4d as const;
+
 /**
  * Generate deployment transaction body for agent wallet.
- * In production this would serialize a TON BoC (Bag of Cells).
+ * Serialises a typed DeployAgent message cell using TON's cell encoding,
+ * replacing the previous error-prone JSON encoding.
  */
 export function buildDeploymentTransaction(
   factoryAddress: TonAddress,
   input: DeployAgentInput,
   deploymentFee: bigint
 ): DeploymentTransaction {
+  const referrer = input.referrer ? Address.parse(input.referrer) : null;
+  const ownerAddr = Address.parse(input.ownerAddress);
+
+  // Build the DeployAgent message cell.
+  // Callers may override agentAddress, safeAddress, and limit fields by
+  // constructing the cell directly via contracts/wrappers/AgentFactory.ts.
+  const bodyCell = beginCell()
+    .storeUint(DEPLOY_AGENT_OPCODE, 32)
+    .storeAddress(ownerAddr)             // ownerAddress
+    .storeAddress(ownerAddr)             // agentAddress (placeholder; override as needed)
+    .storeAddress(ownerAddr)             // safeAddress  (placeholder; override as needed)
+    .storeCoins(BigInt(0))               // maxTradeSizeNano (override as needed)
+    .storeCoins(BigInt(0))               // dailyLimitNano   (override as needed)
+    .storeUint(0, 32)                    // timeLockSeconds  (override as needed)
+    .storeBit(referrer !== null)
+    .endCell();
+
   return {
-    body: Buffer.from(JSON.stringify({ type: 'deploy_agent', ...input })).toString('base64'),
+    body: bodyCell.toBoc().toString('base64'),
     to: factoryAddress,
     value: deploymentFee,
     stateInit: undefined,
