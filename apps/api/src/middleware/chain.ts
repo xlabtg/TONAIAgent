@@ -117,7 +117,7 @@ async function middlewareChainPlugin(app: FastifyInstance): Promise<void> {
     const isMutation = !SAFE_METHODS.has(req.method.toUpperCase());
     const limiter = isMutation ? tradeLimiter : standardLimiter;
 
-    const limitResult = limiter.check(acReq);
+    const limitResult = await limiter.check(acReq);
     if (limitResult) {
       reply.header('Retry-After', String((limitResult.body as { retryAfter?: number }).retryAfter ?? 60));
       return reply.code(429).send(limitResult.body);

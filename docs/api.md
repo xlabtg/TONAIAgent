@@ -26,6 +26,9 @@ Environment variables:
 | `NODE_ENV` | — | Set to `production` to enable HSTS and strict secrets mode |
 | `CSRF_SECRET` | — | Secret for CSRF token validation (required in production) |
 | `SECRETS_BACKEND` | `env` | `env` / `aws` / `vault` |
+| `RATE_LIMIT_STORE` | `memory` | Rate-limit backend: `memory` / `redis` / `noop` |
+| `REDIS_URL` | — | Redis connection URL (required when `RATE_LIMIT_STORE=redis`) |
+| `RATE_LIMIT_FAIL_OPEN` | `false` | Allow requests when Redis is unreachable (`true` / `false`) |
 
 ---
 
@@ -37,7 +40,7 @@ Requests pass through the following middleware in order before reaching any rout
 2. **Security headers** — sets `X-Content-Type-Options`, `X-Frame-Options`, `CSP`, `Cache-Control: no-store`, etc.
 3. **Body-size guard** — rejects `Content-Length > 1 MiB` with `413`
 4. **Request timeout** — per-route, 30 s default; returns `504` on breach
-5. **Rate limiter** — in-memory sliding window; `100 req / 15 min` for reads, `10 req / 1 min` for mutations
+5. **Rate limiter** — pluggable sliding-window; `100 req / 15 min` for reads, `10 req / 1 min` for mutations; backend selected via `RATE_LIMIT_STORE` (see [docs/rate-limiting.md](./rate-limiting.md))
 6. **CSRF validation** — validates `x-csrf-token` header for `POST / PUT / PATCH / DELETE` (skipped in dev when `CSRF_SECRET` is unset)
 7. **Zod body validation** — per-route, returns `400 VALIDATION_ERROR` on failure
 8. **XSS sanitization** — strips script/style tags and HTML from all string fields after validation

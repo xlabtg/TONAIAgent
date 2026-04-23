@@ -209,64 +209,64 @@ describe('RateLimiter', () => {
   const makeIpReq = (ip: string): AgentControlRequest =>
     makeReq({ headers: { 'x-forwarded-for': ip } });
 
-  it('allows requests below the limit', () => {
-    expect(limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
-    expect(limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
-    expect(limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
+  it('allows requests below the limit', async () => {
+    expect(await limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
+    expect(await limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
+    expect(await limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
   });
 
-  it('blocks the (max+1)-th request with 429', () => {
-    for (let i = 0; i < 3; i++) limiter.check(makeIpReq('1.2.3.4'));
-    const res = limiter.check(makeIpReq('1.2.3.4'));
+  it('blocks the (max+1)-th request with 429', async () => {
+    for (let i = 0; i < 3; i++) await limiter.check(makeIpReq('1.2.3.4'));
+    const res = await limiter.check(makeIpReq('1.2.3.4'));
     expect(res?.statusCode).toBe(429);
     expect(res?.body.success).toBe(false);
   });
 
-  it('tracks different IPs independently', () => {
-    for (let i = 0; i < 3; i++) limiter.check(makeIpReq('1.1.1.1'));
+  it('tracks different IPs independently', async () => {
+    for (let i = 0; i < 3; i++) await limiter.check(makeIpReq('1.1.1.1'));
     // 1.1.1.1 is now at the limit, but 2.2.2.2 should pass freely
-    expect(limiter.check(makeIpReq('2.2.2.2'))).toBeNull();
+    expect(await limiter.check(makeIpReq('2.2.2.2'))).toBeNull();
   });
 
-  it('resets the counter on reset(key)', () => {
-    for (let i = 0; i < 3; i++) limiter.check(makeIpReq('1.2.3.4'));
+  it('resets the counter on reset(key)', async () => {
+    for (let i = 0; i < 3; i++) await limiter.check(makeIpReq('1.2.3.4'));
     limiter.reset('1.2.3.4');
-    expect(limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
+    expect(await limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
   });
 
-  it('resets all counters on reset()', () => {
-    for (let i = 0; i < 3; i++) limiter.check(makeIpReq('1.2.3.4'));
+  it('resets all counters on reset()', async () => {
+    for (let i = 0; i < 3; i++) await limiter.check(makeIpReq('1.2.3.4'));
     limiter.reset();
-    expect(limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
+    expect(await limiter.check(makeIpReq('1.2.3.4'))).toBeNull();
   });
 
-  it('uses x-real-ip as fallback key', () => {
+  it('uses x-real-ip as fallback key', async () => {
     const req = makeReq({ headers: { 'x-real-ip': '5.6.7.8' } });
-    expect(limiter.check(req)).toBeNull();
+    expect(await limiter.check(req)).toBeNull();
   });
 
-  it('falls back to "unknown" when no IP header present', () => {
+  it('falls back to "unknown" when no IP header present', async () => {
     const req = makeReq({ headers: {} });
-    expect(limiter.check(req)).toBeNull();
+    expect(await limiter.check(req)).toBeNull();
   });
 });
 
 describe('createStandardRateLimit', () => {
-  it('creates a limiter with max 100', () => {
+  it('creates a limiter with max 100', async () => {
     const limiter = createStandardRateLimit();
     // Should allow 100 requests
     const makeIpReq = (ip: string) => makeReq({ headers: { 'x-forwarded-for': ip } });
-    for (let i = 0; i < 100; i++) expect(limiter.check(makeIpReq('10.0.0.1'))).toBeNull();
-    expect(limiter.check(makeIpReq('10.0.0.1'))?.statusCode).toBe(429);
+    for (let i = 0; i < 100; i++) expect(await limiter.check(makeIpReq('10.0.0.1'))).toBeNull();
+    expect((await limiter.check(makeIpReq('10.0.0.1')))?.statusCode).toBe(429);
   });
 });
 
 describe('createTradeRateLimit', () => {
-  it('creates a limiter with max 10', () => {
+  it('creates a limiter with max 10', async () => {
     const limiter = createTradeRateLimit();
     const makeIpReq = (ip: string) => makeReq({ headers: { 'x-forwarded-for': ip } });
-    for (let i = 0; i < 10; i++) expect(limiter.check(makeIpReq('10.0.0.2'))).toBeNull();
-    expect(limiter.check(makeIpReq('10.0.0.2'))?.statusCode).toBe(429);
+    for (let i = 0; i < 10; i++) expect(await limiter.check(makeIpReq('10.0.0.2'))).toBeNull();
+    expect((await limiter.check(makeIpReq('10.0.0.2')))?.statusCode).toBe(429);
   });
 });
 
