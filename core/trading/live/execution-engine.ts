@@ -28,6 +28,12 @@ import {
 import { ConnectorRegistry, isTerminalOrderStatus } from './connector';
 import { KycAmlManager } from '../../../services/regulatory/kyc-aml';
 import { isAmlEnforcementEnabled } from '../../../services/regulatory/compliance-flags';
+import {
+  tradesTotal,
+  tradeLatencySeconds,
+  tradeSlippageBps,
+  tradeVolumeTotal,
+} from '../../observability/metrics';
 
 // ============================================================================
 // Execution Engine Configuration
@@ -239,6 +245,17 @@ export class DefaultExecutionEngine implements ExecutionEngine {
         this.metrics.failedExecutions++;
       }
 
+      // Emit Prometheus metrics
+      tradesTotal.inc({ status: execution.status });
+      tradeLatencySeconds.observe(execution.executionTimeMs / 1000);
+      if (execution.totalSlippage > 0) {
+        tradeSlippageBps.observe(execution.totalSlippage * 100);
+      }
+      const volumeUsd = execution.filledQuantity * (execution.averagePrice || 0);
+      if (volumeUsd > 0) {
+        tradeVolumeTotal.inc(volumeUsd);
+      }
+
       const eventType = execution.status === 'completed'
         ? 'execution.completed'
         : execution.status === 'partially_completed'
@@ -264,6 +281,9 @@ export class DefaultExecutionEngine implements ExecutionEngine {
       execution.completedAt = new Date();
       execution.executionTimeMs = execution.completedAt.getTime() - startedAt.getTime();
       this.metrics.failedExecutions++;
+
+      tradesTotal.inc({ status: 'failed' });
+      tradeLatencySeconds.observe(execution.executionTimeMs / 1000);
 
       this.emitEvent({
         type: 'execution.failed',
