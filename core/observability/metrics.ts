@@ -204,6 +204,18 @@ export const emergencyEventsTotal = new Counter({
 });
 
 // ============================================================================
+// Trading mode metrics
+// ============================================================================
+
+/** Tracks simulation ↔ live transitions with outcome labels. */
+export const tradingModeTransitionsTotal = new Counter({
+  name: 'tonaiagent_trading_mode_transitions_total',
+  help: 'Total server-side trading mode transition attempts, labelled by from/to mode and result',
+  labelNames: ['from', 'to', 'result'] as const,
+  registers: [registry],
+});
+
+// ============================================================================
 // Health
 // ============================================================================
 

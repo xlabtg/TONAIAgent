@@ -25,6 +25,14 @@ import {
   type KycEnforcementConfig,
 } from '../../../services/regulatory/kyc-aml';
 import { isKycEnforcementEnabled } from '../../../services/regulatory/compliance-flags';
+import {
+  type TradingMode,
+  type EnableLiveTradingPayload,
+  type TradingModeTransitionResult,
+  validateEnableLiveTradingPayload,
+  generateTransitionAuditId,
+} from '../trading-mode';
+import { tradingModeTransitionsTotal } from '../../../core/observability/metrics';
 
 import type {
   AgentEnvironment,
@@ -423,6 +431,7 @@ export class AgentOrchestrator {
         strategy: input.strategy,
         environment,
         status: this.config.autoStart ? 'active' : 'paused',
+        tradingMode: 'simulation', // always start in simulation; live requires explicit API call
         walletAddress,
         telegramBot,
         createdAt: now,
@@ -623,6 +632,194 @@ export class AgentOrchestrator {
   }
 
   // ============================================================================
+  // Trading Mode Transitions
+  // ============================================================================
+
+  /**
+   * Transition an agent from simulation → live trading.
+   *
+   * Requirements:
+   *   1. All three acknowledgements in `payload` must be explicitly true.
+   *   2. The owning user must have at least `standard` KYC tier (when KYC enforcement is on).
+   *   3. The agent must not be under a regulatory freeze.
+   *
+   * On success:
+   *   - Agent's `tradingMode` is set to 'live' server-side.
+   *   - Audit log entry is written.
+   *   - Metric `tonaiagent_trading_mode_transitions_total{from="simulation",to="live",result="success"}` incremented.
+   *
+   * @throws {AgentOrchestratorError} with codes LIVE_TRADING_CHECKLIST_INCOMPLETE,
+   *   LIVE_TRADING_KYC_REQUIRED, LIVE_TRADING_REGULATORY_FREEZE, or LIVE_TRADING_ALREADY_ENABLED.
+   */
+  async enableLiveTrading(
+    agentId: string,
+    payload: EnableLiveTradingPayload,
+    requestMeta?: { ip?: string; userAgent?: string },
+  ): Promise<TradingModeTransitionResult> {
+    const agent = this.getAgent(agentId);
+
+    if (agent.tradingMode === 'live') {
+      tradingModeTransitionsTotal.inc({ from: 'live', to: 'live', result: 'noop' });
+      throw new AgentOrchestratorError(
+        'Live trading is already enabled for this agent',
+        'LIVE_TRADING_ALREADY_ENABLED',
+        { agentId },
+      );
+    }
+
+    // 1. Validate acknowledgement payload
+    const payloadError = validateEnableLiveTradingPayload(payload);
+    if (payloadError) {
+      tradingModeTransitionsTotal.inc({ from: 'simulation', to: 'live', result: 'rejected_checklist' });
+      throw new AgentOrchestratorError(
+        payloadError,
+        'LIVE_TRADING_CHECKLIST_INCOMPLETE',
+        { agentId, userId: agent.userId },
+      );
+    }
+
+    // 2. KYC gate — require at minimum standard tier for live trading
+    const kycCfg = this.config.kycEnforcement;
+    if (kycCfg?.enabled) {
+      const enforcementConfig: KycEnforcementConfig = {
+        ...KYC_ENFORCEMENT_DEFAULTS[kycCfg.mode],
+        // Override to use the live trading tier requirement
+        minimumTierForAgentCreation: KYC_ENFORCEMENT_DEFAULTS[kycCfg.mode].minimumTierForLiveTrading,
+        enforceOnAgentCreation: true,
+      };
+      const kycResult = await this.kycAmlManager.enforceKycForAgentCreation(
+        agent.userId,
+        enforcementConfig,
+      );
+      if (!kycResult.allowed) {
+        tradingModeTransitionsTotal.inc({ from: 'simulation', to: 'live', result: 'rejected_kyc' });
+        // Detect regulatory freeze vs KYC tier issue
+        const isFreeze = kycResult.reason?.toLowerCase().includes('frozen');
+        throw new AgentOrchestratorError(
+          kycResult.reason ?? 'KYC verification required to enable live trading',
+          isFreeze ? 'LIVE_TRADING_REGULATORY_FREEZE' : 'LIVE_TRADING_KYC_REQUIRED',
+          {
+            agentId,
+            userId: agent.userId,
+            currentTier: kycResult.currentTier,
+            requiredTier: kycResult.requiredTier,
+            auditId: kycResult.auditId,
+          },
+        );
+      }
+    }
+
+    // 3. Apply the transition
+    const auditId = generateTransitionAuditId(agentId, agent.userId, 'live');
+    const transitionedAt = new Date();
+    const updated: AgentMetadata = { ...agent, tradingMode: 'live', updatedAt: transitionedAt };
+    this.agents.set(agentId, updated);
+
+    // 4. Audit log
+    if (this.config.security.enableAuditLog) {
+      this.auditLog.push({
+        timestamp: transitionedAt,
+        action: 'trading_mode_enabled_live',
+        userId: agent.userId,
+        agentId,
+        details: {
+          auditId,
+          ip: requestMeta?.ip,
+          userAgent: requestMeta?.userAgent,
+          acknowledgeRealFunds: payload.acknowledgeRealFunds,
+          acknowledgeMainnetChecklist: payload.acknowledgeMainnetChecklist,
+          acknowledgeRiskAccepted: payload.acknowledgeRiskAccepted,
+        },
+      });
+    }
+
+    // 5. Metric
+    tradingModeTransitionsTotal.inc({ from: 'simulation', to: 'live', result: 'success' });
+
+    // 6. Event
+    this.emit({
+      type: 'agent.trading_mode_changed',
+      timestamp: transitionedAt,
+      agentId,
+      userId: agent.userId,
+      data: { previousMode: 'simulation', newMode: 'live', auditId },
+    });
+
+    return {
+      agentId,
+      previousMode: 'simulation',
+      newMode: 'live',
+      success: true,
+      auditId,
+      transitionedAt,
+    };
+  }
+
+  /**
+   * Transition an agent from live → simulation trading.
+   *
+   * This direction is always allowed (safer side). No KYC check required.
+   * The agent's `tradingMode` is set to 'simulation' immediately.
+   */
+  async disableLiveTrading(
+    agentId: string,
+    requestMeta?: { ip?: string; userAgent?: string },
+  ): Promise<TradingModeTransitionResult> {
+    const agent = this.getAgent(agentId);
+
+    if (agent.tradingMode === 'simulation') {
+      tradingModeTransitionsTotal.inc({ from: 'simulation', to: 'simulation', result: 'noop' });
+      throw new AgentOrchestratorError(
+        'Agent is already in simulation mode',
+        'SIMULATION_ALREADY_ENABLED',
+        { agentId },
+      );
+    }
+
+    const auditId = generateTransitionAuditId(agentId, agent.userId, 'simulation');
+    const transitionedAt = new Date();
+    const updated: AgentMetadata = { ...agent, tradingMode: 'simulation', updatedAt: transitionedAt };
+    this.agents.set(agentId, updated);
+
+    if (this.config.security.enableAuditLog) {
+      this.auditLog.push({
+        timestamp: transitionedAt,
+        action: 'trading_mode_disabled_live',
+        userId: agent.userId,
+        agentId,
+        details: { auditId, ip: requestMeta?.ip, userAgent: requestMeta?.userAgent },
+      });
+    }
+
+    tradingModeTransitionsTotal.inc({ from: 'live', to: 'simulation', result: 'success' });
+
+    this.emit({
+      type: 'agent.trading_mode_changed',
+      timestamp: transitionedAt,
+      agentId,
+      userId: agent.userId,
+      data: { previousMode: 'live', newMode: 'simulation', auditId },
+    });
+
+    return {
+      agentId,
+      previousMode: 'live',
+      newMode: 'simulation',
+      success: true,
+      auditId,
+      transitionedAt,
+    };
+  }
+
+  /**
+   * Get the current server-side trading mode for an agent.
+   * Use this in trade-execution paths instead of trusting the client.
+   */
+  getTradingMode(agentId: string): TradingMode {
+    return this.getAgent(agentId).tradingMode;
+  }
+
+  // ============================================================================
   // Strategy Registry
   // ============================================================================
 
@@ -809,6 +1006,7 @@ export class AgentOrchestrator {
       telegramBot: metadata.telegramBot,
       walletAddress: metadata.walletAddress,
       status: metadata.status,
+      tradingMode: metadata.tradingMode,
       strategy: metadata.strategy,
       environment: metadata.environment,
       userId: metadata.userId,
