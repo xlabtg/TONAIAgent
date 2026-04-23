@@ -1,0 +1,166 @@
+# TON AI Agent - HSM Cloud Integration Tests (Nightly)
+#
+# Runs the real-cloud HSM adapter tests against AWS KMS and Azure Key Vault.
+# Separated from the standard CI workflow so it never blocks pull requests.
+#
+# Required GitHub secrets (set in the tonaiagent-ci environment):
+#   AWS_OIDC_ROLE_ARN          - IAM role ARN for GitHub OIDC federation
+#   AZURE_CLIENT_ID            - App (client) ID for workload identity federation
+#   AZURE_TENANT_ID            - Azure AD tenant ID
+#   AZURE_SUBSCRIPTION_ID      - Azure subscription ID
+#   AZURE_KEY_VAULT_URL        - https://<vault-name>.vault.azure.net
+#   HSM_ONCALL_WEBHOOK         - Slack/PagerDuty webhook URL for failure alerts
+#
+# See docs/hsm-setup.md#ci-account-setup for full provisioning instructions.
+
+name: HSM Cloud Integration (Nightly)
+
+on:
+  schedule:
+    # 02:00 UTC every night — outside business hours to minimise noise
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      aws_region:
+        description: 'Run only this AWS region (leave blank for full matrix)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC token exchange
+
+jobs:
+  # --------------------------------------------------------------------------
+  # AWS KMS – region matrix
+  # --------------------------------------------------------------------------
+  hsm-aws:
+    name: AWS KMS (${{ matrix.region }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: tonaiagent-ci
+
+    strategy:
+      fail-fast: false
+      matrix:
+        region:
+          - us-east-1
+          - eu-west-1
+
+    # Skip individual regions when the caller specified a single region override
+    if: >-
+      github.event.inputs.aws_region == '' ||
+      github.event.inputs.aws_region == matrix.region
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ matrix.region }}
+          # Session tags allow the cleanup script to identify CI-created keys
+          role-session-name: tonaiagent-ci-hsm-${{ matrix.region }}
+
+      - name: Run AWS KMS integration tests
+        run: npm test -- tests/security/hsm-integration.test.ts
+        timeout-minutes: 8
+        env:
+          AWS_KMS_TEST: 'true'
+          AWS_REGION: ${{ matrix.region }}
+
+      - name: Run HSM key cleanup (AWS)
+        if: always()
+        run: npx tsx scripts/hsm-ci-cleanup.ts --provider aws --region ${{ matrix.region }}
+        env:
+          AWS_REGION: ${{ matrix.region }}
+
+  # --------------------------------------------------------------------------
+  # Azure Key Vault
+  # --------------------------------------------------------------------------
+  hsm-azure:
+    name: Azure Key Vault
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: tonaiagent-ci
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Azure credentials (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run Azure Key Vault integration tests
+        run: npm test -- tests/security/hsm-integration.test.ts
+        timeout-minutes: 8
+        env:
+          AZURE_KV_TEST: 'true'
+          AZURE_KEY_VAULT_URL: ${{ secrets.AZURE_KEY_VAULT_URL }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          # Workload identity federation: no client secret required
+
+      - name: Run HSM key cleanup (Azure)
+        if: always()
+        run: npx tsx scripts/hsm-ci-cleanup.ts --provider azure
+        env:
+          AZURE_KEY_VAULT_URL: ${{ secrets.AZURE_KEY_VAULT_URL }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+
+  # --------------------------------------------------------------------------
+  # Failure notification — pages the security-engineering rotation
+  # --------------------------------------------------------------------------
+  notify-on-failure:
+    name: Alert on Failure
+    runs-on: ubuntu-latest
+    needs: [hsm-aws, hsm-azure]
+    if: failure()
+
+    steps:
+      - name: Send failure alert
+        run: |
+          FAILED_JOBS=""
+          if [ "${{ needs.hsm-aws.result }}" = "failure" ]; then
+            FAILED_JOBS="${FAILED_JOBS} hsm-aws"
+          fi
+          if [ "${{ needs.hsm-azure.result }}" = "failure" ]; then
+            FAILED_JOBS="${FAILED_JOBS} hsm-azure"
+          fi
+
+          PAYLOAD=$(cat <<JSON
+          {
+            "text": ":rotating_light: *HSM Nightly CI failed* — jobs:${FAILED_JOBS}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nBranch: ${{ github.ref_name }}\nCommit: ${{ github.sha }}"
+          }
+          JSON
+          )
+
+          curl -f -X POST \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD" \
+            "${{ secrets.HSM_ONCALL_WEBHOOK }}"
