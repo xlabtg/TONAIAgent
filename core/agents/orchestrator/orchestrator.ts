@@ -64,6 +64,12 @@ interface StrategyTemplate {
   riskLevel: 'low' | 'medium' | 'high';
   defaultBudgetTon: number;
   executionIntervalMs: number;
+  /**
+   * Marks a strategy as a system-defined demo that bypasses KYC and is
+   * restricted to simulation mode. Set only in this registry — never derived
+   * from user-supplied data.
+   */
+  isDemoStrategy?: boolean;
 }
 
 /** Registry of all available strategy templates */
@@ -99,6 +105,7 @@ const STRATEGY_REGISTRY: Record<AgentStrategy, StrategyTemplate> = {
     riskLevel: 'low',
     defaultBudgetTon: 10,
     executionIntervalMs: 30_000,
+    isDemoStrategy: true,
   },
   custom: {
     id: 'custom',
@@ -312,9 +319,11 @@ export class AgentOrchestrator {
     // Capacity checks
     this.checkCapacity(input.userId);
 
-    // KYC enforcement gate — skip for demo strategy regardless of enforcement config
+    // KYC enforcement gate — skip only for system-defined demo strategies.
+    // Privilege is granted by the server-side registry flag, never by a
+    // user-supplied strategy name string.
     const kycCfg = this.config.kycEnforcement;
-    const isDemoStrategy = input.strategy === 'demo';
+    const isDemoStrategy = STRATEGY_REGISTRY[input.strategy]?.isDemoStrategy === true;
     if (kycCfg?.enabled && !isDemoStrategy) {
       const enforcementConfig: KycEnforcementConfig = KYC_ENFORCEMENT_DEFAULTS[kycCfg.mode];
       const kycResult = await this.kycAmlManager.enforceKycForAgentCreation(
@@ -335,7 +344,7 @@ export class AgentOrchestrator {
     const agentId = generateAgentId(input.userId, agentName, String(startTime));
     const strategy = STRATEGY_REGISTRY[input.strategy];
     const environment: AgentEnvironment = input.environment;
-    const isDemo = environment === 'demo' || input.strategy === 'demo';
+    const isDemo = environment === 'demo' || isDemoStrategy;
 
     this.emit({
       type: 'agent.creation_started',

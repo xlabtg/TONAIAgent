@@ -29,6 +29,7 @@ import {
 } from '../../core/trading/live/execution-engine';
 import { createConnectorRegistry } from '../../core/trading/live/connector';
 import type { KycApplication } from '../../services/regulatory/types';
+import { CreateAgentSchema, ConfigureAgentSchema } from '../../services/api/schemas/agent';
 
 // ============================================================================
 // Helpers
@@ -405,6 +406,91 @@ describe('AgentOrchestrator — KYC gate on createAgent', () => {
     await expect(
       orchestrator.createAgent({ userId: 'user_frozen_orch', strategy: 'trading', environment: 'mainnet' }),
     ).rejects.toThrow(/frozen/i);
+  });
+});
+
+// ============================================================================
+// Demo Strategy KYC Bypass Regression Tests (Issue #369)
+// ============================================================================
+
+describe('AgentOrchestrator — demo strategy KYC bypass security (Issue #369)', () => {
+  it('KYC bypass for demo strategy is driven by server registry flag, not string matching', async () => {
+    // The system-defined demo strategy has isDemoStrategy=true in the registry.
+    // Verify that the bypass is granted through that flag.
+    const kycManager = createKycAmlManager({ enabled: true });
+    const orchestrator = new AgentOrchestrator(
+      { kycEnforcement: { enabled: true, mode: 'mainnet' } },
+      kycManager,
+    );
+
+    // system 'demo' strategy has isDemoStrategy:true in STRATEGY_REGISTRY → allowed
+    const result = await orchestrator.createAgent({
+      userId: 'user_demo_registry_flag',
+      strategy: 'demo',
+      environment: 'demo',
+    });
+    expect(result.agentId).toBeDefined();
+    expect(result.status).toBe('active');
+  });
+
+  it('non-demo strategies still require KYC even on mainnet enforcement', async () => {
+    // Regression: ensure the old bypass path (strategy === 'demo' string) does not
+    // generalise to other strategies. A user submitting strategy='trading' without
+    // KYC must still be blocked.
+    const kycManager = createKycAmlManager({ enabled: true });
+    const orchestrator = new AgentOrchestrator(
+      { kycEnforcement: { enabled: true, mode: 'mainnet' } },
+      kycManager,
+    );
+
+    await expect(
+      orchestrator.createAgent({
+        userId: 'user_no_kyc_trading_real_funds',
+        strategy: 'trading',
+        environment: 'mainnet',
+      }),
+    ).rejects.toThrow(/KYC/i);
+  });
+
+  it('demo strategy is forced into simulation mode (cannot trade real funds)', async () => {
+    // System demo strategies should always be treated as simulation, not live.
+    const kycManager = createKycAmlManager({ enabled: true });
+    const orchestrator = new AgentOrchestrator(
+      { kycEnforcement: { enabled: true, mode: 'mainnet' } },
+      kycManager,
+    );
+
+    const result = await orchestrator.createAgent({
+      userId: 'user_demo_sim_mode',
+      strategy: 'demo',
+      environment: 'demo',
+    });
+    // The runtime subsystem should indicate simulationMode=true for demo agents
+    expect(result.provisioningSummary.runtime.success).toBe(true);
+    expect(result.provisioningSummary.runtime.details?.simulationMode).toBe(true);
+  });
+
+  it('CreateAgentSchema rejects isDemoStrategy field supplied by a client', () => {
+    // Privilege must be granted by server config, never user-supplied data.
+    const payloadWithBypassAttempt = {
+      userId: 'attacker',
+      name: 'My Agent',
+      strategy: 'trend',
+      budgetTon: 100,
+      riskLevel: 'low',
+      isDemoStrategy: true, // attacker attempts to set server-only flag
+    };
+    const parseResult = CreateAgentSchema.safeParse(payloadWithBypassAttempt);
+    expect(parseResult.success).toBe(false);
+  });
+
+  it('ConfigureAgentSchema rejects isDemoStrategy field supplied by a client', () => {
+    const payloadWithBypassAttempt = {
+      name: 'Updated Agent',
+      isDemoStrategy: true,
+    };
+    const parseResult = ConfigureAgentSchema.safeParse(payloadWithBypassAttempt);
+    expect(parseResult.success).toBe(false);
   });
 });
 

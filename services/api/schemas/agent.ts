@@ -12,22 +12,33 @@ import { z } from 'zod';
 // Agent Creation Schema
 // ============================================================================
 
-/** Schema for POST /api/agents — create a new agent */
+/**
+ * Schema for POST /api/agents — create a new agent.
+ *
+ * Uses .strict() so that any unrecognised field (including `isDemoStrategy`)
+ * causes a validation error. Demo-strategy privilege is granted only by the
+ * server-side strategy registry, never by user-supplied data.
+ */
 export const CreateAgentSchema = z.object({
   userId: z.string().min(1).max(100),
   name: z.string().min(1).max(200),
   strategy: z.enum(['trend', 'arbitrage', 'ai_signal']),
   budgetTon: z.number().positive().max(1_000_000),
   riskLevel: z.enum(['low', 'medium', 'high']),
-});
+}).strict();
 
-/** Schema for PATCH/PUT /api/agents/:id/configure */
+/**
+ * Schema for PATCH/PUT /api/agents/:id/configure.
+ *
+ * Uses .strict() so that `isDemoStrategy` and other server-only fields are
+ * rejected when supplied by a client.
+ */
 export const ConfigureAgentSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   strategy: z.enum(['trend', 'arbitrage', 'ai_signal']).optional(),
   budgetTon: z.number().positive().max(1_000_000).optional(),
   riskLevel: z.enum(['low', 'medium', 'high']).optional(),
-}).refine(obj => Object.keys(obj).length > 0, {
+}).strict().refine(obj => Object.keys(obj).length > 0, {
   message: 'At least one field must be provided for configuration update',
 });
 
