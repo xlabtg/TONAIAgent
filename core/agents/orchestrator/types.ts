@@ -107,6 +107,8 @@ export interface CreateAgentResult {
   walletAddress: string | null;
   /** Current agent status */
   status: AgentStatus;
+  /** Server-side trading mode (always 'simulation' on creation) */
+  tradingMode: 'simulation' | 'live';
   /** Strategy that was bound */
   strategy: AgentStrategy;
   /** Deployment environment */
@@ -191,6 +193,12 @@ export interface AgentMetadata {
   environment: AgentEnvironment;
   /** Agent status */
   status: AgentStatus;
+  /**
+   * Server-side trading mode. Defaults to 'simulation' on creation.
+   * All trade-execution paths must read this field; localStorage is a cache only.
+   * Transition to 'live' requires KYC + explicit acknowledgement payload via API.
+   */
+  tradingMode: 'simulation' | 'live';
   /** Wallet address (null if not created) */
   walletAddress: string | null;
   /** Telegram bot username (null if not provisioned) */
@@ -301,7 +309,8 @@ export type OrchestratorEventType =
   | 'agent.creation_completed'
   | 'agent.creation_failed'
   | 'agent.status_changed'
-  | 'agent.terminated';
+  | 'agent.terminated'
+  | 'agent.trading_mode_changed';
 
 /** Orchestrator event */
 export interface OrchestratorEvent {
@@ -344,7 +353,12 @@ export type AgentOrchestratorErrorCode =
   | 'RATE_LIMIT_EXCEEDED'
   | 'ORCHESTRATOR_DISABLED'
   | 'KYC_REQUIRED'
-  | 'ACCOUNT_FROZEN';
+  | 'ACCOUNT_FROZEN'
+  | 'LIVE_TRADING_KYC_REQUIRED'
+  | 'LIVE_TRADING_CHECKLIST_INCOMPLETE'
+  | 'LIVE_TRADING_REGULATORY_FREEZE'
+  | 'LIVE_TRADING_ALREADY_ENABLED'
+  | 'SIMULATION_ALREADY_ENABLED';
 
 /** Structured error for orchestrator operations */
 export class AgentOrchestratorError extends Error {
