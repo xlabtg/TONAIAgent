@@ -33,6 +33,13 @@ import {
 const NULL_TON_ADDRESS = '0:0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
+ * Version of this in-process simulation, encoded as major * 100 + minor.
+ * Must be kept in sync with `self.version` in `contracts/agent-factory.tact`.
+ * Tests in `tests/fakes/` assert this value to surface ABI drift early.
+ */
+export const SIMULATION_VERSION = 100; // 1.0.0
+
+/**
  * Partial defaults for non-critical fields.
  * `owner` and `treasury` are intentionally omitted — callers MUST provide them.
  * @see FactoryContractManager constructor which enforces this at runtime.
