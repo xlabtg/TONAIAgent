@@ -1676,10 +1676,140 @@ See [OWASP LLM Top 10 — LLM01](https://owasp.org/www-project-top-10-for-large-
 
 ---
 
+## Prompt-Injection Threat Model
+
+> **Issue #375 — Harden Prompt-Injection Detection Beyond Regex**
+>
+> This section documents what each defense layer handles and what it does not,
+> so engineers can reason about residual risk accurately.
+
+### Defense Layers (innermost first)
+
+```
+User input / tool output
+         │
+         ▼
+┌────────────────────────────────────────────────────────────┐
+│  Layer 1: PromptBuilder                                    │
+│  core/ai/prompt-builder.ts                                 │
+│  PRIMARY defense. User data is serialised as a JSON value  │
+│  in the `user` role. It NEVER appears in the `system` role.│
+│  A model receiving user text as JSON data cannot use it to │
+│  override system-role instructions (OWASP LLM01).          │
+└────────────────────────────┬───────────────────────────────┘
+                             │ JSON-wrapped user message
+                             ▼
+┌────────────────────────────────────────────────────────────┐
+│  Layer 2: sanitizeUserInput / sanitizeStrategyName / …     │
+│  core/ai/sanitize.ts                                       │
+│  Removes / replaces known-bad patterns BEFORE the data     │
+│  enters a PromptBuilder call. Steps:                       │
+│    1. Max-length truncation                                │
+│    2. Unicode NFKC normalization (collapses fullwidth,     │
+│       halfwidth, ligatures, superscripts, etc.)            │
+│    3. Zero-width & bidi control character stripping        │
+│    4. ASCII control character stripping                    │
+│    5. HTML tag / comment stripping                         │
+│    6. Known injection marker removal ([system], {{admin}}, │
+│       fenced code blocks, URL-encoded variants)            │
+│    7. Large encoded payload blocking (base64/base32/hex)   │
+└────────────────────────────┬───────────────────────────────┘
+                             │ sanitised string
+                             ▼
+┌────────────────────────────────────────────────────────────┐
+│  Layer 3: injection-detector heuristics                    │
+│  core/ai/injection-detector.ts                             │
+│  Detects and flags (does not silently discard). Includes:  │
+│    • Confusable / homoglyph detection (Cyrillic, Greek,    │
+│      mathematical script, Latin Extended lookalikes)       │
+│    • Encoded payload detection (base64/base32/hex/URL/     │
+│      HTML-entity, rot13 labels)                            │
+│    • Jailbreak phrase detection (DAN, "ignore previous",   │
+│      "you are now unrestricted", "bypass all", etc.)       │
+│    • Output-side echo detection (model repeating injected  │
+│      phrases in its response)                              │
+│  Returns DetectionResult with riskScore and findings list. │
+│  Callers decide: log, shadow-ban, or refuse.               │
+└────────────────────────────┬───────────────────────────────┘
+                             │ flagged / clean result
+                             ▼
+┌────────────────────────────────────────────────────────────┐
+│  Layer 4: filterAIOutput                                   │
+│  core/ai/output-filter.ts                                  │
+│  Cleans AI responses before display. Strips injection      │
+│  markers echoed in output, redacts credentials/secrets,    │
+│  removes unsafe HTML.                                      │
+└────────────────────────────┬───────────────────────────────┘
+                             │ clean, filtered text
+                             ▼
+┌────────────────────────────────────────────────────────────┐
+│  Layer 5: ActionInvariantValidator                         │
+│  core/ai/output-validator-actions.ts                       │
+│  For AI-proposed trade actions: enforces amount limits,    │
+│  token whitelist, DEX address whitelist — regardless of    │
+│  what the model's response says.                           │
+└────────────────────────────────────────────────────────────┘
+```
+
+### What Each Layer Handles vs. What It Does Not
+
+| Attack vector | Handled by | Notes |
+|---|---|---|
+| Direct system-role injection | **PromptBuilder** (L1) | Primary defense. User data is never in system role. |
+| `[system]`, `{{admin}}`, fenced code blocks | **sanitize.ts** (L2) | Regex-based; catches ASCII variants. |
+| Fullwidth / halfwidth lookalikes (e.g., ｓｙｓｔｅｍ) | **NFKC normalization** (L2) | Collapsed to ASCII before marker check. |
+| Zero-width / bidi hiding (U+200B, U+202E, etc.) | **normalizeUnicodeInput** (L2) | Stripped before downstream processing. |
+| Cyrillic / Greek homoglyphs not collapsed by NFKC | **detectConfusables** (L3) | Skeleton comparison against injection keywords. |
+| Long base64/base32/hex obfuscation runs | **sanitize.ts** (L2) + **detectEncodedPayloads** (L3) | Blocked at threshold (default 40 chars). |
+| URL-encoded markers (%5Bsystem%5D) | **sanitize.ts** (L2) | Pattern matched directly. |
+| HTML-entity encoded markers | **sanitize.ts** (L2) | Pattern matched directly. |
+| Jailbreak phrases (DAN, "ignore all previous") | **detectInjection** (L3) | 14+ phrase patterns. |
+| Indirect injection via tool outputs / RAG | **wrapToolOutput** (L3) | Structural isolation wrapper. Caller must also sanitize. |
+| Model echoing injected instructions in response | **detectOutputEcho** / **filterAIOutput** (L3/L4) | Patterns matched in model response text. |
+| Adversarial suffixes (GCG gradient attacks) | **Partial** (L3) | Unknown suffix patterns may evade heuristics. |
+| Chunked base64 split across spaces | **Not handled** | Acceptable trade-off vs. false-positive rate. |
+| Double URL-encoding (%255Bsystem%255D) | **Not handled** | Single-pass decoding; future improvement. |
+| Semantically equivalent instructions without keywords | **Not handled** | Requires LLM-based semantic classifier (future work). |
+
+### False-Positive Management
+
+Blocking legitimate inputs is a business risk. Guidelines:
+
+1. **Unicode normalization** should never block legitimate text — it only normalises representations.
+2. **Injection marker removal** only removes specific bracket/template patterns, not free-form prose.
+3. **Encoded payload blocking** threshold defaults to 40 chars (~30 bytes). Reduce to lower false-negative rate; raise to lower false-positive rate for base64-heavy workflows.
+4. **Confusable detection** only flags tokens containing non-ASCII code points that skeleton-match injection keywords. Pure-ASCII text is never flagged.
+5. **Jailbreak phrase matching** is phrase-level, not word-level; normal uses of "system", "ignore", or "instructions" in plain sentences do not trigger.
+6. Monitor `DetectionResult.riskScore` and set thresholds appropriate to context: a score > 0.7 warrants refusal; 0.3–0.7 warrants logging + shadow-ban accumulation.
+
+### Corpus and Regression Tests
+
+A corpus of 200 adversarial test cases lives in `tests/ai/fixtures/adversarial-corpus.json`.
+
+Categories:
+
+| Category | Cases | Description |
+|---|---|---|
+| `homoglyph` | 25 | Unicode confusable attacks (fullwidth, Cyrillic, Greek, mathematical) |
+| `base64` | 20 | Base64-encoded injection payloads |
+| `encoded_variant` | 25 | URL-encoded, HTML-entity, hex, base32, rot13 |
+| `adversarial_suffix` | 90 | Jailbreak templates, DAN, adversarial phrasing, control chars |
+| `indirect_injection` | 20 | Payloads via fetched documents, tools, RAG |
+| `zero_width` | 20 | Zero-width space, bidi control, variation selectors |
+
+Run the full regression suite:
+
+```sh
+npx vitest run tests/ai/prompt-injection.test.ts
+```
+
+---
+
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.4.0 | 2026-04-23 | Added injection-detector heuristics, Unicode normalization, adversarial corpus (issue #375) |
 | 0.3.0 | 2026-04-23 | Added output-side hardening: schema validation, content filtering, action invariants (issue #351) |
 | 0.2.0 | 2026-04-22 | Added PromptBuilder adoption guide and ESLint enforcement (issue #348) |
 | 0.1.0 | 2026-02-20 | Initial release with full AI safety framework |
