@@ -83,6 +83,24 @@ export {
 } from './orchestration';
 export type { ToolExecutor, OrchestrationConfig } from './orchestration';
 
+// Export output validation pipeline
+export { parseAndValidate, validateAIOutput, buildAuditEntry } from './output-validator';
+export type {
+  OutputValidatorOptions,
+  OutputValidationResult,
+  ValidationAuditEntry,
+} from './output-validator';
+
+export { filterAIOutput, detectSuspiciousPatterns } from './output-filter';
+export type { OutputFilterOptions, FilterResult, SuspiciousPatternMatch } from './output-filter';
+
+export { ActionInvariantValidator, createActionValidator } from './output-validator-actions';
+export type { ActionValidatorConfig, ActionValidationResult } from './output-validator-actions';
+
+// Export AI response schemas
+export { TradeSignalSchema, AnalysisResultSchema, RiskAssessmentSchema } from './schemas';
+export type { TradeSignal, AnalysisResult, RiskAssessment } from './schemas';
+
 // ============================================================================
 // AI Service - Unified Entry Point
 // ============================================================================

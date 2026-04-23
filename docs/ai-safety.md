@@ -29,7 +29,8 @@ The TONAIAgent AI Safety Framework ensures that autonomous agents operate reliab
 7. [Human Oversight & Control](#human-oversight--control)
 8. [Configuration](#configuration)
 9. [API Reference](#api-reference)
-10. [Best Practices](#best-practices)
+10. [Output-Side Hardening](#output-side-hardening)
+11. [Best Practices](#best-practices)
 
 ---
 
@@ -1203,6 +1204,234 @@ const safety = createAISafetyManager(config);
 | `getPendingApprovals(agentId?)` | Get pending approvals |
 | `getDashboardData()` | Get dashboard data |
 | `getSystemHealth()` | Get system health status |
+
+---
+
+## Output-Side Hardening
+
+> **Re-audit finding §7 — AI Safety & Prompt Injection (OWASP LLM02)**
+>
+> PR #317 added input sanitization.  This section documents the complementary
+> *output-side* controls added in issue #351.
+
+### Why Output Validation Matters
+
+Even when input sanitization and static system prompts reduce the risk of
+prompt injection, a model can still:
+
+- Return a response in an unexpected or fabricated schema.
+- Hallucinate tool-call instructions that should never be executed.
+- Leak PII or secrets from training data.
+- Produce HTML or script tags that are rendered unsafely in the UI.
+
+The controls below form a deterministic, LLM-free validation pipeline that
+sits between the AI provider response and any downstream consumer.
+
+---
+
+### Architecture
+
+```
+AI Provider Response
+       │
+       ▼
+┌──────────────────────────────────┐
+│  1. Schema Validator             │  core/ai/output-validator.ts
+│     parseAndValidate(raw, schema)│  – JSON parse + Zod check
+│     validateAIOutput(fn, schema) │  – retry loop (backoff)
+└──────────────┬───────────────────┘
+               │ typed, validated data
+               ▼
+┌──────────────────────────────────┐
+│  2. Content Filter               │  core/ai/output-filter.ts
+│     filterAIOutput(text)         │  – strip unsafe HTML
+│                                  │  – strip injection markers
+│                                  │  – redact credentials / base64
+└──────────────┬───────────────────┘
+               │ safe text for UI / logs
+               ▼
+┌──────────────────────────────────┐  (action outputs only)
+│  3. Business Invariant Validator │  core/ai/output-validator-actions.ts
+│     ActionInvariantValidator     │  – amount ≤ configured limit
+│     .validate(signal)            │  – token in whitelist
+│     .validateDexAddress(addr)    │  – DEX address is known-safe
+└──────────────┬───────────────────┘
+               │ cleared for execution
+               ▼
+          Audit Trail
+          (raw + filtered + verdict)
+```
+
+---
+
+### 1. Zod Response Schemas (`core/ai/schemas/`)
+
+Every AI call type has a corresponding Zod schema.  The model is instructed
+in `prompt-builder.ts` to return JSON matching the schema; the validator
+enforces this contract.
+
+| Schema file              | Validated type      | Key constraints                                           |
+|--------------------------|---------------------|-----------------------------------------------------------|
+| `strategy-signal.ts`     | `TradeSignal`       | `action` enum, `confidence ∈ [0,1]`, `amountTon ≥ 0`    |
+| `analysis-result.ts`     | `AnalysisResult`    | `riskScore ∈ [0,10]`, bounded arrays                     |
+| `risk-assessment.ts`     | `RiskAssessment`    | `recommendation` enum, `maxSafeAmountTon ≥ 0`           |
+
+```typescript
+import { TradeSignalSchema } from 'core/ai/schemas';
+
+const result = parseAndValidate(rawModelOutput, TradeSignalSchema);
+if (!result.success) {
+  // log and drop — do not execute
+}
+```
+
+---
+
+### 2. Output Validator with Retry (`core/ai/output-validator.ts`)
+
+`validateAIOutput` wraps any function that produces a raw model response.
+On schema mismatch it:
+
+1. Logs the failure with the truncated raw response.
+2. Waits `baseDelayMs × 2^attempt` ms (exponential backoff).
+3. Calls the response function again with the next attempt number.
+4. After `maxRetries + 1` total attempts, returns a structured error.
+
+```typescript
+import { validateAIOutput } from 'core/ai/output-validator';
+
+const result = await validateAIOutput(
+  async (attempt) => {
+    // Re-call the AI provider on each attempt
+    return await aiProvider.complete(request, attempt);
+  },
+  TradeSignalSchema,
+  { maxRetries: 2, baseDelayMs: 500 }
+);
+
+if (!result.ok) {
+  // Surface structured error — do not proceed
+  auditLog(buildAuditEntry(result, 'TradeSignalSchema'));
+  throw new Error(result.error);
+}
+
+const signal: TradeSignal = result.data;
+```
+
+---
+
+### 3. Content Filter (`core/ai/output-filter.ts`)
+
+`filterAIOutput` cleans any AI-generated text before it is rendered in the
+UI or stored in logs.
+
+**HTML stripping** — allow-list only: `<b>`, `<i>`, `<code>`.  All other
+tags (including `<script>`, `<img>`, event handlers) are removed.
+
+**Injection marker removal** — strips `[system]`, `{{admin}}`, fenced code
+blocks with privileged labels, and HTML comments.
+
+**Suspicious pattern redaction** — replaces with `[REDACTED_*]` tokens:
+
+| Pattern type       | Example match                | Replacement               |
+|--------------------|------------------------------|---------------------------|
+| `openai_key`       | `sk-abc…`                   | `[REDACTED_API_KEY]`      |
+| `aws_access_key`   | `AKIA…`                     | `[REDACTED_API_KEY]`      |
+| `generic_api_key`  | `api_key: "secret123"`      | `[REDACTED_API_KEY]`      |
+| `pem_private_key`  | `-----BEGIN RSA PRIVATE KEY` | `[REDACTED_PRIVATE_KEY]`  |
+| `long_base64`      | 60+ char base64 blob         | `[REDACTED_BASE64]`       |
+| `internal_hostname`| `http://192.168.1.1/…`      | `[REDACTED_INTERNAL_URL]` |
+
+```typescript
+import { filterAIOutput } from 'core/ai/output-filter';
+
+const { filtered, hadSuspiciousContent, detectedPatterns } = filterAIOutput(rawText);
+
+if (hadSuspiciousContent) {
+  auditLog({ event: 'suspicious_output', patterns: detectedPatterns });
+}
+
+renderToUI(filtered); // safe
+```
+
+---
+
+### 4. Business Invariant Validator (`core/ai/output-validator-actions.ts`)
+
+Applied as a second stage specifically for AI-proposed trade actions before
+they reach the execution layer.
+
+```typescript
+import { createActionValidator } from 'core/ai/output-validator-actions';
+
+const validator = createActionValidator({
+  maxAmountTon: 1000,                          // per-signal limit
+  allowedTokenSymbols: new Set(['TON', 'USDT']),
+  knownDexAddresses: new Set(['EQB3nc…']),     // STON.fi router
+});
+
+const check = validator.validate(tradeSignal);
+if (!check.passed) {
+  // Reject before execution
+  throw new Error(check.reason);
+}
+
+// Later, when the DEX address is resolved:
+const dexCheck = validator.validateDexAddress(resolvedDexAddress);
+if (!dexCheck.passed) throw new Error(dexCheck.reason);
+```
+
+Invariants checked:
+
+| Check              | Failure condition                                          |
+|--------------------|------------------------------------------------------------|
+| `amount_limit`     | `signal.amountTon > maxAmountTon`                         |
+| `token_whitelist`  | symbol not in `allowedTokenSymbols` (case-insensitive)    |
+| `dex_address`      | address not in `knownDexAddresses`                        |
+
+---
+
+### 5. Audit Trail
+
+Every validation result should be logged with `buildAuditEntry`:
+
+```typescript
+import { buildAuditEntry } from 'core/ai/output-validator';
+
+const entry = buildAuditEntry(validationResult, 'TradeSignalSchema');
+// entry = { timestamp, schema, attempts, verdict, error?, rawSnippet }
+```
+
+The entry captures:
+- **raw snippet** — first 500 chars of the model's response.
+- **verdict** — `'pass'` or `'fail'`.
+- **attempt count** — how many retries were needed.
+
+---
+
+### 6. Configuration Reference
+
+```typescript
+// Output validator options
+interface OutputValidatorOptions {
+  maxRetries?: number;    // Default: 2
+  baseDelayMs?: number;   // Default: 500 ms (doubled each attempt)
+}
+
+// Content filter options
+interface OutputFilterOptions {
+  stripHtml?: boolean;               // Default: true
+  stripInjectionMarkers?: boolean;   // Default: true
+  redactSuspiciousPatterns?: boolean;// Default: true
+}
+
+// Action invariant validator config
+interface ActionValidatorConfig {
+  maxAmountTon?: number;             // Default: 1000
+  allowedTokenSymbols?: Set<string>; // Default: TON / USDT / USDC / NOT / JETTON / STON
+  knownDexAddresses?: Set<string>;   // Default: STON.fi v1, DeDust vault
+}
+```
 
 ---
 
