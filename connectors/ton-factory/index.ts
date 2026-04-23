@@ -86,6 +86,7 @@ export {
   deriveContractAddress,
   buildDeploymentTransaction,
   DEFAULT_FACTORY_CONFIG,
+  SIMULATION_VERSION,
 } from './factory-contract';
 
 // ============================================================================
