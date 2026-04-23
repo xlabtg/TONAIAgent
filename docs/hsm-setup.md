@@ -16,6 +16,7 @@ This guide explains how to configure Hardware Security Module (HSM) key storage 
 8. [Key Rotation](#key-rotation)
 9. [Environment Variables Reference](#environment-variables-reference)
 10. [Troubleshooting](#troubleshooting)
+11. [CI Account Setup (Nightly HSM Tests)](#ci-account-setup-nightly-hsm-tests)
 
 ---
 
@@ -471,3 +472,159 @@ Verify `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` are set, 
 Contributions are welcome — implement the `HSMProviderAdapter` interface (see
 `core/security/hsm/aws-kms.ts` for the canonical example), pass a `KeyRegistry`
 to the constructor, and add tests in `tests/security/hsm-integration.test.ts`.
+
+---
+
+## CI Account Setup (Nightly HSM Tests)
+
+The `.github/workflows/hsm-nightly.yml` workflow runs the real-cloud integration
+tests nightly.  It uses **OIDC-based federated authentication** — no long-lived
+static keys are stored in GitHub Secrets.
+
+### AWS
+
+#### 1. Create a dedicated test-only IAM role
+
+```bash
+# Replace GITHUB_ORG and REPO_NAME with the actual values
+aws iam create-role \
+  --role-name tonaiagent-ci-hsm \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Effect": "Allow",
+      "Principal": { "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com" },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringLike": { "token.actions.githubusercontent.com:sub": "repo:<GITHUB_ORG>/<REPO_NAME>:*" },
+        "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" }
+      }
+    }]
+  }'
+```
+
+#### 2. Attach a minimal inline policy
+
+Only the operations the test suite actually performs are allowed.  Every
+test-created key must be tagged with `tonaiagent-ci=true` so the cleanup
+script can find and delete it.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "KmsTestOperations",
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey",
+        "kms:Sign",
+        "kms:GetPublicKey",
+        "kms:ScheduleKeyDeletion",
+        "kms:ListKeys",
+        "kms:DescribeKey",
+        "kms:ListResourceTags",
+        "kms:TagResource"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": ["us-east-1", "eu-west-1"] }
+      }
+    }
+  ]
+}
+```
+
+#### 3. Add a budget alarm
+
+```bash
+aws budgets create-budget \
+  --account-id <ACCOUNT_ID> \
+  --budget '{
+    "BudgetName": "tonaiagent-ci-hsm",
+    "BudgetLimit": { "Amount": "10", "Unit": "USD" },
+    "TimeUnit": "MONTHLY",
+    "BudgetType": "COST",
+    "CostFilters": { "Service": ["AWS Key Management Service"] }
+  }' \
+  --notifications-with-subscribers '[{
+    "Notification": {
+      "NotificationType": "ACTUAL",
+      "ComparisonOperator": "GREATER_THAN",
+      "Threshold": 80,
+      "ThresholdType": "PERCENTAGE"
+    },
+    "Subscribers": [{ "SubscriptionType": "EMAIL", "Address": "security-engineering@example.com" }]
+  }]'
+```
+
+#### 4. Store the role ARN as a GitHub secret
+
+In the `tonaiagent-ci` GitHub Actions environment:
+
+```
+AWS_OIDC_ROLE_ARN = arn:aws:iam::<ACCOUNT_ID>:role/tonaiagent-ci-hsm
+```
+
+### Azure
+
+#### 1. Create a workload identity federation credential
+
+```bash
+# Create app registration
+APP_ID=$(az ad app create --display-name tonaiagent-ci-hsm --query appId -o tsv)
+az ad sp create --id $APP_ID
+
+# Add federated credential for GitHub Actions
+az ad app federated-credential create --id $APP_ID --parameters '{
+  "name": "tonaiagent-ci-hsm",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:<GITHUB_ORG>/<REPO_NAME>:environment:tonaiagent-ci",
+  "audiences": ["api://AzureADTokenExchange"]
+}'
+```
+
+#### 2. Assign Key Vault permissions
+
+```bash
+az keyvault set-policy \
+  --name <VAULT_NAME> \
+  --spn $APP_ID \
+  --key-permissions create get sign delete list purge
+```
+
+#### 3. Store credentials as GitHub secrets
+
+```
+AZURE_CLIENT_ID       = <APP_ID>
+AZURE_TENANT_ID       = <TENANT_ID>
+AZURE_SUBSCRIPTION_ID = <SUBSCRIPTION_ID>
+AZURE_KEY_VAULT_URL   = https://<VAULT_NAME>.vault.azure.net
+```
+
+### Failure alerting
+
+Set `HSM_ONCALL_WEBHOOK` in the `tonaiagent-ci` environment to a Slack incoming
+webhook URL (or PagerDuty Events API v2 endpoint).  The `notify-on-failure` job
+fires a JSON payload when any HSM job fails.
+
+### Key cleanup
+
+The `scripts/hsm-ci-cleanup.ts` script is called automatically by the workflow
+at the end of each run (even on failure) via the `if: always()` condition.  You
+can also run it manually:
+
+```bash
+# AWS — dry run first
+npx tsx scripts/hsm-ci-cleanup.ts --provider aws --region us-east-1 --dry-run
+
+# Azure — dry run first
+npx tsx scripts/hsm-ci-cleanup.ts --provider azure --dry-run
+
+# Delete keys older than 24 h (default)
+npx tsx scripts/hsm-ci-cleanup.ts --provider all
+```
+
+The script requires the same credentials as the test run (IAM role / managed
+identity) and will not delete keys unless they carry the `tonaiagent-ci=true`
+tag AND are older than `--max-age-hours` (default: 24).
