@@ -1,5 +1,9 @@
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const noAiPromptConcat = require('./eslint-local-rules/no-ai-prompt-concat.js');
 
 export default [
   {
@@ -33,6 +37,18 @@ export default [
       'no-case-declarations': 'off',
       'no-constant-condition': 'off',
       'prefer-const': 'off',
+    },
+  },
+  // AI prompt-injection safety rule: flags template-literal/concatenation in
+  // system-role message content inside files that import an AI SDK.
+  {
+    files: ['core/ai/**/*.ts', 'services/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    plugins: {
+      local: { rules: { 'no-ai-prompt-concat': noAiPromptConcat } },
+    },
+    rules: {
+      'local/no-ai-prompt-concat': 'error',
     },
   },
 ];
