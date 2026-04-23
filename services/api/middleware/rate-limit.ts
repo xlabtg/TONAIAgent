@@ -1,14 +1,29 @@
 /**
  * TONAIAgent - Rate Limiting Middleware
  *
- * Framework-agnostic in-memory rate limiter based on a sliding-window
- * counter.  Mirrors the semantics of `express-rate-limit` but requires
- * no HTTP framework — it operates directly on IP/user identifiers.
+ * Pluggable sliding-window rate limiter.  The in-process MemoryStore is the
+ * default; swap in RedisStore for distributed / multi-replica deployments.
  *
- * Implements Issue #309: API input validation
+ * Backend selection via RATE_LIMIT_STORE env var (redis | memory).
+ * Fail-closed behaviour when Redis is unreachable unless RATE_LIMIT_FAIL_OPEN=true.
+ *
+ * Implements Issue #309 (API input validation) and Issue #355 (distributed store).
  */
 
 import type { AgentControlRequest, AgentControlResponse } from '../../../core/agents/control/index.js';
+import { MemoryStore } from './rate-limit-stores/memory.js';
+import { NoOpStore } from './rate-limit-stores/noop.js';
+import type { RateLimiterStore } from './rate-limit-stores/types.js';
+
+// ============================================================================
+// Re-exports for convenience
+// ============================================================================
+
+export type { RateLimiterStore };
+export { MemoryStore } from './rate-limit-stores/memory.js';
+export { NoOpStore } from './rate-limit-stores/noop.js';
+export { RedisStore } from './rate-limit-stores/redis.js';
+export type { RedisClient } from './rate-limit-stores/redis.js';
 
 // ============================================================================
 // Types
@@ -19,13 +34,59 @@ export interface RateLimitConfig {
   windowMs: number;
   /** Maximum number of requests allowed within the window */
   max: number;
+  /** Bucket label used in metrics (e.g. "standard", "trade") */
+  bucket?: string;
   /** Key extractor — defaults to IP from headers */
   keyExtractor?: (req: AgentControlRequest) => string;
+  /**
+   * Store backend.  Defaults to MemoryStore.
+   * Pass a RedisStore for production multi-instance deployments.
+   */
+  store?: RateLimiterStore;
+  /**
+   * When the store throws (e.g. Redis unreachable), allow the request through
+   * instead of blocking it.  Defaults to false (fail-closed).
+   * Set to true only if you prefer availability over strict rate enforcement.
+   */
+  failOpen?: boolean;
 }
 
-interface WindowEntry {
-  count: number;
-  resetAt: number;
+// ============================================================================
+// Metrics
+// ============================================================================
+
+/** In-process counter for `tonaiagent_rate_limit_hit_total{bucket,result}`. */
+const metrics: Record<string, Record<string, number>> = {};
+
+function recordMetric(bucket: string, result: 'allowed' | 'blocked' | 'error'): void {
+  if (!metrics[bucket]) metrics[bucket] = {};
+  metrics[bucket][result] = (metrics[bucket][result] ?? 0) + 1;
+}
+
+/**
+ * Return a Prometheus-compatible text snapshot of the rate-limit hit counter.
+ * Merge this into your `/metrics` endpoint.
+ */
+export function getRateLimitMetrics(): string {
+  const lines: string[] = [
+    '# HELP tonaiagent_rate_limit_hit_total Total rate-limit decisions',
+    '# TYPE tonaiagent_rate_limit_hit_total counter',
+  ];
+  for (const [bucket, results] of Object.entries(metrics)) {
+    for (const [result, count] of Object.entries(results)) {
+      lines.push(
+        `tonaiagent_rate_limit_hit_total{bucket="${bucket}",result="${result}"} ${count}`,
+      );
+    }
+  }
+  return lines.join('\n');
+}
+
+/** Reset all metrics counters (useful in tests). */
+export function resetRateLimitMetrics(): void {
+  for (const key of Object.keys(metrics)) {
+    delete metrics[key];
+  }
 }
 
 // ============================================================================
@@ -33,7 +94,7 @@ interface WindowEntry {
 // ============================================================================
 
 /**
- * In-memory sliding-window rate limiter.
+ * Sliding-window rate limiter backed by a pluggable RateLimiterStore.
  *
  * Call `check(req)` on every incoming request.  If the limit has not been
  * exceeded the method returns `null` (pass-through).  If the limit IS
@@ -42,12 +103,15 @@ interface WindowEntry {
  */
 export class RateLimiter {
   private readonly config: Required<RateLimitConfig>;
-  private readonly windows = new Map<string, WindowEntry>();
 
   constructor(config: RateLimitConfig) {
     this.config = {
-      keyExtractor: defaultKeyExtractor,
-      ...config,
+      bucket: config.bucket ?? 'default',
+      keyExtractor: config.keyExtractor ?? defaultKeyExtractor,
+      store: config.store ?? new MemoryStore(),
+      failOpen: config.failOpen ?? false,
+      windowMs: config.windowMs,
+      max: config.max,
     };
   }
 
@@ -55,21 +119,35 @@ export class RateLimiter {
    * Check whether the request is within the rate limit.
    * Returns `null` if the request is allowed, or a 429 response if blocked.
    */
-  check(req: AgentControlRequest): AgentControlResponse | null {
+  async check(req: AgentControlRequest): Promise<AgentControlResponse | null> {
     const key = this.config.keyExtractor(req);
-    const now = Date.now();
-    const entry = this.windows.get(key);
+    const { bucket, windowMs, max, store, failOpen } = this.config;
 
-    if (!entry || now >= entry.resetAt) {
-      // Start a new window
-      this.windows.set(key, { count: 1, resetAt: now + this.config.windowMs });
-      return null;
+    let count: number;
+    let ttlMs: number;
+
+    try {
+      ({ count, ttlMs } = await store.incr(key, windowMs));
+    } catch {
+      recordMetric(bucket, 'error');
+      if (failOpen) {
+        return null;
+      }
+      // Fail-closed: treat as if limit is exceeded to protect the system
+      return {
+        statusCode: 429,
+        body: {
+          success: false,
+          error: 'Rate limit store unavailable — please retry later',
+          code: 'RATE_LIMIT_EXCEEDED' as const,
+          retryAfter: Math.ceil(windowMs / 1000),
+        },
+      };
     }
 
-    entry.count++;
-
-    if (entry.count > this.config.max) {
-      const retryAfterSecs = Math.ceil((entry.resetAt - now) / 1000);
+    if (count > max) {
+      recordMetric(bucket, 'blocked');
+      const retryAfterSecs = Math.ceil(ttlMs / 1000);
       return {
         statusCode: 429,
         body: {
@@ -81,15 +159,18 @@ export class RateLimiter {
       };
     }
 
+    recordMetric(bucket, 'allowed');
     return null;
   }
 
-  /** Reset the counter for a specific key (useful in tests). */
+  /**
+   * Reset the counter for a specific key (or all keys) when using a MemoryStore.
+   * No-op for other store backends.
+   */
   reset(key?: string): void {
-    if (key !== undefined) {
-      this.windows.delete(key);
-    } else {
-      this.windows.clear();
+    const { store } = this.config;
+    if (store instanceof MemoryStore) {
+      store.reset(key);
     }
   }
 }
@@ -108,6 +189,45 @@ function defaultKeyExtractor(req: AgentControlRequest): string {
 }
 
 // ============================================================================
+// Store factory — reads RATE_LIMIT_STORE env var
+// ============================================================================
+
+/**
+ * Build the appropriate store from environment variables.
+ *
+ * RATE_LIMIT_STORE=memory  (default) — MemoryStore
+ * RATE_LIMIT_STORE=redis             — RedisStore (requires REDIS_URL)
+ * RATE_LIMIT_STORE=noop              — NoOpStore  (explicit bypass only)
+ *
+ * When redis is requested but REDIS_URL is absent, throws to prevent silent
+ * misconfiguration.
+ */
+export async function createStoreFromEnv(): Promise<RateLimiterStore> {
+  const backend = process.env['RATE_LIMIT_STORE'] ?? 'memory';
+
+  switch (backend) {
+    case 'redis': {
+      const redisUrl = process.env['REDIS_URL'];
+      if (!redisUrl) {
+        throw new Error(
+          'RATE_LIMIT_STORE=redis requires REDIS_URL to be set',
+        );
+      }
+      // Lazy-require keeps ioredis optional — only needed when RATE_LIMIT_STORE=redis.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const IoRedis = require('ioredis') as { default: new (url: string) => import('./rate-limit-stores/redis.js').RedisClient };
+      const RedisConstructor = IoRedis.default ?? (IoRedis as unknown as new (url: string) => import('./rate-limit-stores/redis.js').RedisClient);
+      const { RedisStore } = await import('./rate-limit-stores/redis.js');
+      return new RedisStore(new RedisConstructor(redisUrl));
+    }
+    case 'noop':
+      return new NoOpStore();
+    default:
+      return new MemoryStore();
+  }
+}
+
+// ============================================================================
 // Pre-built Rate Limiters
 // ============================================================================
 
@@ -115,20 +235,26 @@ function defaultKeyExtractor(req: AgentControlRequest): string {
  * Standard rate limit: 100 requests per 15-minute window.
  * Suitable for general read endpoints.
  */
-export function createStandardRateLimit(): RateLimiter {
-  return new RateLimiter({
+export function createStandardRateLimit(store?: RateLimiterStore): RateLimiter {
+  const cfg: RateLimitConfig = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
-  });
+    bucket: 'standard',
+  };
+  if (store !== undefined) cfg.store = store;
+  return new RateLimiter(cfg);
 }
 
 /**
  * Trade/mutation rate limit: 10 requests per 1-minute window.
  * Suitable for state-mutating endpoints (start/stop/restart).
  */
-export function createTradeRateLimit(): RateLimiter {
-  return new RateLimiter({
+export function createTradeRateLimit(store?: RateLimiterStore): RateLimiter {
+  const cfg: RateLimitConfig = {
     windowMs: 60 * 1000, // 1 minute
     max: 10,
-  });
+    bucket: 'trade',
+  };
+  if (store !== undefined) cfg.store = store;
+  return new RateLimiter(cfg);
 }

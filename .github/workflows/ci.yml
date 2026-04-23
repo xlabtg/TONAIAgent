@@ -124,6 +124,41 @@ jobs:
       - name: Run tests
         run: npm test
 
+  test-integration-redis:
+    name: Integration Tests (Redis)
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install ioredis
+        run: npm install --no-save ioredis
+
+      - name: Run Redis integration tests
+        run: npm test -- tests/integration/rate-limit-redis.test.ts
+        env:
+          REDIS_URL: redis://localhost:6379
+          REDIS_INTEGRATION_TEST: 'true'
+
   security:
     name: Security Audit
     runs-on: ubuntu-latest
