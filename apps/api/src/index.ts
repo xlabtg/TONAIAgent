@@ -95,7 +95,8 @@ async function main(): Promise<void> {
 
     // Prometheus metrics
     if (req.method === 'GET' && req.url === '/metrics') {
-      return metricsHandler(req, res);
+      void metricsHandler(req, res);
+      return;
     }
 
     // All other routes — placeholder until full router is wired (issue #08)
