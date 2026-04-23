@@ -389,6 +389,7 @@
   ],
   "scripts": {
     "build": "npm run build:core && npm run build:extended && npm run build:services && npm run build:connectors && npm run build:research && npm run build:packages",
+    "contracts:build": "cd contracts && npm run build",
     "build:runtime": "tsup --config tsup.config.ts --clean",
     "build:core": "tsup --config tsup.config.core.ts --clean",
     "build:extended": "tsup --config tsup.config.extended.ts --clean",

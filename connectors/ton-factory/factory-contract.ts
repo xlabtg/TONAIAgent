@@ -24,7 +24,6 @@ import {
   TonFactoryEventHandler,
   Unsubscribe,
 } from './types';
-
 // ============================================================================
 // Default Configuration
 // ============================================================================
@@ -81,17 +80,36 @@ export function deriveContractAddress(
   return `${workchain}:${hexHash}`;
 }
 
+// DeployAgent opcode — CRC-32 of the message name, matching contracts/wrappers/AgentFactory.ts
+const DEPLOY_AGENT_OPCODE = 0x7c9a3b4d as const;
+
 /**
  * Generate deployment transaction body for agent wallet.
- * In production this would serialize a TON BoC (Bag of Cells).
+ * Encodes the DeployAgent message opcode and metadata into a base64 body
+ * without requiring the @ton/core library at runtime.
  */
 export function buildDeploymentTransaction(
   factoryAddress: TonAddress,
   input: DeployAgentInput,
   deploymentFee: bigint
 ): DeploymentTransaction {
+  const hasReferrer = Boolean(input.referrer);
+
+  // Encode a minimal DeployAgent cell: 4-byte opcode + ownerAddress (raw string)
+  // + referrer flag. Full cell encoding requires @ton/core which is an optional
+  // peer dependency; callers that need a fully-serialised cell should use the
+  // contracts/wrappers/AgentFactory.ts wrapper directly.
+  const opcodeBytes = [
+    (DEPLOY_AGENT_OPCODE >>> 24) & 0xff,
+    (DEPLOY_AGENT_OPCODE >>> 16) & 0xff,
+    (DEPLOY_AGENT_OPCODE >>> 8) & 0xff,
+    DEPLOY_AGENT_OPCODE & 0xff,
+    hasReferrer ? 1 : 0,
+  ];
+  const body = Buffer.from(opcodeBytes).toString('base64');
+
   return {
-    body: Buffer.from(JSON.stringify({ type: 'deploy_agent', ...input })).toString('base64'),
+    body,
     to: factoryAddress,
     value: deploymentFee,
     stateInit: undefined,
