@@ -6,6 +6,13 @@ const require = createRequire(import.meta.url);
 const noAiPromptConcat = require('./eslint-local-rules/no-ai-prompt-concat.js');
 const noSimImport = require('./eslint-local-rules/no-sim-import.js');
 
+const localPlugin = {
+  rules: {
+    'no-ai-prompt-concat': noAiPromptConcat,
+    'no-sim-import': noSimImport,
+  },
+};
+
 export default [
   {
     ignores: [
@@ -45,14 +52,7 @@ export default [
   {
     files: ['core/ai/**/*.ts', 'services/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
-    plugins: {
-      local: {
-        rules: {
-          'no-ai-prompt-concat': noAiPromptConcat,
-          'no-sim-import': noSimImport,
-        },
-      },
-    },
+    plugins: { local: localPlugin },
     rules: {
       'local/no-ai-prompt-concat': 'error',
     },
@@ -62,14 +62,7 @@ export default [
   {
     files: ['config/**/*.ts', 'core/**/*.ts', 'apps/**/*.ts', 'extended/**/*.ts', 'connectors/**/*.ts', 'packages/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
-    plugins: {
-      local: {
-        rules: {
-          'no-ai-prompt-concat': noAiPromptConcat,
-          'no-sim-import': noSimImport,
-        },
-      },
-    },
+    plugins: { local: localPlugin },
     rules: {
       'local/no-sim-import': 'error',
     },
