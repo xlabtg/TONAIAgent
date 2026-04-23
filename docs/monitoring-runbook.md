@@ -12,13 +12,14 @@ monitoring stack in production.
 1. [Architecture Overview](#1-architecture-overview)
 2. [Alert Thresholds Reference](#2-alert-thresholds-reference)
 3. [Circuit Breaker Operation](#3-circuit-breaker-operation)
-4. [Alerting Channels](#4-alerting-channels)
-5. [Grafana Dashboards](#5-grafana-dashboards)
-6. [Routine Checks](#6-routine-checks)
-7. [Configuration Reference](#7-configuration-reference)
-8. [Emergency Admin Commands](#8-emergency-admin-commands)
-9. [Health Check Endpoints](#9-health-check-endpoints)
-10. [Log Reference](#10-log-reference)
+4. [Circuit Breaker State Persistence](#4-circuit-breaker-state-persistence)
+5. [Alerting Channels](#5-alerting-channels)
+6. [Grafana Dashboards](#6-grafana-dashboards)
+7. [Routine Checks](#7-routine-checks)
+8. [Configuration Reference](#8-configuration-reference)
+9. [Emergency Admin Commands](#9-emergency-admin-commands)
+10. [Health Check Endpoints](#10-health-check-endpoints)
+11. [Log Reference](#11-log-reference)
 
 ---
 
@@ -189,7 +190,124 @@ for (const id of paused) {
 
 ---
 
-## 4. Alerting Channels
+## 4. Circuit Breaker State Persistence
+
+### Why persistence matters
+
+Without a persistence layer the circuit breaker's state lives only in memory.
+After a process restart a breaker that was tripped comes back in the *ok* state
+and resumes accepting trading traffic — defeating the purpose of the emergency
+stop.  In a multi-replica deployment each replica maintains independent state,
+so they can disagree on whether the breaker is tripped.
+
+### BreakerStateStore interface
+
+`services/observability/breaker-state-store.ts` defines the `BreakerStateStore`
+interface.  Two implementations ship out of the box:
+
+| Class | Module | Use-case |
+|-------|--------|----------|
+| `MemoryStateStore` | `breaker-state-store.ts` | Unit tests, single-instance dev |
+| `RedisStateStore` | `breaker-state-redis.ts` | Production / multi-replica |
+
+### Wiring the Redis-backed store
+
+```typescript
+import { createCircuitBreaker } from './services/observability/circuit-breaker';
+import { createRedisStateStore } from './services/observability/breaker-state-redis';
+import { createEmergencyController } from './core/security/emergency';
+
+// REDIS_URL must be set in the environment.
+const store = await createRedisStateStore(/* maxHistory = */ 100);
+const ec = createEmergencyController({ autoTriggerEnabled: true });
+
+const cb = createCircuitBreaker(ec, {}, store);
+
+// IMPORTANT: call initialize() before accepting any trading traffic.
+// Throws (fail-closed) if Redis is unreachable at startup.
+await cb.initialize();
+
+cb.onTrip((trip) => {
+  console.error('Circuit breaker trip:', trip);
+});
+
+// In your monitoring loop:
+setInterval(async () => {
+  await cb.checkAndTrip(await collectCurrentMetrics());
+}, 30_000);
+
+// On graceful shutdown:
+process.on('SIGTERM', async () => {
+  await cb.close();
+});
+```
+
+### Fail-closed startup behaviour
+
+`initialize()` calls `store.load()`.  If the store throws (e.g. Redis is down)
+the error propagates and the process should refuse to start rather than accept
+trading traffic with an unknown breaker state.  Wire this into your readiness
+probe or startup sequence accordingly.
+
+### Multi-replica coordination
+
+When any replica trips the breaker it calls `store.save()`, which publishes the
+new state to the `cb:events` Redis pub/sub channel.  All other replicas that
+have called `initialize()` are subscribed and update their in-memory state
+within milliseconds.
+
+### Rolling history
+
+The last 100 transitions (default) are stored in a Redis list (`cb:history`).
+Retrieve them programmatically:
+
+```typescript
+const history = await cb.getHistory(50); // up to 50 most recent entries
+```
+
+Each entry is a `BreakerTransition` containing the full `CircuitTripEvent` and
+an ISO-8601 timestamp.  Use this for post-incident dashboarding and analysis.
+
+### Redis key layout
+
+| Key | Type | Contents |
+|-----|------|----------|
+| `cb:state` | String | JSON-encoded `BreakerState` snapshot |
+| `cb:history` | List | JSON-encoded `BreakerTransition` entries (newest at index 0) |
+| `cb:events` | Pub/Sub channel | JSON-encoded `BreakerState` on each transition |
+
+### Ops procedures
+
+**Inspect current state**
+
+```bash
+redis-cli GET cb:state | python3 -m json.tool
+```
+
+**Inspect recent history**
+
+```bash
+redis-cli LRANGE cb:history 0 9
+```
+
+**Manually clear a tripped state** (use with caution — validate the underlying
+incident is resolved first):
+
+```bash
+redis-cli SET cb:state '{"isTripped":false,"tripCount":0,"lastTrippedAt":null,"lastTripReason":null,"updatedAt":"'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"}'
+redis-cli PUBLISH cb:events "$(redis-cli GET cb:state)"
+```
+
+**Required environment variables**
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REDIS_URL` | Yes (Redis store) | ioredis-compatible connection URL, e.g. `redis://localhost:6379` |
+| `BREAKER_STATE_STORE` | No | Set to `redis` to use `RedisStateStore`; defaults to `MemoryStateStore` |
+
+---
+
+## 5. Alerting Channels
 
 ### 4.1 Console (always active)
 
@@ -280,7 +398,7 @@ createAlertingManager({
 
 ---
 
-## 5. Grafana Dashboards
+## 6. Grafana Dashboards
 
 Dashboard templates are in `infrastructure/grafana/`.
 
@@ -302,7 +420,7 @@ Prometheus alert rules.
 
 ---
 
-## 6. Routine Checks
+## 7. Routine Checks
 
 ### Daily
 
@@ -336,7 +454,7 @@ Prometheus alert rules.
 
 ---
 
-## 7. Configuration Reference
+## 8. Configuration Reference
 
 ### Circuit Breaker
 
@@ -392,7 +510,7 @@ const alerts = createAlertService({
 
 ---
 
-## 8. Emergency Admin Commands
+## 9. Emergency Admin Commands
 
 ### Via TypeScript (service layer)
 
@@ -431,7 +549,7 @@ await ec.resolveEmergency(active[0].id, 'operator-name', 'Resolution description
 
 ---
 
-## 9. Health Check Endpoints
+## 10. Health Check Endpoints
 
 The `ProductionMonitoringService` exposes two HTTP-style endpoints:
 
@@ -476,7 +594,7 @@ readinessProbe:
 
 ---
 
-## 10. Log Reference
+## 11. Log Reference
 
 All components use the structured logger from `services/observability/logger.ts`.
 Log entries are JSON-formatted with the following fields:
