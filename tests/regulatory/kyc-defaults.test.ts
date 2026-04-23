@@ -133,7 +133,9 @@ describe('AgentOrchestrator — default-on KYC gate (Issue #330)', () => {
     ).rejects.toMatchObject({ code: 'KYC_REQUIRED' });
   });
 
-  it('still allows demo strategy without any KYC record (demo bypass)', async () => {
+  it('still allows demo strategy without any KYC record (bypass via server registry isDemoStrategy flag)', async () => {
+    // The bypass is granted because STRATEGY_REGISTRY['demo'].isDemoStrategy === true,
+    // not because of a string comparison on the strategy name.
     const { AgentOrchestrator } = await import('../../core/agents/orchestrator/orchestrator');
     const orchestrator = new AgentOrchestrator();
 

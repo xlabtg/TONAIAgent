@@ -102,7 +102,7 @@ const orchestrator = new AgentOrchestrator(
 );
 ```
 
-**Demo strategy bypass:** Agents created with `strategy: 'demo'` always bypass the KYC gate. This allows safe onboarding demonstrations without requiring real identity documents.
+**Demo strategy policy (Issue #369):** Agents created with a system-defined demo strategy bypass the KYC gate. This is granted by the server-side `isDemoStrategy: true` flag in the orchestrator's `STRATEGY_REGISTRY`, never by matching the strategy name string supplied by a user. User payloads that attempt to set `isDemoStrategy` are rejected by schema validation (`CreateAgentSchema` and `ConfigureAgentSchema` use `.strict()` to block unknown fields). Demo strategies are also restricted to simulation mode — they cannot trade real funds regardless of the user's KYC tier.
 
 ### Execution Engine
 
