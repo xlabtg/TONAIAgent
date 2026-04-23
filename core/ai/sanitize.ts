@@ -23,6 +23,21 @@ export interface SanitizeOptions {
   stripControlChars?: boolean;
   /** Strip common prompt-injection markers such as [system] or {{admin}}. Default: true */
   stripInjectionMarkers?: boolean;
+  /**
+   * Apply Unicode NFKC normalization and strip zero-width / bidi control
+   * characters before other processing. Default: true
+   */
+  normalizeUnicode?: boolean;
+  /**
+   * Detect and flag large encoded payloads (base64/base32/hex runs).
+   * Runs above the threshold are replaced with [blocked-encoded]. Default: true
+   */
+  blockEncodedPayloads?: boolean;
+  /**
+   * Minimum run length (chars) to treat as a suspicious encoded payload.
+   * Default: 40
+   */
+  encodedPayloadThreshold?: number;
 }
 
 const DEFAULT_OPTIONS: Required<SanitizeOptions> = {
@@ -30,7 +45,79 @@ const DEFAULT_OPTIONS: Required<SanitizeOptions> = {
   stripHtml: true,
   stripControlChars: true,
   stripInjectionMarkers: true,
+  normalizeUnicode: true,
+  blockEncodedPayloads: true,
+  encodedPayloadThreshold: 40,
 };
+
+// ============================================================================
+// Unicode normalization helpers
+// ============================================================================
+
+/**
+ * Zero-width and bidirectional control code points that are invisible in most
+ * renderers but can be used to hide or reorder injection payloads.
+ *
+ * Ranges:
+ *   U+200B–U+200F  zero-width space, ZWNJ, ZWJ, LRM, RLM
+ *   U+2028–U+202F  line/paragraph separators, bidi format chars
+ *   U+2060–U+206F  word joiner and other invisible operators
+ *   U+FE00–U+FE0F  variation selectors (visual variants, no semantic content)
+ *   U+FEFF         BOM / zero-width no-break space
+ *   U+061C         Arabic letter mark
+ *   U+180E         Mongolian vowel separator
+ */
+const ZERO_WIDTH_AND_BIDI_RE =
+  /[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFE00-\uFE0F\uFEFF\u061C\u180E]/gu;
+
+/**
+ * Normalize a string for safe downstream processing:
+ *   1. NFKC — maps fullwidth/halfwidth, compatibility ligatures, superscripts,
+ *      etc. to their canonical ASCII/Latin equivalents.
+ *   2. Strip zero-width and bidi control characters that are invisible in UIs
+ *      but could smuggle payload fragments past regex detectors.
+ */
+export function normalizeUnicodeInput(input: string): string {
+  return input.normalize('NFKC').replace(ZERO_WIDTH_AND_BIDI_RE, '');
+}
+
+// ============================================================================
+// Encoded payload detection
+// ============================================================================
+
+/**
+ * Long continuous base64 runs (standard + URL-safe alphabet).
+ * A threshold of 40 chars = ~30 bytes decoded, enough to carry "ignore all
+ * previous instructions" but short enough not to false-positive on hashes.
+ */
+function buildBase64Pattern(threshold: number): RegExp {
+  const n = Math.max(8, Math.floor(threshold / 4)) * 4; // multiple of 4
+  return new RegExp(`(?:[A-Za-z0-9+/\\-_]{4}){${n / 4},}={0,2}`, 'g');
+}
+
+/**
+ * Continuous lowercase hex runs — used for hex-encoded payloads.
+ * 40 hex chars = 20 bytes.
+ */
+function buildHexPattern(threshold: number): RegExp {
+  return new RegExp(`[0-9a-fA-F]{${threshold},}`, 'g');
+}
+
+/**
+ * Base32 alphabet runs (RFC 4648 — A-Z + 2-7, case-insensitive).
+ * 40 base32 chars = 25 bytes decoded.
+ */
+function buildBase32Pattern(threshold: number): RegExp {
+  return new RegExp(`[A-Z2-7]{${threshold},}={0,6}`, 'gi');
+}
+
+function blockEncodedPayloads(input: string, threshold: number): string {
+  let s = input;
+  s = s.replace(buildBase64Pattern(threshold), '[blocked-encoded]');
+  s = s.replace(buildHexPattern(threshold), '[blocked-encoded]');
+  s = s.replace(buildBase32Pattern(threshold), '[blocked-encoded]');
+  return s;
+}
 
 // ============================================================================
 // Core Sanitization
@@ -41,9 +128,11 @@ const DEFAULT_OPTIONS: Required<SanitizeOptions> = {
  *
  * Steps (in order):
  * 1. Enforce max length
- * 2. Strip ASCII control characters
- * 3. Strip HTML tags
- * 4. Remove prompt-injection markers
+ * 2. Unicode NFKC normalization + zero-width/bidi stripping
+ * 3. Strip ASCII control characters
+ * 4. Strip HTML tags
+ * 5. Remove prompt-injection markers
+ * 6. Block large encoded payloads (base64/base32/hex)
  */
 export function sanitizeUserInput(input: string, options: SanitizeOptions = {}): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -54,21 +143,30 @@ export function sanitizeUserInput(input: string, options: SanitizeOptions = {}):
     s = s.slice(0, opts.maxLength);
   }
 
-  // 2. Strip control characters (keeps \t \n \r which are legitimate whitespace)
+  // 2. Unicode normalization — map lookalikes to ASCII, strip invisible chars
+  if (opts.normalizeUnicode) {
+    s = normalizeUnicodeInput(s);
+  }
+
+  // 3. Strip control characters (keeps \t \n \r which are legitimate whitespace)
   if (opts.stripControlChars) {
-    // eslint-disable-next-line no-control-regex
     s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
   }
 
-  // 3. Strip HTML tags and HTML comments
+  // 4. Strip HTML tags and HTML comments
   if (opts.stripHtml) {
     s = s.replace(/<!--[\s\S]*?-->/g, '');
     s = s.replace(/<[^>]*>/g, '');
   }
 
-  // 4. Remove prompt-injection markers
+  // 5. Remove prompt-injection markers
   if (opts.stripInjectionMarkers) {
     s = removeInjectionMarkers(s);
+  }
+
+  // 6. Block large encoded payloads
+  if (opts.blockEncodedPayloads) {
+    s = blockEncodedPayloads(s, opts.encodedPayloadThreshold);
   }
 
   return s;
@@ -132,6 +230,9 @@ export function sanitizeAddress(address: string): string {
 /**
  * Strip common prompt-injection markers from a string.
  * These markers attempt to override the AI's instruction context.
+ *
+ * After NFKC normalization the input already has fullwidth/homoglyph variants
+ * collapsed, so these patterns work on normalized text.
  */
 function removeInjectionMarkers(input: string): string {
   let s = input;
@@ -139,8 +240,15 @@ function removeInjectionMarkers(input: string): string {
   // [system], [admin], [developer], [INST], [/INST], etc.
   s = s.replace(/\[(?:system|admin|developer|inst|\/inst|user|assistant)\]/gi, '[blocked]');
 
-  // {{system}}, {{admin}}, etc.
+  // URL-encoded variants: %5Bsystem%5D  (%5B=[  %5D=])
+  s = s.replace(
+    /%5[Bb](?:system|admin|developer|inst|user|assistant)%5[Dd]/gi,
+    '[blocked]',
+  );
+
+  // {{system}}, {{admin}}, etc. (and HTML-entity {{ → &#123;&#123;)
   s = s.replace(/\{\{(?:system|admin|developer)\}\}/gi, '[blocked]');
+  s = s.replace(/&#123;&#123;(?:system|admin|developer)&#125;&#125;/gi, '[blocked]');
 
   // Markdown-style fenced code blocks with privileged labels
   s = s.replace(/```(?:system|hidden|secret|admin|developer)[^`]*```/gi, '[blocked]');
@@ -148,8 +256,11 @@ function removeInjectionMarkers(input: string): string {
   // HTML-style comments that could smuggle instructions
   s = s.replace(/<!--[\s\S]*?-->/g, '');
 
-  // Base64 payload attempts (common obfuscation)
+  // Base64 payload attempts (explicit "base64:" prefix)
   s = s.replace(/base64\s*:\s*[A-Za-z0-9+/=]{20,}/gi, '[blocked]');
+
+  // URL-encoded "base64" prefix: base64%3A
+  s = s.replace(/base64%3[Aa]\s*[A-Za-z0-9+/=]{20,}/gi, '[blocked]');
 
   return s;
 }
