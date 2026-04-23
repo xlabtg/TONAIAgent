@@ -1,0 +1,216 @@
+{
+  "version": "1.0.0",
+  "generatedFrom": "docs/mainnet-readiness-checklist.md",
+  "items": [
+    {
+      "id": "sec-telegram-2fa",
+      "title": "Telegram 2FA enabled",
+      "description": "Enable Two-Step Verification in Telegram: Settings → Privacy and Security → Two-Step Verification",
+      "category": "account-security",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "sec-recovery-code",
+      "title": "Telegram recovery code saved",
+      "description": "Store your 2FA recovery code offline (e.g., printed or in a password manager). If you lose access to your account, you lose access to your agents.",
+      "category": "account-security",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "sec-sessions-reviewed",
+      "title": "Active Telegram sessions reviewed",
+      "description": "Remove unknown sessions: Settings → Privacy and Security → Active Sessions",
+      "category": "account-security",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "sec-email-set",
+      "title": "Telegram account email set",
+      "description": "Add a recovery email to your Telegram account for account recovery.",
+      "category": "account-security",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "wallet-dedicated",
+      "title": "Dedicated trading wallet created",
+      "description": "Create a separate TON wallet exclusively for agent trading. Do not use your primary savings wallet.",
+      "category": "wallet",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "wallet-address-verified",
+      "title": "Wallet address verified",
+      "description": "Double-check your TON wallet address character by character. A single typo can result in permanent fund loss.",
+      "category": "wallet",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "wallet-backup-secured",
+      "title": "Wallet backup secured",
+      "description": "Your seed phrase is stored securely offline. Never store it digitally or share it with anyone.",
+      "category": "wallet",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "wallet-test-transaction",
+      "title": "Test transaction completed",
+      "description": "Send a small test transaction (e.g., 0.1 TON) to and from your trading wallet to confirm it works correctly.",
+      "category": "wallet",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "wallet-permissions-reviewed",
+      "title": "Wallet permissions reviewed",
+      "description": "Review which applications and contracts have permissions to interact with your wallet.",
+      "category": "wallet",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "platform-simulation-understood",
+      "title": "Simulation mode understood",
+      "description": "I have read the User Security Guide and understand the difference between simulation and live trading.",
+      "category": "platform",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "platform-risk-disclosures-read",
+      "title": "Risk disclosures read",
+      "description": "I have read the full Risk Disclosures document and accept the risks.",
+      "category": "platform",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "platform-strategy-understood",
+      "title": "Strategy behavior understood",
+      "description": "I understand how my chosen strategy behaves, including when it buys, sells, and what triggers a stop-loss.",
+      "category": "platform",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "platform-emergency-stop-known",
+      "title": "Emergency stop procedure known",
+      "description": "I know how to immediately stop my agent: Open the Mini App → Agents → tap agent → Stop Agent Permanently",
+      "category": "platform",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "sim-min-period",
+      "title": "Minimum simulation period completed",
+      "description": "My agent has run in simulation mode for at least 7 days (14 days recommended).",
+      "category": "simulation",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "sim-trade-history-reviewed",
+      "title": "Simulation trade history reviewed",
+      "description": "I have reviewed all simulated trades and the strategy is behaving as expected.",
+      "category": "simulation",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "sim-drawdown-acceptable",
+      "title": "Simulation drawdown acceptable",
+      "description": "The maximum drawdown in simulation is within my acceptable risk tolerance.",
+      "category": "simulation",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "sim-roi-reviewed",
+      "title": "Simulation ROI reviewed",
+      "description": "I understand that simulation performance is not a guarantee of live performance.",
+      "category": "simulation",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "risk-level-low",
+      "title": "Risk level set to low for first 30 days",
+      "description": "Start conservative. You can increase your risk level after 30 days of successful live trading.",
+      "category": "risk",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "risk-capital-allocation",
+      "title": "Initial capital allocation set to 1–5%",
+      "description": "Allocate only a small fraction of your portfolio for the first month.",
+      "category": "risk",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "risk-drawdown-limit",
+      "title": "Maximum drawdown limit configured",
+      "description": "Set a drawdown limit you are comfortable with. The agent will stop automatically if this limit is reached.",
+      "category": "risk",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "risk-daily-loss-limit",
+      "title": "Daily loss limit set",
+      "description": "Configure a daily maximum loss to prevent runaway losses.",
+      "category": "risk",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "mon-notifications-enabled",
+      "title": "Telegram notifications enabled",
+      "description": "Enable trade notifications so you are alerted immediately when your agent executes trades.",
+      "category": "monitoring",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "mon-daily-checkin",
+      "title": "Daily check-in plan in place",
+      "description": "Plan to review your agent dashboard at least once per day during the first week.",
+      "category": "monitoring",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "mon-emergency-contact",
+      "title": "Emergency contact saved",
+      "description": "Know how to reach platform support in case of issues.",
+      "category": "monitoring",
+      "mandatoryForLive": false
+    },
+    {
+      "id": "final-all-sections-complete",
+      "title": "All checklist sections completed",
+      "description": "I have completed all sections of this checklist.",
+      "category": "final-acknowledgment",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "final-ai-loses-money",
+      "title": "AI agents can and do lose money",
+      "description": "I understand that AI agents can and do lose money.",
+      "category": "final-acknowledgment",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "final-afford-to-lose",
+      "title": "Only investing funds I can afford to lose",
+      "description": "I am only investing funds I can afford to lose entirely.",
+      "category": "final-acknowledgment",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "final-no-pressure",
+      "title": "No pressure or incentive to enable live trading",
+      "description": "I have not been pressured or incentivized to enable live trading before I feel ready.",
+      "category": "final-acknowledgment",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "final-not-primary-income",
+      "title": "Not relying on platform as primary income",
+      "description": "I am not relying on this platform as my primary source of income.",
+      "category": "final-acknowledgment",
+      "mandatoryForLive": true
+    },
+    {
+      "id": "final-24-7-trading",
+      "title": "Crypto markets are 24/7 — agents may trade at any time",
+      "description": "I understand that crypto markets are available 24/7 and my agent may trade at any time.",
+      "category": "final-acknowledgment",
+      "mandatoryForLive": true
+    }
+  ]
+}

@@ -48,3 +48,17 @@ export type {
 } from './types';
 
 export { UserManager, createUserManager } from './user-manager';
+
+export type {
+  ChecklistItem,
+  ChecklistManifest,
+  AcknowledgementRecord,
+  UserChecklistStatus,
+  ChecklistGateResult,
+} from './checklist-status';
+
+export {
+  ChecklistStatusManager,
+  createChecklistStatusManager,
+  getChecklistStatusManager,
+} from './checklist-status';
