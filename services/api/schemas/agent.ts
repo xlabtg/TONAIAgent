@@ -32,8 +32,29 @@ export const ConfigureAgentSchema = z.object({
 });
 
 // ============================================================================
+// Live Trading Mode Schema
+// ============================================================================
+
+/**
+ * Schema for POST /agents/:id/enable-live-trading
+ *
+ * All three acknowledgements must be explicitly true.
+ * These correspond to the confirmation checklist shown in the UI modal
+ * and are validated server-side to prevent client-side bypass.
+ */
+export const EnableLiveTradingSchema = z.object({
+  /** User confirms real funds will be at risk */
+  acknowledgeRealFunds: z.literal(true),
+  /** User confirms the mainnet readiness checklist is complete */
+  acknowledgeMainnetChecklist: z.literal(true),
+  /** User explicitly accepts the financial risk */
+  acknowledgeRiskAccepted: z.literal(true),
+});
+
+// ============================================================================
 // Inferred Types
 // ============================================================================
 
 export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
 export type ConfigureAgentInput = z.infer<typeof ConfigureAgentSchema>;
+export type EnableLiveTradingInput = z.infer<typeof EnableLiveTradingSchema>;
