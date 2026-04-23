@@ -18,7 +18,7 @@ import fp from 'fastify-plugin';
 import {
   getSecurityHeaders,
   isBodySizeAllowed,
-  isCsrfTokenValid,
+  verifyCsrfToken,
   withTimeout,
   RequestTimeoutError,
 } from '../../../../services/api/middleware/index.js';
@@ -125,15 +125,18 @@ async function middlewareChainPlugin(app: FastifyInstance): Promise<void> {
   });
 
   // ── 6. CSRF validation ─────────────────────────────────────────────────────
+  //
+  // Double-submit cookie pattern:
+  //   1. Client reads csrf_token cookie (HttpOnly=false) issued by GET /healthz.
+  //   2. Client echoes cookie value in X-CSRF-Token request header.
+  //   3. Server verifies: header present, HMAC signature valid, not expired.
+  //
   app.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply) => {
     if (SAFE_METHODS.has(req.method.toUpperCase())) return;
 
     // Skip CSRF on /healthz and /readyz (used by infrastructure probes)
     if (req.url.startsWith('/healthz') || req.url.startsWith('/readyz')) return;
 
-    const csrfHeader = req.headers['x-csrf-token'] as string | undefined;
-
-    // When CSRF_SECRET is not set (dev mode), skip validation but warn.
     const csrfSecret = process.env['CSRF_SECRET'];
     if (!csrfSecret) {
       if (process.env['NODE_ENV'] === 'production') {
@@ -147,19 +150,18 @@ async function middlewareChainPlugin(app: FastifyInstance): Promise<void> {
       return;
     }
 
-    if (!csrfHeader) {
+    const csrfHeader = req.headers['x-csrf-token'] as string | undefined;
+    const result = verifyCsrfToken(csrfHeader, csrfSecret);
+    if (!result.valid) {
+      const messages: Record<string, string> = {
+        missing: 'Missing x-csrf-token header',
+        malformed: 'Malformed CSRF token',
+        expired: 'Expired CSRF token',
+        signature_mismatch: 'Invalid CSRF token',
+      };
       return reply.code(403).send({
         success: false,
-        error: 'Missing x-csrf-token header',
-        code: 'CSRF_INVALID',
-      });
-    }
-
-    const headers: Record<string, string> = { 'x-csrf-token': csrfHeader };
-    if (!isCsrfTokenValid(req.method.toUpperCase(), headers, csrfSecret)) {
-      return reply.code(403).send({
-        success: false,
-        error: 'Invalid CSRF token',
+        error: messages[result.reason ?? 'signature_mismatch'] ?? 'Invalid CSRF token',
         code: 'CSRF_INVALID',
       });
     }
