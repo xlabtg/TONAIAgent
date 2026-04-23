@@ -83,6 +83,26 @@ export {
 } from './orchestration';
 export type { ToolExecutor, OrchestrationConfig } from './orchestration';
 
+// Export input sanitization and injection detection
+export {
+  sanitizeUserInput,
+  normalizeUnicodeInput,
+  sanitizeStrategyName,
+  sanitizeMarketData,
+  sanitizeAddress,
+} from './sanitize';
+export type { SanitizeOptions } from './sanitize';
+
+export {
+  detectConfusables,
+  detectEncodedPayloads,
+  detectOutputEcho,
+  detectInjection,
+  detectInjectionInOutput,
+  wrapToolOutput,
+} from './injection-detector';
+export type { DetectionResult, InjectionDetectorOptions } from './injection-detector';
+
 // Export output validation pipeline
 export { parseAndValidate, validateAIOutput, buildAuditEntry } from './output-validator';
 export type {
