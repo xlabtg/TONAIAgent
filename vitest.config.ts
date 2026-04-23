@@ -9,6 +9,8 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/contracts/tests/**',
+      // Playwright E2E tests — run via `npx playwright test` in apps/telegram-miniapp/
+      '**/apps/telegram-miniapp/tests/**',
     ],
   },
 });
