@@ -4,6 +4,14 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const noAiPromptConcat = require('./eslint-local-rules/no-ai-prompt-concat.js');
+const noSimImport = require('./eslint-local-rules/no-sim-import.js');
+
+const localPlugin = {
+  rules: {
+    'no-ai-prompt-concat': noAiPromptConcat,
+    'no-sim-import': noSimImport,
+  },
+};
 
 export default [
   {
@@ -44,11 +52,19 @@ export default [
   {
     files: ['core/ai/**/*.ts', 'services/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
-    plugins: {
-      local: { rules: { 'no-ai-prompt-concat': noAiPromptConcat } },
-    },
+    plugins: { local: localPlugin },
     rules: {
       'local/no-ai-prompt-concat': 'error',
+    },
+  },
+  // Simulation guard: prevent production code from importing the JS factory
+  // simulation (tests/fakes/factory-contract.fake). Only test files may use it.
+  {
+    files: ['config/**/*.ts', 'core/**/*.ts', 'apps/**/*.ts', 'extended/**/*.ts', 'connectors/**/*.ts', 'packages/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    plugins: { local: localPlugin },
+    rules: {
+      'local/no-sim-import': 'error',
     },
   },
 ];
