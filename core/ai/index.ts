@@ -149,27 +149,41 @@ export class AIService {
     this.registry = new ProviderRegistry();
 
     // Initialize providers
-    if (config.providers?.groq?.apiKey || process.env.GROQ_API_KEY) {
+    // Deprecation: falling back to process.env for API keys will be removed in the next minor release.
+    // Load secrets via initConfig() at startup and pass apiKey explicitly in AIServiceConfig.providers.
+    const warnDirectEnv = (key: string) =>
+      console.warn(
+        `[SecretsLoader] Deprecation: ${key} read directly from process.env. ` +
+          'Pass the key via AIServiceConfig.providers after loading secrets with initConfig().'
+      );
+
+    if (config.providers?.groq?.apiKey || process.env['GROQ_API_KEY']) {
+      if (!config.providers?.groq?.apiKey && process.env['GROQ_API_KEY']) warnDirectEnv('GROQ_API_KEY');
       this.registry.register(createGroqProvider(config.providers?.groq));
     }
 
-    if (config.providers?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY) {
+    if (config.providers?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY']) {
+      if (!config.providers?.anthropic?.apiKey && process.env['ANTHROPIC_API_KEY']) warnDirectEnv('ANTHROPIC_API_KEY');
       this.registry.register(createAnthropicProvider(config.providers?.anthropic));
     }
 
-    if (config.providers?.openai?.apiKey || process.env.OPENAI_API_KEY) {
+    if (config.providers?.openai?.apiKey || process.env['OPENAI_API_KEY']) {
+      if (!config.providers?.openai?.apiKey && process.env['OPENAI_API_KEY']) warnDirectEnv('OPENAI_API_KEY');
       this.registry.register(createOpenAIProvider(config.providers?.openai));
     }
 
-    if (config.providers?.google?.apiKey || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY) {
+    if (config.providers?.google?.apiKey || process.env['GOOGLE_API_KEY'] || process.env['GEMINI_API_KEY']) {
+      if (!config.providers?.google?.apiKey && (process.env['GOOGLE_API_KEY'] || process.env['GEMINI_API_KEY'])) warnDirectEnv('GOOGLE_API_KEY');
       this.registry.register(createGoogleProvider(config.providers?.google));
     }
 
-    if (config.providers?.xai?.apiKey || process.env.XAI_API_KEY) {
+    if (config.providers?.xai?.apiKey || process.env['XAI_API_KEY']) {
+      if (!config.providers?.xai?.apiKey && process.env['XAI_API_KEY']) warnDirectEnv('XAI_API_KEY');
       this.registry.register(createXAIProvider(config.providers?.xai));
     }
 
-    if (config.providers?.openrouter?.apiKey || process.env.OPENROUTER_API_KEY) {
+    if (config.providers?.openrouter?.apiKey || process.env['OPENROUTER_API_KEY']) {
+      if (!config.providers?.openrouter?.apiKey && process.env['OPENROUTER_API_KEY']) warnDirectEnv('OPENROUTER_API_KEY');
       this.registry.register(createOpenRouterProvider(config.providers?.openrouter));
     }
 

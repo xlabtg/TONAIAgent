@@ -32,20 +32,27 @@
 import { TonClient, WalletContractV4, internal } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { toNano, Address } from '@ton/core';
-import { assertComplianceGatesEnabled } from '../services/regulatory/compliance-flags';
+import { assertComplianceGatesEnabled } from '../services/regulatory/compliance-flags.js';
+import { initConfig } from '../config/index.js';
 
 // Uncomment after running `npx blueprint build`:
 // import { AgentFactory } from '../contracts/wrappers/AgentFactory';
 // import { StrategyExecutor } from '../contracts/wrappers/StrategyExecutor';
 
 const MAINNET_RPC = 'https://toncenter.com/api/v2/jsonRPC';
-const MAINNET_API_KEY = process.env.TON_MAINNET_API_KEY ?? '';
 
 const NULL_ADDR = '0:0000000000000000000000000000000000000000000000000000000000000000';
 
 async function main() {
+  // ---- 0. Load secrets and config before any business logic ----
+  // Mainnet deploys always run in strict mode — missing secrets are fatal.
+  await initConfig({ strictMode: true });
+
+  // TON_MAINNET_API_KEY is non-secret config; read directly from env
+  const MAINNET_API_KEY = process.env['TON_MAINNET_API_KEY'] ?? '';
+
   // ---- Hard-gate: require explicit opt-in ----
-  if (process.env.NETWORK !== 'mainnet') {
+  if (process.env['NETWORK'] !== 'mainnet') {
     throw new Error(
       'Mainnet deployment requires NETWORK=mainnet environment variable. ' +
       'This is an intentional safety gate — do not bypass it.'
@@ -61,12 +68,12 @@ async function main() {
   }
 
   // ---- 1. Validate environment ----
-  const mnemonic = process.env.TON_MNEMONIC;
+  const mnemonic = process.env['TON_MNEMONIC'];
   if (!mnemonic) {
     throw new Error('TON_MNEMONIC environment variable is required');
   }
 
-  const ownerAddress = process.env.FACTORY_OWNER_ADDRESS;
+  const ownerAddress = process.env['FACTORY_OWNER_ADDRESS'];
   if (!ownerAddress || ownerAddress === NULL_ADDR) {
     throw new Error(
       'FACTORY_OWNER_ADDRESS is required and must not be the null address. ' +
@@ -74,7 +81,7 @@ async function main() {
     );
   }
 
-  const treasuryAddress = process.env.FACTORY_TREASURY_ADDRESS;
+  const treasuryAddress = process.env['FACTORY_TREASURY_ADDRESS'];
   if (!treasuryAddress || treasuryAddress === NULL_ADDR) {
     throw new Error(
       'FACTORY_TREASURY_ADDRESS is required and must not be the null address. ' +
@@ -82,7 +89,7 @@ async function main() {
     );
   }
 
-  const orchestratorAddress = process.env.STRATEGY_ORCHESTRATOR_ADDRESS;
+  const orchestratorAddress = process.env['STRATEGY_ORCHESTRATOR_ADDRESS'];
   if (!orchestratorAddress || orchestratorAddress === NULL_ADDR) {
     throw new Error('STRATEGY_ORCHESTRATOR_ADDRESS is required');
   }
@@ -101,7 +108,7 @@ async function main() {
 
   // In a real deployment you would add an interactive y/n prompt here.
   // For automated CI/CD, the CONFIRM_MAINNET=yes variable acts as the gate.
-  if (process.env.CONFIRM_MAINNET !== 'yes') {
+  if (process.env['CONFIRM_MAINNET'] !== 'yes') {
     throw new Error(
       'Set CONFIRM_MAINNET=yes to confirm mainnet deployment. ' +
       'This gate exists to prevent accidental mainnet deployments.'
