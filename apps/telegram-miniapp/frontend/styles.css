@@ -937,6 +937,7 @@ body {
 
 .modal-sheet {
   position: relative;
+  z-index: 1;
   width: 100%;
   background: var(--bg2);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
