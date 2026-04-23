@@ -6,6 +6,7 @@
  * trigger an emergency stop without human intervention.
  *
  * Implements Issue #313: Monitoring, Alerting, and Incident Response
+ * Implements Issue #359: Persist Circuit Breaker State Across Restarts
  *
  * Thresholds (all configurable):
  *   Agent error rate  — warning >5% / critical >20% in a rolling window
@@ -23,6 +24,7 @@ import {
   circuitBreakerTripped,
   circuitBreakerTripsTotal,
 } from '../../core/observability/metrics';
+import type { BreakerStateStore } from './breaker-state-store';
 
 // ============================================================================
 // Types
@@ -133,11 +135,17 @@ export const DEFAULT_CIRCUIT_BREAKER_THRESHOLDS: CircuitBreakerThresholds = {
  * threshold is breached, fires a structured trip event and optionally
  * triggers the EmergencyController to pause or stop all agents.
  *
+ * Accepts an optional `BreakerStateStore` for persistence across restarts and
+ * cross-replica coordination via pub/sub.  When no store is supplied the
+ * breaker operates entirely in memory (backward-compatible with Issue #313).
+ *
  * Only critical-severity breaches invoke the EmergencyController (to avoid
  * noisy auto-stops on transient warnings).
  *
  * Usage:
- *   const cb = createCircuitBreaker(emergencyController);
+ *   const store = new MemoryStateStore();
+ *   const cb = createCircuitBreaker(emergencyController, {}, store);
+ *   await cb.initialize(); // loads persisted state before accepting traffic
  *   cb.onTrip(event => log.warn('Circuit tripped', event));
  *   await cb.checkAndTrip(currentMetrics);
  */
@@ -146,21 +154,69 @@ export class TradingCircuitBreaker {
   private readonly emergencyController: EmergencyController | null;
   private readonly handlers: Set<TripHandler> = new Set();
   private readonly log: Logger;
+  private readonly store: BreakerStateStore | null;
+
   private tripCount = 0;
+  private isTripped = false;
+  private lastTrippedAt: string | null = null;
+  private lastTripReason: string | null = null;
+
+  /** True once `initialize()` has been called (or no store is configured). */
+  private initialized: boolean;
 
   constructor(
     emergencyController: EmergencyController | null,
     thresholds: Partial<CircuitBreakerThresholds> = {},
-    logger?: Logger
+    logger?: Logger,
+    store?: BreakerStateStore | null,
   ) {
     this.emergencyController = emergencyController;
     this.thresholds = { ...DEFAULT_CIRCUIT_BREAKER_THRESHOLDS, ...thresholds };
     this.log = logger ?? createLogger('circuit-breaker');
+    this.store = store ?? null;
+    // When no store is provided there is nothing to load, so we start ready.
+    this.initialized = this.store === null;
   }
 
   // --------------------------------------------------------------------------
   // Public API
   // --------------------------------------------------------------------------
+
+  /**
+   * Load persisted state from the store and subscribe to cross-replica updates.
+   *
+   * Must be called before `checkAndTrip` when a store is configured.
+   * Throws (fail-closed) if the store is unreachable.
+   */
+  async initialize(): Promise<void> {
+    if (!this.store) {
+      this.initialized = true;
+      return;
+    }
+
+    const persisted = await this.store.load();
+    if (persisted) {
+      this.isTripped = persisted.isTripped;
+      this.tripCount = persisted.tripCount;
+      this.lastTrippedAt = persisted.lastTrippedAt;
+      this.lastTripReason = persisted.lastTripReason;
+    }
+
+    // Subscribe to state updates pushed by other replicas.
+    this.store.subscribe((state) => {
+      this.isTripped = state.isTripped;
+      this.tripCount = state.tripCount;
+      this.lastTrippedAt = state.lastTrippedAt;
+      this.lastTripReason = state.lastTripReason;
+      this.log.warn('Circuit breaker state updated from remote replica', {
+        isTripped: state.isTripped,
+        tripCount: state.tripCount,
+        lastTripReason: state.lastTripReason,
+      });
+    });
+
+    this.initialized = true;
+  }
 
   /**
    * Subscribe to trip events.
@@ -174,8 +230,18 @@ export class TradingCircuitBreaker {
   /**
    * Evaluate the provided metrics against all thresholds.
    * Trips (and optionally triggers the emergency controller) for each breach.
+   *
+   * Throws if `initialize()` has not been called when a store is configured,
+   * ensuring the breaker never evaluates metrics without knowing its state.
    */
   async checkAndTrip(metrics: CircuitBreakerMetrics): Promise<void> {
+    if (!this.initialized) {
+      throw new Error(
+        'TradingCircuitBreaker.initialize() must be called before checkAndTrip() ' +
+        'when a BreakerStateStore is configured.',
+      );
+    }
+
     // Check all conditions in order of severity (critical first so we don't
     // emit a warning trip when a critical trip fires on the same metric).
 
@@ -190,7 +256,7 @@ export class TradingCircuitBreaker {
         emergencyType: 'anomaly_detected',
       });
     } else if (metrics.agentErrorRate >= this.thresholds.agentErrorRateWarning) {
-      this._tripWarning({
+      await this._tripWarning({
         reason: 'agent_error_rate_warning',
         metricValue: metrics.agentErrorRate,
         threshold: this.thresholds.agentErrorRateWarning,
@@ -209,7 +275,7 @@ export class TradingCircuitBreaker {
         emergencyType: 'risk_limit_breach',
       });
     } else if (metrics.portfolioDrawdownPct <= this.thresholds.portfolioDrawdownWarning) {
-      this._tripWarning({
+      await this._tripWarning({
         reason: 'portfolio_drawdown_warning',
         metricValue: metrics.portfolioDrawdownPct,
         threshold: this.thresholds.portfolioDrawdownWarning,
@@ -228,7 +294,7 @@ export class TradingCircuitBreaker {
         emergencyType: 'suspicious_activity',
       });
     } else if (metrics.tradeVolumeRatio >= this.thresholds.tradeVolumeWarning) {
-      this._tripWarning({
+      await this._tripWarning({
         reason: 'trade_volume_warning',
         metricValue: metrics.tradeVolumeRatio,
         threshold: this.thresholds.tradeVolumeWarning,
@@ -259,13 +325,18 @@ export class TradingCircuitBreaker {
         emergencyType: 'system_failure',
       });
     } else if (metrics.apiLatencyP99Ms >= this.thresholds.apiLatencyWarningMs) {
-      this._tripWarning({
+      await this._tripWarning({
         reason: 'api_latency_warning',
         metricValue: metrics.apiLatencyP99Ms,
         threshold: this.thresholds.apiLatencyWarningMs,
         affectedAgentIds: metrics.affectedAgentIds,
       });
     }
+  }
+
+  /** Whether the breaker is currently in a tripped (critical) state. */
+  getIsTripped(): boolean {
+    return this.isTripped;
   }
 
   /** Current number of trips recorded (resets on `reset()`). */
@@ -278,9 +349,33 @@ export class TradingCircuitBreaker {
     return this.thresholds;
   }
 
-  /** Reset internal trip counter (does NOT restore paused agents). */
+  /**
+   * Reset internal trip counter and tripped flag.
+   * Does NOT restore paused agents.
+   */
   reset(): void {
     this.tripCount = 0;
+    this.isTripped = false;
+    this.lastTrippedAt = null;
+    this.lastTripReason = null;
+  }
+
+  /**
+   * Retrieve the rolling transition history from the store (up to `limit` entries).
+   * Returns an empty array when no store is configured.
+   */
+  async getHistory(limit = 100) {
+    if (!this.store) return [];
+    return this.store.history(limit);
+  }
+
+  /**
+   * Release store resources.  Call this on graceful shutdown.
+   */
+  async close(): Promise<void> {
+    if (this.store) {
+      await this.store.close();
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -325,6 +420,11 @@ export class TradingCircuitBreaker {
       }
     }
 
+    const now = new Date().toISOString();
+    this.isTripped = true;
+    this.lastTrippedAt = now;
+    this.lastTripReason = opts.reason;
+
     const event: CircuitTripEvent = {
       tripId,
       reason: opts.reason,
@@ -332,19 +432,20 @@ export class TradingCircuitBreaker {
       metricValue: opts.metricValue,
       threshold: opts.threshold,
       affectedAgentIds: opts.affectedAgentIds,
-      trippedAt: new Date().toISOString(),
+      trippedAt: now,
       emergencyTriggered,
     };
 
+    await this._persistState(event);
     this._emit(event);
   }
 
-  private _tripWarning(opts: {
+  private async _tripWarning(opts: {
     reason: TripReason;
     metricValue: number;
     threshold: number;
     affectedAgentIds: string[];
-  }): void {
+  }): Promise<void> {
     this.tripCount++;
     const tripId = `trip_${Date.now()}_${this.tripCount}`;
 
@@ -356,6 +457,8 @@ export class TradingCircuitBreaker {
       threshold: opts.threshold,
     });
 
+    const now = new Date().toISOString();
+
     const event: CircuitTripEvent = {
       tripId,
       reason: opts.reason,
@@ -363,11 +466,31 @@ export class TradingCircuitBreaker {
       metricValue: opts.metricValue,
       threshold: opts.threshold,
       affectedAgentIds: opts.affectedAgentIds,
-      trippedAt: new Date().toISOString(),
+      trippedAt: now,
       emergencyTriggered: false,
     };
 
+    await this._persistState(event);
     this._emit(event);
+  }
+
+  private async _persistState(event: CircuitTripEvent): Promise<void> {
+    if (!this.store) return;
+    const now = new Date().toISOString();
+    try {
+      await this.store.save({
+        isTripped: this.isTripped,
+        tripCount: this.tripCount,
+        lastTrippedAt: this.lastTrippedAt,
+        lastTripReason: this.lastTripReason,
+        updatedAt: now,
+      });
+      await this.store.appendHistory({ timestamp: now, event });
+    } catch (err) {
+      this.log.error('Failed to persist circuit breaker state', {
+        error: String(err),
+      });
+    }
   }
 
   private _emit(event: CircuitTripEvent): void {
@@ -386,16 +509,21 @@ export class TradingCircuitBreaker {
 // ============================================================================
 
 /**
- * Create a TradingCircuitBreaker with optional emergency controller and
- * custom threshold overrides.
+ * Create a TradingCircuitBreaker with optional emergency controller,
+ * custom threshold overrides, and an optional persistence store.
  *
  * Pass `null` for `emergencyController` to get a stand-alone circuit breaker
  * that fires events without triggering emergency stops (useful in tests or
  * environments without the security module).
+ *
+ * Pass a `BreakerStateStore` for persistence across restarts and
+ * cross-replica coordination.  Call `await cb.initialize()` before the first
+ * `checkAndTrip()` call to load persisted state.
  */
 export function createCircuitBreaker(
   emergencyController: EmergencyController | null,
-  thresholds: Partial<CircuitBreakerThresholds> = {}
+  thresholds: Partial<CircuitBreakerThresholds> = {},
+  store?: BreakerStateStore | null,
 ): TradingCircuitBreaker {
-  return new TradingCircuitBreaker(emergencyController, thresholds);
+  return new TradingCircuitBreaker(emergencyController, thresholds, undefined, store);
 }

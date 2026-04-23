@@ -76,7 +76,7 @@ export type {
   AllMetrics,
 } from './metrics';
 
-// Circuit Breaker (Issue #313)
+// Circuit Breaker (Issue #313, #359)
 export {
   TradingCircuitBreaker,
   createCircuitBreaker,
@@ -92,6 +92,20 @@ export type {
   TripHandler,
   TripUnsubscribe,
 } from './circuit-breaker';
+
+// Breaker State Persistence (Issue #359)
+export { MemoryStateStore } from './breaker-state-store';
+export { RedisStateStore, createRedisStateStore } from './breaker-state-redis';
+
+export type {
+  BreakerState,
+  BreakerTransition,
+  BreakerStateStore,
+  BreakerStateHandler,
+  BreakerStateUnsubscribe,
+} from './breaker-state-store';
+
+export type { RedisClient as BreakerRedisClient } from './breaker-state-redis';
 
 // Multi-Channel Alerting (Issue #313)
 export {
