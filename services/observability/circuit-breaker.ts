@@ -19,6 +19,10 @@ import type { EmergencyController } from '../../core/security/emergency';
 import type { EmergencyType } from '../../core/security/types';
 import { createLogger } from './logger';
 import type { Logger } from './logger';
+import {
+  circuitBreakerTripped,
+  circuitBreakerTripsTotal,
+} from '../../core/observability/metrics';
 
 // ============================================================================
 // Types
@@ -301,6 +305,9 @@ export class TradingCircuitBreaker {
       affectedAgentIds: opts.affectedAgentIds,
     });
 
+    circuitBreakerTripsTotal.inc({ reason: opts.reason, severity: opts.severity });
+    circuitBreakerTripped.set(1);
+
     let emergencyTriggered = false;
     if (this.emergencyController) {
       try {
@@ -340,6 +347,8 @@ export class TradingCircuitBreaker {
   }): void {
     this.tripCount++;
     const tripId = `trip_${Date.now()}_${this.tripCount}`;
+
+    circuitBreakerTripsTotal.inc({ reason: opts.reason, severity: 'warning' });
 
     this.log.warn(`Circuit breaker warning [${opts.reason}]`, {
       tripId,

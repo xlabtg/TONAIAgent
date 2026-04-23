@@ -16,6 +16,7 @@ import { initConfig, appConfig } from '../../../config/index.js';
 import { createLogger } from '../../../services/observability/logger.js';
 import { assertComplianceGatesEnabled } from '../../../services/regulatory/compliance-flags.js';
 import type { SecretAuditEvent } from '../../../config/secrets.types.js';
+import { metricsHandler } from '../../../core/observability/prometheus-exporter.js';
 
 const logger = createLogger('api-server');
 
@@ -90,6 +91,11 @@ async function main(): Promise<void> {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'alive' }));
       return;
+    }
+
+    // Prometheus metrics
+    if (req.method === 'GET' && req.url === '/metrics') {
+      return metricsHandler(req, res);
     }
 
     // All other routes — placeholder until full router is wired (issue #08)
