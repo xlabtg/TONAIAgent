@@ -17,7 +17,6 @@ import {
   validateContentType,
 } from '../middleware/validate.js';
 import { withTimeout, RequestTimeoutError } from '../middleware/index.js';
-import type { FastifyReply } from 'fastify';
 
 // ── Timeout helper (mirrors apps/api/src/middleware/chain.ts) ───────────────
 const REQUEST_TIMEOUT_MS = 30_000;

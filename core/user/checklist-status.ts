@@ -12,8 +12,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 // ============================================================================
 // Types
@@ -63,16 +62,8 @@ export type ChecklistGateResult =
 // Helpers
 // ============================================================================
 
-let __dirnameResolved: string | undefined;
 function getRoot(): string {
-  if (!__dirnameResolved) {
-    try {
-      __dirnameResolved = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-    } catch {
-      __dirnameResolved = process.cwd();
-    }
-  }
-  return __dirnameResolved;
+  return process.cwd();
 }
 
 function generateId(prefix: string): string {
