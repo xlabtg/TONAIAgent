@@ -25,6 +25,8 @@ export interface AppSecrets {
   KEY_ENCRYPTION_KEY: string;
   /** JWT signing secret for API authentication (32+ chars) */
   JWT_SECRET: string;
+  /** HMAC signing key for CSRF tokens (32+ chars, required in production) */
+  CSRF_SECRET: string;
 
   // AI Providers
   /** Groq AI API key (primary provider) */

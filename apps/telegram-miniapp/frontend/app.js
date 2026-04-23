@@ -87,18 +87,53 @@
   };
 
   /* ============================================================
+     CSRF helpers
+     ============================================================ */
+
+  const CSRF = {
+    /** Read the csrf_token cookie issued by GET /healthz. */
+    getToken() {
+      const match = document.cookie.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('csrf_token='));
+      return match ? match.slice('csrf_token='.length) : null;
+    },
+
+    /**
+     * Fetch a fresh CSRF token from /healthz and store it in a cookie.
+     * Called once at app startup and after login/logout (token rotation).
+     */
+    async refresh() {
+      try {
+        await fetch('/healthz', { method: 'GET', credentials: 'same-origin' });
+      } catch (_) {
+        // Non-fatal — the cookie may already be present.
+      }
+    },
+  };
+
+  /* ============================================================
      API Client – connects to Portfolio API
      ============================================================ */
+
+  const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
   const API = {
     baseUrl: '/api',
     initData: '',
 
     async request(endpoint, options = {}) {
       const url = `${this.baseUrl}${endpoint}`;
+      const method = (options.method || 'GET').toUpperCase();
       const headers = { 'Content-Type': 'application/json', ...options.headers };
       if (this.initData) headers['X-Telegram-Init-Data'] = this.initData;
+      // Double-submit cookie: attach the CSRF token for state-mutating requests.
+      if (MUTATION_METHODS.has(method)) {
+        const csrfToken = CSRF.getToken();
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+      }
       try {
-        const res = await fetch(url, { ...options, headers });
+        const res = await fetch(url, { ...options, method, headers, credentials: 'same-origin' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
       } catch (err) {
@@ -108,6 +143,14 @@
     },
 
     get(path) { return this.request(path); },
+
+    post(path, body) {
+      return this.request(path, { method: 'POST', body: JSON.stringify(body) });
+    },
+
+    del(path) {
+      return this.request(path, { method: 'DELETE' });
+    },
   };
 
   /* ============================================================
@@ -518,6 +561,9 @@
      Init
      ============================================================ */
   function init() {
+    // Fetch a CSRF token from /healthz so mutations are authorized from the start.
+    CSRF.refresh();
+
     // Navigation
     document.querySelectorAll('.nav-item').forEach(btn => {
       btn.addEventListener('click', () => showPage(btn.dataset.page));
@@ -599,7 +645,7 @@
   /* ============================================================
      Public exports for components
      ============================================================ */
-  window.App = { State, API, DemoData, Fmt, esc, el, TG, showPage };
+  window.App = { State, API, CSRF, DemoData, Fmt, esc, el, TG, showPage };
 
   // Start when DOM is ready
   if (document.readyState === 'loading') {

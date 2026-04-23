@@ -41,7 +41,7 @@ Requests pass through the following middleware in order before reaching any rout
 3. **Body-size guard** — rejects `Content-Length > 1 MiB` with `413`
 4. **Request timeout** — per-route, 30 s default; returns `504` on breach
 5. **Rate limiter** — pluggable sliding-window; `100 req / 15 min` for reads, `10 req / 1 min` for mutations; backend selected via `RATE_LIMIT_STORE` (see [docs/rate-limiting.md](./rate-limiting.md))
-6. **CSRF validation** — validates `x-csrf-token` header for `POST / PUT / PATCH / DELETE` (skipped in dev when `CSRF_SECRET` is unset)
+6. **CSRF validation** — validates `x-csrf-token` header for `POST / PUT / PATCH / DELETE` using HMAC-signed double-submit cookie (skipped in dev when `CSRF_SECRET` is unset)
 7. **Zod body validation** — per-route, returns `400 VALIDATION_ERROR` on failure
 8. **XSS sanitization** — strips script/style tags and HTML from all string fields after validation
 
@@ -61,6 +61,14 @@ Requests pass through the following middleware in order before reaching any rout
 ```json
 { "status": "ok", "timestamp": "2026-04-22T00:00:00.000Z" }
 ```
+
+When `CSRF_SECRET` is configured the response also sets a CSRF cookie:
+
+```
+Set-Cookie: csrf_token=<signed-token>; SameSite=Strict; Secure; Path=/
+```
+
+Clients must call `GET /healthz` once at startup (before any mutation) to obtain this cookie. The Telegram Mini App does this automatically during `init()`.
 
 #### `GET /readyz` — 200 or 503
 
@@ -151,6 +159,70 @@ Response: `202 Accepted`
   }
 }
 ```
+
+---
+
+## CSRF protection
+
+### Strategy
+
+The API uses the **double-submit cookie** pattern with HMAC-signed tokens ([OWASP cheat sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)):
+
+1. The server issues a signed token as a **non-HttpOnly cookie** (`csrf_token`) on `GET /healthz`.
+2. Client JavaScript reads the cookie and echoes it in the **`X-CSRF-Token` request header** on every `POST / PUT / PATCH / DELETE` request.
+3. The server verifies the HMAC signature and TTL of the header value — no server-side session storage is required (stateless, scales horizontally).
+
+### Token format
+
+```
+<64-char-hex-nonce>.<issuedAt-ms>.<sessionId>.<sha256-hmac-hex>
+```
+
+Tokens expire after **24 hours**. Call `GET /healthz` again to refresh.
+
+### Cookie
+
+```
+Set-Cookie: csrf_token=<token>; SameSite=Strict; Secure; Path=/
+```
+
+`HttpOnly` is intentionally **absent** so client JavaScript can read the value.
+
+### Sending the header
+
+```js
+// Read cookie
+const csrfToken = document.cookie.split(';')
+  .map(c => c.trim())
+  .find(c => c.startsWith('csrf_token='))
+  ?.slice('csrf_token='.length);
+
+// Include in mutation requests
+fetch('/api/agents', {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': csrfToken,
+  },
+  body: JSON.stringify({ ... }),
+});
+```
+
+The Telegram Mini App (`apps/telegram-miniapp/frontend/app.js`) handles this automatically via `API.post()` / `API.del()`.
+
+### Token rotation
+
+Rotate (call `GET /healthz` again) after:
+- Login / session creation
+- Logout
+- Sensitive operations (password change, 2FA change)
+
+### Configuration
+
+| Variable | Description |
+|---|---|
+| `CSRF_SECRET` | HMAC signing key (32+ chars). Required in production. Omit in dev to disable enforcement. |
 
 ---
 
