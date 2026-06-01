@@ -282,6 +282,135 @@ describe('AgentWallet', () => {
     expect(badResult.transactions).toHaveTransaction({ success: false });
   });
 
+  // ---- LOGIC-03: over-send / limit-bypass regression ----
+  //
+  // In Tact/TON, SendRemainingValue forwards the leftover inbound message
+  // value *in addition to* the explicit `value`. The handlers previously
+  // combined `value: msg.amount` with `SendRemainingValue`, so a caller could
+  // attach a large inbound value and push far more TON to the target than
+  // `maxTradeSizeNano` / `dailyLimitNano` (and the withdrawal balance check)
+  // authorised. The fix sends exactly `msg.amount` with
+  // `SendIgnoreErrors | SendPayGasSeparately` (no SendRemainingValue).
+
+  it('AgentExecute sends exactly msg.amount even with large inbound value', async () => {
+    const target = await blockchain.treasury('dex');
+    const tradeAmount = toNano('5');
+
+    const result = await wallet.send(
+      agent.getSender(),
+      { value: toNano('30') },   // huge inbound value — would ride along via SendRemainingValue
+      {
+        $$type: 'AgentExecute',
+        to: target.address,
+        amount: tradeAmount,
+        payload: null,
+        opCode: 0x1234n,
+      }
+    );
+
+    // The outbound message to the target must carry exactly the trade amount,
+    // not msg.amount + leftover inbound value.
+    expect(result.transactions).toHaveTransaction({
+      from: wallet.address,
+      to: target.address,
+      success: true,
+      value: tradeAmount,
+    });
+  });
+
+  it('AgentExecute does not let inbound value bypass maxTradeSize on the wire', async () => {
+    const target = await blockchain.treasury('dex');
+    const tradeAmount = toNano('10');   // == maxTradeSizeNano
+
+    const result = await wallet.send(
+      agent.getSender(),
+      { value: toNano('40') },   // attempt to push 50 TON to the target
+      {
+        $$type: 'AgentExecute',
+        to: target.address,
+        amount: tradeAmount,
+        payload: null,
+        opCode: 0x1234n,
+      }
+    );
+
+    // Exactly maxTradeSize leaves the wallet; the extra inbound value stays put.
+    expect(result.transactions).toHaveTransaction({
+      from: wallet.address,
+      to: target.address,
+      success: true,
+      value: tradeAmount,
+    });
+    // No outbound transfer to the target should exceed the per-trade cap.
+    expect(result.transactions).not.toHaveTransaction({
+      from: wallet.address,
+      to: target.address,
+      value: (v) => v !== undefined && v > toNano('10'),
+    });
+  });
+
+  it('WithdrawRequest sends exactly the requested amount regardless of inbound value', async () => {
+    const recipient = await blockchain.treasury('withdraw_dest');
+    const amount = toNano('3');
+
+    const result = await wallet.send(
+      owner.getSender(),
+      { value: toNano('20') },   // large inbound value attached to the request
+      { $$type: 'WithdrawRequest', to: recipient.address, amount }
+    );
+
+    expect(result.transactions).toHaveTransaction({
+      from: wallet.address,
+      to: recipient.address,
+      success: true,
+      value: amount,
+    });
+  });
+
+  it('ClaimWithdrawal sends exactly the queued amount regardless of inbound value', async () => {
+    // Wallet with a time-lock so the withdrawal is queued, then claimed.
+    const lockedWallet = blockchain.openContract(
+      await AgentWallet.fromInit(
+        owner.address,
+        agent.address,
+        owner.address,
+        toNano('10'),
+        toNano('50'),
+        60n
+      )
+    );
+    await lockedWallet.send(
+      owner.getSender(),
+      { value: toNano('40') },
+      { $$type: 'Deposit' }
+    );
+
+    const recipient = await blockchain.treasury('claim_dest');
+    const amount = toNano('15');   // > maxTradeSize -> queued under time-lock
+
+    await lockedWallet.send(
+      owner.getSender(),
+      { value: toNano('0.05') },
+      { $$type: 'WithdrawRequest', to: recipient.address, amount }
+    );
+
+    // Fast-forward past the time-lock.
+    blockchain.now = Math.floor(Date.now() / 1000) + 120;
+
+    const claim = await lockedWallet.send(
+      owner.getSender(),
+      { value: toNano('20') },   // large inbound value on the claim
+      { $$type: 'ClaimWithdrawal', nonce: 1n }
+    );
+
+    expect(claim.transactions).toHaveTransaction({
+      from: lockedWallet.address,
+      to: recipient.address,
+      success: true,
+      value: amount,
+    });
+  });
+
   // ---- Update limits ----
 
   it('owner can update spending limits', async () => {
