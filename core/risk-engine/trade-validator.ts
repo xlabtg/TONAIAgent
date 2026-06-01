@@ -147,7 +147,13 @@ export interface TradeValidator {
   /** Validate a trade request */
   validate(request: TradeValidationRequest): TradeValidationResult;
   /** Record a completed trade for daily tracking */
-  recordTrade(agentId: string, pnlUsd: number): void;
+  recordTrade(agentId: string, pnlUsd: number, portfolioValueUsd?: number): void;
+  /**
+   * Evaluate the daily-loss circuit breaker for an agent and disable trading
+   * if the accumulated loss has reached `dailyLossLimitPercent`. Returns the
+   * current `tradingDisabled` state for the agent.
+   */
+  checkDailyLossLimit(agentId: string, portfolioValueUsd: number): boolean;
   /** Check if trading is disabled for an agent */
   isTradingDisabled(agentId: string): boolean;
   /** Get today's loss record for an agent */
@@ -199,6 +205,14 @@ export class DefaultTradeValidator implements TradeValidator {
     const violations: RiskLimitViolation[] = [];
     const warnings: TradeWarning[] = [];
     let suggestedModifications: TradeSuggestion | undefined;
+
+    // Re-evaluate the daily-loss circuit breaker before reading the flag, so
+    // that cumulative losses recorded via recordTrade() actually disable
+    // trading during the normal validation flow (not only when
+    // checkDailyLossLimit() is invoked directly).
+    if (this.config.enableDailyLossLimit) {
+      this.checkDailyLossLimit(request.agentId, request.portfolioValueUsd);
+    }
 
     // Check 1: Trading disabled due to daily loss limit
     if (this.config.enableDailyLossLimit && this.isTradingDisabled(request.agentId)) {
@@ -337,7 +351,7 @@ export class DefaultTradeValidator implements TradeValidator {
     };
   }
 
-  recordTrade(agentId: string, pnlUsd: number): void {
+  recordTrade(agentId: string, pnlUsd: number, portfolioValueUsd?: number): void {
     const today = this.getTodayKey();
     let record = this.dailyLossRecords.get(`${agentId}:${today}`);
 
@@ -361,9 +375,12 @@ export class DefaultTradeValidator implements TradeValidator {
     }
     record.netPnlUsd = record.totalGainUsd - record.totalLossUsd;
 
-    // Check if daily loss limit should disable trading
-    // Note: We need portfolio value for percentage calculation
-    // For now, track absolute loss and check percentage in validate()
+    // Update the daily loss circuit breaker immediately when the portfolio
+    // value is known. validate() also re-evaluates this on every request, so
+    // the breaker is enforced even when the value is not supplied here.
+    if (portfolioValueUsd !== undefined && this.config.enableDailyLossLimit) {
+      this.checkDailyLossLimit(agentId, portfolioValueUsd);
+    }
   }
 
   checkDailyLossLimit(agentId: string, portfolioValueUsd: number): boolean {
