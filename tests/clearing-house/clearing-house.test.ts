@@ -275,6 +275,75 @@ describe('NettingEngine', () => {
       expect(run.grossExposureBefore).toBe(8000); // 5000 + 3000
       expect(run.netExposureAfter).toBeLessThan(run.grossExposureBefore);
     });
+
+    it('should produce a non-zero net obligation for a mixed-direction pair', () => {
+      // fund1 buys 5000, fund2 buys 3000 (i.e. fund1 sells 3000) of the same
+      // asset within the pair. True net cash leg is 5000 - 3000 = 2000.
+      const trade1 = clearing.registerTrade({
+        buyerParticipantId: fund1Id,
+        sellerParticipantId: fund2Id,
+        assetId: 'TON',
+        assetName: 'TON',
+        assetClass: 'crypto',
+        quantity: 1000,
+        price: 5.0,
+      });
+      const trade2 = clearing.registerTrade({
+        buyerParticipantId: fund2Id,
+        sellerParticipantId: fund1Id,
+        assetId: 'TON',
+        assetName: 'TON',
+        assetClass: 'crypto',
+        quantity: 600,
+        price: 5.0,
+      });
+
+      const run = engine.runBilateralNetting([trade1, trade2]);
+
+      // Residual exposure equals the true directional net, not zero.
+      expect(run.netExposureAfter).toBe(2000);
+
+      const obligations = engine.listObligations();
+      expect(obligations.length).toBe(1);
+      const ob = obligations[0];
+      // Exactly one side carries the net; the magnitude is the true net cash leg.
+      expect(Math.max(ob.netPayable, ob.netReceivable)).toBe(2000);
+      expect(Math.min(ob.netPayable, ob.netReceivable)).toBe(0);
+      // Gross is the total traded notional within the pair (5000 + 3000).
+      expect(ob.grossPayable).toBe(8000);
+    });
+
+    it('should net a fully-offsetting pair to zero', () => {
+      // Equal and opposite trades within the pair: net cash leg is 0.
+      const trade1 = clearing.registerTrade({
+        buyerParticipantId: fund1Id,
+        sellerParticipantId: fund2Id,
+        assetId: 'TON',
+        assetName: 'TON',
+        assetClass: 'crypto',
+        quantity: 1000,
+        price: 5.0,
+      });
+      const trade2 = clearing.registerTrade({
+        buyerParticipantId: fund2Id,
+        sellerParticipantId: fund1Id,
+        assetId: 'TON',
+        assetName: 'TON',
+        assetClass: 'crypto',
+        quantity: 1000,
+        price: 5.0,
+      });
+
+      const run = engine.runBilateralNetting([trade1, trade2]);
+
+      expect(run.netExposureAfter).toBe(0);
+
+      const obligations = engine.listObligations();
+      expect(obligations.length).toBe(1);
+      const ob = obligations[0];
+      expect(ob.netPayable).toBe(0);
+      expect(ob.netReceivable).toBe(0);
+    });
   });
 
   describe('multilateral netting', () => {
