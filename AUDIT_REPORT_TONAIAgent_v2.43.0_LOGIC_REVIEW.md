@@ -71,9 +71,10 @@ based on source review of the contract logic and TON message-mode semantics.
 
 ## Findings Index
 
-Each finding has a corresponding ready-to-file issue document under
+Each finding has a corresponding issue document under
 [`TEMP/logic-review/`](./TEMP/logic-review/) with full acceptance criteria, tags, and implementation
-stage. IDs are stable references (`LOGIC-NN`).
+stage. IDs are stable references (`LOGIC-NN`). **All 22 findings have been filed as individual GitHub
+issues #386–#407** — see the [`LOGIC-NN → issue` mapping](./TEMP/logic-review/README.md#filed-issues).
 
 ### High severity
 
