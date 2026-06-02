@@ -172,6 +172,68 @@ describe('TradeValidator', () => {
     expect(result.approved).toBe(false);
   });
 
+  it('should enforce daily loss limit through validate() without calling checkDailyLossLimit directly', () => {
+    const validator = createTradeValidator({
+      dailyLossLimitPercent: 3,
+      enableDailyLossLimit: true,
+    });
+
+    // Accumulate losses purely through recordTrade (production flow).
+    // 350 / 10000 = 3.5% > 3% threshold.
+    validator.recordTrade('agent_001', -100);
+    validator.recordTrade('agent_001', -150);
+    validator.recordTrade('agent_001', -100);
+
+    // No direct call to checkDailyLossLimit — validate() must flip the flag.
+    expect(validator.isTradingDisabled('agent_001')).toBe(false);
+
+    const result = validator.validate(makeTradeRequest({
+      agentId: 'agent_001',
+      portfolioValueUsd: 10000,
+      valueUsd: 100, // small, within position/exposure limits
+    }));
+
+    expect(result.approved).toBe(false);
+    expect(result.violations.some(v => v.limitId === 'daily_loss_limit')).toBe(true);
+    expect(validator.isTradingDisabled('agent_001')).toBe(true);
+    expect(validator.getDisabledAgents()).toContain('agent_001');
+  });
+
+  it('should enforce daily loss limit when portfolio value is threaded through recordTrade', () => {
+    const validator = createTradeValidator({
+      dailyLossLimitPercent: 3,
+      enableDailyLossLimit: true,
+    });
+
+    validator.recordTrade('agent_001', -200, 10000);
+    expect(validator.isTradingDisabled('agent_001')).toBe(false); // 2% < 3%
+
+    validator.recordTrade('agent_001', -150, 10000); // cumulative 3.5% > 3%
+    expect(validator.isTradingDisabled('agent_001')).toBe(true);
+
+    const result = validator.validate(makeTradeRequest({ agentId: 'agent_001' }));
+    expect(result.approved).toBe(false);
+  });
+
+  it('should keep trading enabled below the daily loss limit', () => {
+    const validator = createTradeValidator({
+      dailyLossLimitPercent: 3,
+      enableDailyLossLimit: true,
+    });
+
+    // 200 / 10000 = 2% < 3% threshold.
+    validator.recordTrade('agent_001', -200);
+
+    const result = validator.validate(makeTradeRequest({
+      agentId: 'agent_001',
+      portfolioValueUsd: 10000,
+      valueUsd: 100,
+    }));
+
+    expect(validator.isTradingDisabled('agent_001')).toBe(false);
+    expect(result.violations.some(v => v.limitId === 'daily_loss_limit')).toBe(false);
+  });
+
   it('should reset daily limits', () => {
     const validator = createTradeValidator();
 
