@@ -187,11 +187,16 @@ contract AgentWallet with Deployable, Ownable {
                 unlocksAt: now() + self.timeLockSeconds
             });
         } else {
-            // Immediate withdrawal
+            // Immediate withdrawal.
+            // Send a fixed amount: gas is paid separately from the contract
+            // balance so the recipient receives exactly `msg.amount`. We must
+            // NOT add SendRemainingValue here — it would forward the leftover
+            // inbound message value on top of `msg.amount`, sending more TON
+            // than the balance check authorised.
             send(SendParameters{
                 to: msg.to,
                 value: msg.amount,
-                mode: SendRemainingValue | SendIgnoreErrors,
+                mode: SendIgnoreErrors | SendPayGasSeparately,
                 body: emptyCell()
             });
         }
@@ -206,10 +211,13 @@ contract AgentWallet with Deployable, Ownable {
         let pw: PendingWithdrawal = pending!!;
         require(now() >= pw.unlocksAt, "AgentWallet: time-lock not expired");
         self.pendingWithdrawals.del(msg.nonce);
+        // Send the exact queued amount. Gas is paid separately and the inbound
+        // remainder is NOT forwarded, so the recipient receives exactly
+        // `pw.amount` regardless of the value attached to the claim message.
         send(SendParameters{
             to: pw.to,
             value: pw.amount,
-            mode: SendRemainingValue | SendIgnoreErrors,
+            mode: SendIgnoreErrors | SendPayGasSeparately,
             body: emptyCell()
         });
     }
@@ -241,10 +249,15 @@ contract AgentWallet with Deployable, Ownable {
 
         self.dailySpent = self.dailySpent + msg.amount;
 
+        // Send exactly `msg.amount` to the target. Gas is paid separately from
+        // the contract balance and the leftover inbound value is NOT forwarded.
+        // Using SendRemainingValue here would let a caller inflate the inbound
+        // message value to push more TON out than `maxTradeSizeNano` /
+        // `dailyLimitNano` permit, bypassing every limit checked above.
         send(SendParameters{
             to: msg.to,
             value: msg.amount,
-            mode: SendRemainingValue | SendIgnoreErrors,
+            mode: SendIgnoreErrors | SendPayGasSeparately,
             body: msg.payload != null ? msg.payload!! : emptyCell()
         });
     }
