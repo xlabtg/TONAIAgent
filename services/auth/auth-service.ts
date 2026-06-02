@@ -11,7 +11,7 @@
  * Issue #271: Multi-User Accounts, RBAC & API Key System
  */
 
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { UserManager } from '../../core/user/user-manager';
 import { ApiKeyService } from './api-key';
 import {
@@ -118,7 +118,12 @@ export class AuthService {
     const secretKey = createHmac('sha256', 'WebAppData').update(botToken).digest();
     const expectedHash = createHmac('sha256', secretKey).update(checkString).digest('hex');
 
-    if (expectedHash !== receivedHash) {
+    // Constant-time comparison over fixed-length buffers to prevent timing attacks.
+    // `receivedHash` is attacker-controlled, so we must not use `!==` (short-circuits on
+    // the first differing byte). `timingSafeEqual` throws on unequal lengths, so guard first.
+    const expectedBuf = Buffer.from(expectedHash, 'hex');
+    const receivedBuf = Buffer.from(receivedHash, 'hex');
+    if (expectedBuf.length !== receivedBuf.length || !timingSafeEqual(expectedBuf, receivedBuf)) {
       throw new Error('Invalid Telegram initData signature');
     }
 

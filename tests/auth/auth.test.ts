@@ -409,7 +409,23 @@ describe('AuthService', () => {
   it('rejects Telegram auth with tampered initData', () => {
     const initData = buildFakeInitData(33333, 'hacker', BOT_TOKEN);
     const tampered = initData.replace(/hash=[^&]+/, 'hash=deadbeef');
-    expect(() => authService.authenticateTelegram({ initData: tampered, botToken: BOT_TOKEN })).toThrow();
+    expect(() => authService.authenticateTelegram({ initData: tampered, botToken: BOT_TOKEN })).toThrow(/signature/);
+  });
+
+  it('rejects Telegram auth with a forged but correctly-sized hash (constant-time comparison)', () => {
+    // A 64-char hex hash matches the SHA-256 digest length, exercising the
+    // timingSafeEqual path rather than the length-mismatch guard.
+    const initData = buildFakeInitData(55551, 'attacker', BOT_TOKEN);
+    const forged = initData.replace(/hash=[^&]+/, `hash=${'a'.repeat(64)}`);
+    expect(() => authService.authenticateTelegram({ initData: forged, botToken: BOT_TOKEN })).toThrow(/signature/);
+  });
+
+  it('rejects Telegram auth with a non-hex hash without throwing a raw crypto error', () => {
+    // Non-hex input decodes to a shorter buffer; the length guard must catch it
+    // before timingSafeEqual (which throws on unequal-length buffers).
+    const initData = buildFakeInitData(55552, 'attacker', BOT_TOKEN);
+    const forged = initData.replace(/hash=[^&]+/, 'hash=not-a-valid-hex-hash');
+    expect(() => authService.authenticateTelegram({ initData: forged, botToken: BOT_TOKEN })).toThrow(/signature/);
   });
 
   it('rejects Telegram auth with missing auth_date', () => {
