@@ -125,31 +125,56 @@ export class DefaultNettingEngine implements NettingEngine {
     const createdObligations: ObligationId[] = [];
     let totalNetExposure = 0;
 
-    for (const [, pairTrades] of pairMap.entries()) {
+    for (const [pairKey, pairTrades] of pairMap.entries()) {
+      // Use a fixed reference participant (first of the sorted pair) so that the
+      // two cash legs are accumulated by direction relative to the same side.
+      const [referenceParticipant] = pairKey.split(':');
+
       // Net per asset within each pair
-      const assetMap = new Map<string, { buy: number; sell: number; tradeIds: TradeId[] }>();
+      const assetMap = new Map<
+        string,
+        { buy: number; sell: number; tradeIds: TradeId[]; price: number; currency: string }
+      >();
 
       for (const trade of pairTrades) {
-        const entry = assetMap.get(trade.assetId) ?? { buy: 0, sell: 0, tradeIds: [] };
-        entry.buy += trade.quantity * trade.price;
-        entry.sell += trade.quantity * trade.price;
+        const entry =
+          assetMap.get(trade.assetId) ??
+          { buy: 0, sell: 0, tradeIds: [], price: trade.price, currency: trade.currency };
+        const notional = trade.quantity * trade.price;
+        // Accumulate the cash leg by the reference participant's direction: if the
+        // reference bought the asset it owes cash (buy leg), otherwise it is owed
+        // cash (sell leg). Direction is taken from buyer/sellerParticipantId.
+        if (trade.buyerParticipantId === referenceParticipant) {
+          entry.buy += notional;
+        } else {
+          entry.sell += notional;
+        }
         entry.tradeIds.push(trade.id);
         assetMap.set(trade.assetId, entry);
       }
 
-      for (const [assetId, { buy, sell, tradeIds }] of assetMap.entries()) {
+      for (const [assetId, { buy, sell, tradeIds, price, currency }] of assetMap.entries()) {
         const netPayable = buy - sell;
-        const netReceivable = sell - buy;
-        const grossPayable = buy;
+        const grossPayable = buy + sell;
+        const referencePrice = price || 1;
 
         const obligation = this.createObligation(
-          pairTrades[0].buyerParticipantId,
+          referenceParticipant,
           assetId,
           netPayable > 0 ? netPayable : 0,
           netPayable < 0 ? Math.abs(netPayable) : 0,
           grossPayable,
           grossPayable,
-          [{ assetId, assetName: assetId, netQuantity: netPayable / (pairTrades[0].price || 1), grossQuantity: grossPayable / (pairTrades[0].price || 1), estimatedValue: Math.abs(netPayable), currency: pairTrades[0].currency }],
+          [
+            {
+              assetId,
+              assetName: assetId,
+              netQuantity: netPayable / referencePrice,
+              grossQuantity: grossPayable / referencePrice,
+              estimatedValue: Math.abs(netPayable),
+              currency,
+            },
+          ],
           tradeIds,
           pairTrades[0].settlementDate
         );
