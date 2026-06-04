@@ -606,6 +606,9 @@ export class DefaultRecoveryManager implements RecoveryManager {
     }
 
     const step = request.verificationSteps[stepIndex];
+    if (step.status === 'failed') {
+      throw new Error(`Cannot verify failed step: ${stepType}`);
+    }
 
     // Verify the step
     const verified = await this.performVerification(step, verificationData);
@@ -621,14 +624,16 @@ export class DefaultRecoveryManager implements RecoveryManager {
       }
     }
 
-    request.status = 'verification_pending';
+    if (request.status !== 'failed') {
+      request.status = 'verification_pending';
+    }
 
     // Check if all required steps are verified
     const allRequiredVerified = request.verificationSteps
       .filter((s) => s.required)
       .every((s) => s.status === 'verified');
 
-    if (allRequiredVerified) {
+    if (request.status !== 'failed' && allRequiredVerified) {
       request.status = 'verification_complete';
     }
 

@@ -1094,6 +1094,26 @@ describe('Recovery Manager', () => {
       expect(result.success).toBe(false);
       expect(result.step.attempts).toBe(1);
     });
+
+    it('should permanently fail recovery after a step exhausts attempts', async () => {
+      const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await recovery.verifyStep(request.id, 'email', { code: '12' });
+      }
+
+      const failed = recovery.getRecoveryRequest(request.id);
+
+      expect(failed?.status).toBe('failed');
+      expect(failed?.verificationSteps.find((s) => s.type === 'email')?.status).toBe('failed');
+      expect(recovery.getActiveRecoveries('user_123')).not.toContainEqual(
+        expect.objectContaining({ id: request.id })
+      );
+
+      await expect(recovery.verifyStep(request.id, 'email', { code: '123456' })).rejects.toThrow(
+        'Cannot verify step for request with status: failed'
+      );
+    });
   });
 
   describe('Recovery Execution', () => {
