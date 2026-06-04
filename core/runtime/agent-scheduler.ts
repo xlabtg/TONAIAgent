@@ -217,6 +217,7 @@ export class AgentScheduler {
       nextRunAt: new Date(now.getTime() + intervalMs),
       lastRunAt: null,
       isRunning: false,
+      isPaused: false,
     };
 
     this.scheduledAgents.set(agentId, scheduled);
@@ -256,6 +257,7 @@ export class AgentScheduler {
       clearTimeout(scheduled.timerId);
       scheduled.timerId = undefined;
     }
+    scheduled.isPaused = true;
 
     return true;
   }
@@ -269,6 +271,7 @@ export class AgentScheduler {
 
     // Recalculate next run time
     const now = new Date();
+    scheduled.isPaused = false;
     scheduled.nextRunAt = new Date(now.getTime() + scheduled.intervalMs);
 
     this.scheduleNextRun(agentId);
@@ -381,7 +384,7 @@ export class AgentScheduler {
 
   private scheduleNextRun(agentId: string): void {
     const scheduled = this.scheduledAgents.get(agentId);
-    if (!scheduled || !this.running) return;
+    if (!scheduled || !this.running || scheduled.isPaused) return;
 
     const now = Date.now();
     const targetTime = scheduled.nextRunAt.getTime();
@@ -401,7 +404,7 @@ export class AgentScheduler {
     const scheduled = this.scheduledAgents.get(agentId);
     const callback = this.executionCallbacks.get(agentId);
 
-    if (!scheduled || !callback || !this.running) return;
+    if (!scheduled || !callback || !this.running || scheduled.isPaused) return;
 
     // Check concurrent execution limit
     if (this.currentExecutions >= this.config.maxConcurrentExecutions) {
@@ -448,7 +451,7 @@ export class AgentScheduler {
       }
 
       // Schedule next run
-      if (this.running && this.scheduledAgents.has(agentId)) {
+      if (this.running && this.scheduledAgents.has(agentId) && !scheduled.isPaused) {
         this.scheduleNextRun(agentId);
       }
     }

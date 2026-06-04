@@ -187,7 +187,11 @@ export class AgentStateManager {
   /**
    * Set an agent to ERROR state.
    */
-  setAgentError(agentId: string, errorMessage: string): AgentRuntimeState {
+  setAgentError(
+    agentId: string,
+    errorMessage: string,
+    options: { incrementConsecutiveErrors?: boolean } = {}
+  ): AgentRuntimeState {
     const state = this.requireAgent(agentId);
 
     if (!STATE_TRANSITIONS[state.state].includes('ERROR') && state.state !== 'RUNNING') {
@@ -200,7 +204,9 @@ export class AgentStateManager {
 
     state.state = 'ERROR';
     state.errorMessage = errorMessage;
-    state.consecutiveErrors++;
+    if (options.incrementConsecutiveErrors ?? true) {
+      state.consecutiveErrors++;
+    }
     state.updatedAt = new Date();
 
     this.emitEvent('agent.error', agentId, {
@@ -307,6 +313,16 @@ export class AgentStateManager {
     state.consecutiveErrors = 0;
     state.errorMessage = undefined;
     state.updatedAt = new Date();
+  }
+
+  /**
+   * Increment consecutive error count.
+   */
+  incrementConsecutiveErrors(agentId: string): number {
+    const state = this.requireAgent(agentId);
+    state.consecutiveErrors++;
+    state.updatedAt = new Date();
+    return state.consecutiveErrors;
   }
 
   /**
