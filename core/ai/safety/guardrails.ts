@@ -361,7 +361,9 @@ export interface TransactionContext {
 }
 
 export class RiskValidator {
-  constructor(private readonly thresholds: RiskThresholds) {}
+  constructor(private readonly thresholds: RiskThresholds) {
+    this.validateThresholds(thresholds);
+  }
 
   validateTransaction(context: TransactionContext): SafetyCheckResult {
     // Check single transaction limit
@@ -386,7 +388,18 @@ export class RiskValidator {
       };
     }
 
-    // Additional risk for new destinations (check first as it's more specific)
+    // Check if multi-sig required before lower-severity escalation rules.
+    if (context.valueTon > this.thresholds.requireMultiSigAbove) {
+      return {
+        passed: true,
+        reason: `Transaction requires multi-signature (value: ${context.valueTon} TON)`,
+        severity: 'high',
+        action: 'escalate',
+        metadata: { requireMultiSig: true },
+      };
+    }
+
+    // Additional risk for new destinations below the multi-sig band.
     if (context.isNewDestination && context.valueTon > 100) {
       return {
         passed: true,
@@ -408,22 +421,43 @@ export class RiskValidator {
       };
     }
 
-    // Check if multi-sig required
-    if (context.valueTon > this.thresholds.requireMultiSigAbove) {
-      return {
-        passed: true,
-        reason: `Transaction requires multi-signature (value: ${context.valueTon} TON)`,
-        severity: 'high',
-        action: 'escalate',
-        metadata: { requireMultiSig: true },
-      };
-    }
-
     return {
       passed: true,
       severity: 'low',
       action: 'allow',
     };
+  }
+
+  private validateThresholds(thresholds: RiskThresholds): void {
+    const requiredThresholds = [
+      'maxTransactionValueTon',
+      'maxDailyTransactionsTon',
+      'requireConfirmationAbove',
+      'requireMultiSigAbove',
+    ] as const;
+
+    for (const name of requiredThresholds) {
+      const value = thresholds[name];
+      if (!Number.isFinite(value) || value < 0) {
+        throw new Error(`Invalid risk threshold ${name}: must be a non-negative finite number`);
+      }
+    }
+
+    if (thresholds.maxTransactionValueTon <= 0) {
+      throw new Error('Invalid risk threshold maxTransactionValueTon: must be greater than 0');
+    }
+
+    if (thresholds.requireConfirmationAbove >= thresholds.requireMultiSigAbove) {
+      throw new Error(
+        'Invalid risk thresholds: requireConfirmationAbove must be below requireMultiSigAbove'
+      );
+    }
+
+    if (thresholds.requireMultiSigAbove >= thresholds.maxTransactionValueTon) {
+      throw new Error(
+        'Invalid risk thresholds: requireMultiSigAbove must be below maxTransactionValueTon'
+      );
+    }
   }
 }
 
@@ -574,7 +608,7 @@ export function createSafetyManager(config?: Partial<SafetyConfig>): SafetyManag
       maxTransactionValueTon: 1000,
       maxDailyTransactionsTon: 5000,
       requireConfirmationAbove: 100,
-      requireMultiSigAbove: 1000,
+      requireMultiSigAbove: 500,
     },
     ...config,
   };

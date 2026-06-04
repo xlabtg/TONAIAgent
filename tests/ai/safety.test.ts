@@ -267,7 +267,7 @@ describe('RiskValidator', () => {
       maxTransactionValueTon: 1000,
       maxDailyTransactionsTon: 5000,
       requireConfirmationAbove: 100,
-      requireMultiSigAbove: 1000,
+      requireMultiSigAbove: 500,
     });
   });
 
@@ -292,6 +292,20 @@ describe('RiskValidator', () => {
     expect(result.passed).toBe(true);
     expect(result.action).toBe('escalate');
     expect(result.metadata?.requireConfirmation).toBe(true);
+  });
+
+  it('should require multi-signature for high transactions below the hard limit', () => {
+    const result = validator.validateTransaction({
+      valueTon: 750,
+      dailyTotalTon: 500,
+      transactionType: 'transfer',
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.action).toBe('escalate');
+    expect(result.severity).toBe('high');
+    expect(result.metadata?.requireMultiSig).toBe(true);
+    expect(result.metadata?.requireConfirmation).toBeUndefined();
   });
 
   it('should block transactions exceeding single limit', () => {
@@ -329,6 +343,18 @@ describe('RiskValidator', () => {
     expect(result.passed).toBe(true);
     expect(result.action).toBe('escalate');
     expect(result.metadata?.newDestination).toBe(true);
+  });
+
+  it('should reject multi-sig thresholds that are not below the hard transaction limit', () => {
+    expect(
+      () =>
+        new RiskValidator({
+          maxTransactionValueTon: 1000,
+          maxDailyTransactionsTon: 5000,
+          requireConfirmationAbove: 100,
+          requireMultiSigAbove: 1000,
+        })
+    ).toThrow(/requireMultiSigAbove/);
   });
 });
 
@@ -397,6 +423,18 @@ describe('SafetyManager', () => {
     });
 
     expect(result.passed).toBe(true);
+  });
+
+  it('should require multi-signature in the default high-value band', () => {
+    const result = manager.validateTransaction({
+      valueTon: 750,
+      dailyTotalTon: 100,
+      transactionType: 'transfer',
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.action).toBe('escalate');
+    expect(result.metadata?.requireMultiSig).toBe(true);
   });
 
   it('should sanitize input', () => {
