@@ -69,6 +69,8 @@ export const DEFAULT_AGENT_MANAGER_CONFIG: AgentManagerConfig = {
   logLevel: 'info',
 };
 
+const MAX_CONSECUTIVE_ERRORS_BEFORE_ERROR = 5;
+
 // ============================================================================
 // Agent Manager
 // ============================================================================
@@ -567,13 +569,17 @@ export class AgentManager {
           this.stateManager.updateMetrics(agentId, metrics);
         }
       } else {
-        // Increment consecutive errors
-        const currentState = this.stateManager.requireAgent(agentId);
+        const consecutiveErrors = this.stateManager.incrementConsecutiveErrors(agentId);
 
         // Check if we should transition to ERROR state
-        if (currentState.consecutiveErrors >= 5) {
-          this.stateManager.setAgentError(agentId, result.error ?? 'Too many consecutive errors');
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS_BEFORE_ERROR) {
+          this.stateManager.setAgentError(
+            agentId,
+            result.error ?? 'Too many consecutive errors',
+            { incrementConsecutiveErrors: false }
+          );
           this.scheduler.pauseAgent(agentId);
+          this.stateManager.updateNextExecution(agentId, null);
         }
       }
 
@@ -601,11 +607,16 @@ export class AgentManager {
 
       // Record failure
       this.stateManager.incrementCycleCounts(agentId, false, 0);
-      const currentState = this.stateManager.requireAgent(agentId);
+      const consecutiveErrors = this.stateManager.incrementConsecutiveErrors(agentId);
 
-      if (currentState.consecutiveErrors >= 5) {
-        this.stateManager.setAgentError(agentId, errorMessage);
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS_BEFORE_ERROR) {
+        this.stateManager.setAgentError(
+          agentId,
+          errorMessage,
+          { incrementConsecutiveErrors: false }
+        );
         this.scheduler.pauseAgent(agentId);
+        this.stateManager.updateNextExecution(agentId, null);
       }
 
       this.monitor.updateAgentState(this.stateManager.requireAgent(agentId));

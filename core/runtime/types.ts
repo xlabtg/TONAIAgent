@@ -345,6 +345,8 @@ export interface ScheduledAgent {
   lastRunAt: Date | null;
   /** Whether currently running */
   isRunning: boolean;
+  /** Whether scheduled execution is paused */
+  isPaused?: boolean;
   /** Timer reference (internal) */
   timerId?: ReturnType<typeof setTimeout>;
 }

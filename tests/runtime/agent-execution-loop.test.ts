@@ -68,6 +68,33 @@ function createTestAgentConfig(overrides: Partial<AgentConfig> = {}): AgentConfi
   };
 }
 
+function createTestAgentManager(
+  options: NonNullable<Parameters<typeof createAgentManager>[0]> = {}
+): AgentManager {
+  return createAgentManager({
+    ...options,
+    config: {
+      maxAgents: 10,
+      scheduler: {
+        minIntervalMs: 100,
+        maxIntervalMs: 60000,
+        maxConcurrentExecutions: 10,
+        enableDriftCompensation: true,
+        executionTimeoutMs: 5000,
+      },
+      ...options.config,
+      scheduler: {
+        minIntervalMs: 100,
+        maxIntervalMs: 60000,
+        maxConcurrentExecutions: 10,
+        enableDriftCompensation: true,
+        executionTimeoutMs: 5000,
+        ...options.config?.scheduler,
+      },
+    },
+  });
+}
+
 // ============================================================================
 // Agent State Manager Tests
 // ============================================================================
@@ -210,6 +237,21 @@ describe('AgentStateManager', () => {
       expect(events[0].type).toBe('agent.created');
       expect(events[1].type).toBe('agent.started');
       expect(events[2].type).toBe('agent.paused');
+    });
+  });
+
+  describe('errors', () => {
+    it('should increment and reset consecutive errors', () => {
+      const config = createTestAgentConfig({ agentId: 'agent-001' });
+      stateManager.createAgent(config);
+
+      expect(stateManager.incrementConsecutiveErrors('agent-001')).toBe(1);
+      expect(stateManager.incrementConsecutiveErrors('agent-001')).toBe(2);
+      expect(stateManager.requireAgent('agent-001').consecutiveErrors).toBe(2);
+
+      stateManager.resetErrors('agent-001');
+
+      expect(stateManager.requireAgent('agent-001').consecutiveErrors).toBe(0);
     });
   });
 });
@@ -388,6 +430,23 @@ describe('AgentScheduler', () => {
       expect(executionCount).toBeGreaterThan(countBeforePause);
     });
 
+    it('should not reschedule an agent paused during its callback', async () => {
+      let executionCount = 0;
+
+      scheduler.scheduleAgent(
+        'agent-001',
+        { value: 100, unit: 'milliseconds' },
+        async () => {
+          executionCount++;
+          scheduler.pauseAgent('agent-001');
+        }
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      expect(executionCount).toBe(1);
+    });
+
     it('should unschedule agents', async () => {
       let executionCount = 0;
       scheduler.scheduleAgent(
@@ -521,18 +580,7 @@ describe('AgentManager', () => {
   let manager: AgentManager;
 
   beforeEach(() => {
-    manager = createAgentManager({
-      config: {
-        maxAgents: 10,
-        scheduler: {
-          minIntervalMs: 100,
-          maxIntervalMs: 60000,
-          maxConcurrentExecutions: 10,
-          enableDriftCompensation: true,
-          executionTimeoutMs: 5000,
-        },
-      },
-    });
+    manager = createTestAgentManager();
     manager.start();
   });
 
@@ -632,6 +680,114 @@ describe('AgentManager', () => {
 
       const result = await manager.triggerAgent('agent-001');
       expect(result.success).toBe(true);
+    });
+
+    it('should increment consecutive errors and auto-error after five failed cycles', async () => {
+      manager.stop();
+      manager = createTestAgentManager({
+        marketDataProvider: {
+          getPrice: vi.fn(async () => null),
+          getSnapshot: vi.fn(async () => {
+            throw new Error('market data unavailable');
+          }),
+        },
+      });
+      manager.start();
+
+      const config = createTestAgentConfig({
+        agentId: 'agent-001',
+        interval: { value: 1, unit: 'minutes' },
+      });
+      await manager.createAgent(config);
+      await manager.startAgent('agent-001');
+
+      for (let i = 1; i <= 4; i++) {
+        const result = await manager.triggerAgent('agent-001');
+        const state = manager.getAgent('agent-001');
+
+        expect(result.success).toBe(false);
+        expect(state?.state).toBe('RUNNING');
+        expect(state?.consecutiveErrors).toBe(i);
+      }
+
+      const result = await manager.triggerAgent('agent-001');
+      const state = manager.getAgent('agent-001');
+
+      expect(result.success).toBe(false);
+      expect(state?.state).toBe('ERROR');
+      expect(state?.consecutiveErrors).toBe(5);
+      expect(state?.errorMessage).toContain('market data unavailable');
+      expect(state?.nextExecutionAt).toBeNull();
+      await expect(manager.triggerAgent('agent-001')).rejects.toThrow(RuntimeError);
+    });
+
+    it('should reset consecutive errors after a successful cycle', async () => {
+      let failMarketData = true;
+
+      manager.stop();
+      manager = createTestAgentManager({
+        marketDataProvider: {
+          getPrice: vi.fn(async () => null),
+          getSnapshot: vi.fn(async () => {
+            if (failMarketData) {
+              throw new Error('temporary market data outage');
+            }
+
+            const now = new Date();
+            return {
+              prices: {
+                TON: {
+                  asset: 'TON',
+                  price: 5,
+                  volume24h: 1000,
+                  timestamp: now,
+                },
+                USDT: {
+                  asset: 'USDT',
+                  price: 1,
+                  volume24h: 1000,
+                  timestamp: now,
+                },
+              },
+              source: 'test',
+              fetchedAt: now,
+            };
+          }),
+        },
+        strategyExecutor: {
+          execute: vi.fn(async () => ({
+            action: 'HOLD',
+            pair: 'TON/USDT',
+            size: 0,
+            confidence: 0.5,
+            reason: 'No test trade',
+            strategyId: 'momentum',
+            generatedAt: new Date(),
+          })),
+        },
+      });
+      manager.start();
+
+      const config = createTestAgentConfig({
+        agentId: 'agent-001',
+        interval: { value: 1, unit: 'minutes' },
+      });
+      await manager.createAgent(config);
+      await manager.startAgent('agent-001');
+
+      await manager.triggerAgent('agent-001');
+      await manager.triggerAgent('agent-001');
+      expect(manager.getAgent('agent-001')?.consecutiveErrors).toBe(2);
+
+      failMarketData = false;
+
+      const result = await manager.triggerAgent('agent-001');
+      const state = manager.getAgent('agent-001');
+
+      expect(result.success).toBe(true);
+      expect(state?.state).toBe('RUNNING');
+      expect(state?.consecutiveErrors).toBe(0);
+      expect(state?.errorMessage).toBeUndefined();
     });
   });
 
