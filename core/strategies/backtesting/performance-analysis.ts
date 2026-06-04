@@ -25,6 +25,16 @@ import {
   TradeMetrics,
 } from './types';
 
+interface RealizedTradeResult {
+  pnl: number;
+  costBasis: number;
+}
+
+interface OpenCostBasisPosition {
+  amount: number;
+  costBasis: number;
+}
+
 // ============================================================================
 // Performance Calculator
 // ============================================================================
@@ -92,14 +102,9 @@ export class PerformanceCalculator {
     simulations: number = 1000,
     confidenceLevel: number = 0.95
   ): MonteCarloAnalysis {
-    // Calculate return per trade
-    const tradeReturns = orders
-      .filter((o) => o.status === 'filled' || o.status === 'partially_filled')
-      .map((o) => {
-        const grossReturn = o.side === 'sell' ? o.filledAmount * o.executedPrice : 0;
-        const cost = o.side === 'buy' ? o.filledAmount * o.executedPrice + o.fees : 0;
-        return grossReturn > 0 ? (grossReturn - o.fees - cost) / Math.max(cost, 1) : 0;
-      })
+    // Calculate return per realized closing trade
+    const tradeReturns = this.calculateRealizedTradeResults(this.getFilledOrders(orders))
+      .map((t) => (t.costBasis > 0 ? t.pnl / t.costBasis : 0))
       .filter((r) => isFinite(r));
 
     if (tradeReturns.length < 2) {
@@ -385,17 +390,8 @@ export class PerformanceCalculator {
   }
 
   private calculateTradeMetrics(orders: SimulatedOrder[]): TradeMetrics {
-    const filledOrders = orders.filter(
-      (o) => o.status === 'filled' || o.status === 'partially_filled'
-    );
-    const sells = filledOrders.filter((o) => o.side === 'sell');
-
-    // Calculate P&L per sell order (simplified: sell revenue minus cost basis estimation)
-    const tradeResults = sells.map((order) => {
-      const proceeds = order.filledAmount * order.executedPrice;
-      // Approximate cost by assuming entry at a fair price (will be 0 for market orders without buy reference)
-      return { pnl: proceeds - order.fees, value: proceeds };
-    });
+    const filledOrders = this.getFilledOrders(orders);
+    const tradeResults = this.calculateRealizedTradeResults(filledOrders);
 
     const winningTrades = tradeResults.filter((t) => t.pnl > 0);
     const losingTrades = tradeResults.filter((t) => t.pnl <= 0);
@@ -423,11 +419,12 @@ export class PerformanceCalculator {
     const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
 
-    const winRate = sells.length > 0 ? (winningTrades.length / sells.length) * 100 : 0;
+    const winRate =
+      tradeResults.length > 0 ? (winningTrades.length / tradeResults.length) * 100 : 0;
     const expectancy = (winRate / 100) * avgWin - (1 - winRate / 100) * avgLoss;
 
     return {
-      totalTrades: sells.length,
+      totalTrades: tradeResults.length,
       winningTrades: winningTrades.length,
       losingTrades: losingTrades.length,
       winRate,
@@ -442,6 +439,67 @@ export class PerformanceCalculator {
       totalSlippage,
       avgSlippage: avgSlippage * 100, // Convert to percentage
     };
+  }
+
+  private getFilledOrders(orders: SimulatedOrder[]): SimulatedOrder[] {
+    return orders
+      .filter((o) => o.status === 'filled' || o.status === 'partially_filled')
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }
+
+  private calculateRealizedTradeResults(filledOrders: SimulatedOrder[]): RealizedTradeResult[] {
+    const positions = new Map<string, OpenCostBasisPosition>();
+    const results: RealizedTradeResult[] = [];
+
+    for (const order of filledOrders) {
+      if (order.filledAmount <= 0 || order.executedPrice <= 0) {
+        continue;
+      }
+
+      if (order.side === 'buy') {
+        const buyCost = order.filledAmount * order.executedPrice + order.fees;
+        const existing = positions.get(order.asset);
+        if (existing) {
+          existing.amount += order.filledAmount;
+          existing.costBasis += buyCost;
+        } else {
+          positions.set(order.asset, {
+            amount: order.filledAmount,
+            costBasis: buyCost,
+          });
+        }
+        continue;
+      }
+
+      const position = positions.get(order.asset);
+      if (!position || position.amount <= 0 || position.costBasis <= 0) {
+        continue;
+      }
+
+      const matchedAmount = Math.min(order.filledAmount, position.amount);
+      if (matchedAmount <= 0) {
+        continue;
+      }
+
+      const proceeds = matchedAmount * order.executedPrice;
+      const matchedCostBasis = position.costBasis * (matchedAmount / position.amount);
+      const matchedFees = order.fees * (matchedAmount / order.filledAmount);
+      const pnl = proceeds - matchedCostBasis - matchedFees;
+
+      results.push({
+        pnl,
+        costBasis: matchedCostBasis,
+      });
+
+      position.amount -= matchedAmount;
+      position.costBasis -= matchedCostBasis;
+
+      if (position.amount <= 0.000001) {
+        positions.delete(order.asset);
+      }
+    }
+
+    return results;
   }
 
   private calculateBenchmarkComparison(

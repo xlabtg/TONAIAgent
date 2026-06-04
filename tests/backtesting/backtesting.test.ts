@@ -821,6 +821,92 @@ describe('Performance Analysis', () => {
     expect(report.returns.positiveMonths).toBeGreaterThanOrEqual(0);
   });
 
+  it('should classify closing trades using matched cost basis', () => {
+    const equityCurve: EquityCurvePoint[] = [
+      { timestamp: new Date('2024-01-01'), equity: 10000, drawdown: 0, positions: {}, cash: 10000 },
+      { timestamp: new Date('2024-01-02'), equity: 9500, drawdown: 5, positions: {}, cash: 9500 },
+      { timestamp: new Date('2024-01-03'), equity: 10300, drawdown: 0, positions: {}, cash: 10300 },
+    ];
+
+    const orders: SimulatedOrder[] = [
+      {
+        id: 'buy_high',
+        sessionId: 'bt_cost_basis',
+        timestamp: new Date('2024-01-01T00:00:00Z'),
+        asset: 'TON',
+        side: 'buy',
+        type: 'market',
+        requestedAmount: 10,
+        filledAmount: 10,
+        executedPrice: 100,
+        fees: 0,
+        slippage: 0,
+        status: 'filled',
+      },
+      {
+        id: 'sell_loss',
+        sessionId: 'bt_cost_basis',
+        timestamp: new Date('2024-01-02T00:00:00Z'),
+        asset: 'TON',
+        side: 'sell',
+        type: 'market',
+        requestedAmount: 5,
+        filledAmount: 5,
+        executedPrice: 90,
+        fees: 2,
+        slippage: 0,
+        status: 'filled',
+      },
+      {
+        id: 'buy_lower',
+        sessionId: 'bt_cost_basis',
+        timestamp: new Date('2024-01-03T00:00:00Z'),
+        asset: 'TON',
+        side: 'buy',
+        type: 'market',
+        requestedAmount: 5,
+        filledAmount: 5,
+        executedPrice: 80,
+        fees: 0,
+        slippage: 0,
+        status: 'filled',
+      },
+      {
+        id: 'sell_win',
+        sessionId: 'bt_cost_basis',
+        timestamp: new Date('2024-01-04T00:00:00Z'),
+        asset: 'TON',
+        side: 'sell',
+        type: 'market',
+        requestedAmount: 10,
+        filledAmount: 10,
+        executedPrice: 110,
+        fees: 3,
+        slippage: 0,
+        status: 'filled',
+      },
+    ];
+
+    const report = calculator.buildReport(
+      'bt_cost_basis',
+      'Cost Basis Strategy',
+      10000,
+      equityCurve,
+      orders
+    );
+
+    expect(report.trades.totalTrades).toBe(2);
+    expect(report.trades.winningTrades).toBe(1);
+    expect(report.trades.losingTrades).toBe(1);
+    expect(report.trades.winRate).toBe(50);
+    expect(report.trades.averageWin).toBeCloseTo(197, 6);
+    expect(report.trades.averageLoss).toBeCloseTo(52, 6);
+    expect(report.trades.largestWin).toBeCloseTo(197, 6);
+    expect(report.trades.largestLoss).toBeCloseTo(-52, 6);
+    expect(report.trades.profitFactor).toBeCloseTo(197 / 52, 6);
+    expect(report.trades.expectancy).toBeCloseTo(72.5, 6);
+  });
+
   describe('Monte Carlo Analysis', () => {
     it('should run Monte Carlo simulation with orders', () => {
       const orders = createMockOrders();
