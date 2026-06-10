@@ -731,7 +731,7 @@ class BayesianOptimizer implements Optimizer {
     return results;
   }
 
-  observe(params: ParameterSet, value: number): void {
+  observe(params: ParameterSet, value: number, _valid: boolean): void {
     this.observations.push({ params, value });
     this.iterations++;
   }
@@ -784,7 +784,7 @@ class BayesianOptimizer implements Optimizer {
 }
 
 class GeneticOptimizer implements Optimizer {
-  private population: Array<{ params: ParameterSet; fitness: number }> = [];
+  private population: Array<{ params: ParameterSet; fitness: number; evaluated: boolean }> = [];
   private generation = 0;
   private readonly populationSize = 20;
   private readonly mutationRate = 0.1;
@@ -796,6 +796,7 @@ class GeneticOptimizer implements Optimizer {
       this.population.push({
         params: this.generateRandom(),
         fitness: 0,
+        evaluated: false,
       });
     }
   }
@@ -803,7 +804,7 @@ class GeneticOptimizer implements Optimizer {
   suggest(count: number): ParameterSet[] {
     // Return unevaluated individuals
     const unevaluated = this.population
-      .filter(p => p.fitness === 0)
+      .filter(p => !p.evaluated)
       .slice(0, count);
 
     if (unevaluated.length > 0) {
@@ -815,7 +816,7 @@ class GeneticOptimizer implements Optimizer {
     return this.population.slice(0, count).map(p => p.params);
   }
 
-  observe(params: ParameterSet, value: number): void {
+  observe(params: ParameterSet, value: number, _valid: boolean): void {
     const individual = this.population.find(p =>
       this.config.parameters.every(param =>
         p.params[param.parameterId] === params[param.parameterId]
@@ -824,6 +825,7 @@ class GeneticOptimizer implements Optimizer {
 
     if (individual) {
       individual.fitness = value;
+      individual.evaluated = true;
     }
   }
 
@@ -834,7 +836,7 @@ class GeneticOptimizer implements Optimizer {
   hasConverged(threshold: number): boolean {
     if (this.population.length < 2) return false;
 
-    const fitnesses = this.population.map(p => p.fitness).filter(f => f > 0);
+    const fitnesses = this.population.filter(p => p.evaluated).map(p => p.fitness);
     if (fitnesses.length < 5) return false;
 
     const best = Math.max(...fitnesses);
@@ -855,10 +857,13 @@ class GeneticOptimizer implements Optimizer {
   private evolve(): void {
     this.generation++;
 
-    // Sort by fitness
-    this.population.sort((a, b) => b.fitness - a.fitness);
+    // Sort evaluated individuals above unevaluated, then by fitness descending
+    this.population.sort((a, b) => {
+      if (a.evaluated !== b.evaluated) return a.evaluated ? -1 : 1;
+      return b.fitness - a.fitness;
+    });
 
-    // Select top half
+    // Select top half (prefer evaluated individuals)
     const selected = this.population.slice(0, this.populationSize / 2);
 
     // Generate new population
@@ -880,13 +885,13 @@ class GeneticOptimizer implements Optimizer {
         child = this.mutate(child);
       }
 
-      newPopulation.push({ params: child, fitness: 0 });
+      newPopulation.push({ params: child, fitness: 0, evaluated: false });
     }
 
     this.population = newPopulation;
   }
 
-  private selectParent(population: Array<{ params: ParameterSet; fitness: number }>): typeof population[0] {
+  private selectParent(population: Array<{ params: ParameterSet; fitness: number; evaluated: boolean }>): typeof population[0] {
     // Tournament selection
     const tournamentSize = 3;
     let best = population[Math.floor(Math.random() * population.length)];
