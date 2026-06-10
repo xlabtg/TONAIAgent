@@ -156,6 +156,10 @@ contract StrategyExecutor with Deployable, Ownable {
     // Audit log: (strategyId * 2^32 + seqno) -> AuditEntry
     auditLog: map<Int, AuditEntry>;
 
+    // Index: (strategyId * 2^64 + signalNonce) -> seqno, used by ReportOutcome
+    // to locate the correct audit entry regardless of subsequent executions.
+    nonceToSeqno: map<Int, Int>;
+
     // Safety
     isHalted: Bool;
     totalStrategiesRegistered: Int as uint64;
@@ -303,6 +307,9 @@ contract StrategyExecutor with Deployable, Ownable {
             gasUsedNano: 0,
             executedAt: now()
         });
+        // Record signalNonce → seqno so ReportOutcome can locate this entry
+        // even if further ExecuteSignal calls have incremented executionCount.
+        self.nonceToSeqno.set(self.nonceKey(msg.strategyId, msg.signalNonce), r.executionCount);
 
         // Auto-complete if max executions reached
         if (r.maxExecutions > 0 && r.executionCount >= r.maxExecutions) {
@@ -344,14 +351,19 @@ contract StrategyExecutor with Deployable, Ownable {
         }
         self.strategies.set(msg.strategyId, r);
 
-        // Patch the audit entry with real outcomes
-        let auditKey: Int = self.auditKey(msg.strategyId, r.executionCount);
-        let entry: AuditEntry? = self.auditLog.get(auditKey);
-        if (entry != null) {
-            let e: AuditEntry = entry!!;
-            e.actualPnlNano = msg.actualPnlNano;
-            e.gasUsedNano = msg.gasUsedNano;
-            self.auditLog.set(auditKey, e);
+        // Patch the audit entry with real outcomes.
+        // Look up the seqno that was assigned when this signal was executed
+        // so we find the correct entry even if further signals have run since.
+        let seqno: Int? = self.nonceToSeqno.get(self.nonceKey(msg.strategyId, msg.signalNonce));
+        if (seqno != null) {
+            let auditKey: Int = self.auditKey(msg.strategyId, seqno!!);
+            let entry: AuditEntry? = self.auditLog.get(auditKey);
+            if (entry != null) {
+                let e: AuditEntry = entry!!;
+                e.actualPnlNano = msg.actualPnlNano;
+                e.gasUsedNano = msg.gasUsedNano;
+                self.auditLog.set(auditKey, e);
+            }
         }
     }
 
@@ -394,5 +406,10 @@ contract StrategyExecutor with Deployable, Ownable {
     fun auditKey(strategyId: Int, seqno: Int): Int {
         // Pack strategyId in high 32 bits and seqno in low 32 bits
         return (strategyId << 32) | seqno;
+    }
+
+    fun nonceKey(strategyId: Int, signalNonce: Int): Int {
+        // Pack strategyId in high 64 bits and signalNonce in low 64 bits
+        return (strategyId << 64) | signalNonce;
     }
 }

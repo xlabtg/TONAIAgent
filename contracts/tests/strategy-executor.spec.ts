@@ -348,6 +348,67 @@ describe('StrategyExecutor', () => {
     expect(reportResult.transactions).toHaveTransaction({ success: true });
   });
 
+  // LOGIC-14: ReportOutcome must patch the entry for the *reported* signalNonce,
+  // not the most-recent execution (r.executionCount).
+  it('ReportOutcome patches the correct audit entry when a second signal was executed after the first', async () => {
+    await registerRunningStrategy();
+
+    // Signal 1 — seqno will be 1
+    await executor.send(
+      orchestrator.getSender(),
+      { value: toNano('1') + toNano('0.05') },
+      {
+        $$type: 'ExecuteSignal',
+        strategyId: STRATEGY_ID,
+        signalNonce: 1n,
+        to: agentWallet.address,
+        amount: toNano('1'),
+        payload: null,
+        expectedPnlNano: BigInt(toNano('0.05')),
+      }
+    );
+
+    // Signal 2 — seqno will be 2; executionCount is now 2
+    await executor.send(
+      orchestrator.getSender(),
+      { value: toNano('1') + toNano('0.05') },
+      {
+        $$type: 'ExecuteSignal',
+        strategyId: STRATEGY_ID,
+        signalNonce: 2n,
+        to: agentWallet.address,
+        amount: toNano('1'),
+        payload: null,
+        expectedPnlNano: BigInt(toNano('0.02')),
+      }
+    );
+
+    // Report outcome for signal 1 (while executionCount == 2)
+    const reportResult = await executor.send(
+      orchestrator.getSender(),
+      { value: toNano('0.05') },
+      {
+        $$type: 'ReportOutcome',
+        strategyId: STRATEGY_ID,
+        signalNonce: 1n,
+        actualPnlNano: -BigInt(toNano('0.03')),
+        gasUsedNano: toNano('0.001'),
+      }
+    );
+    expect(reportResult.transactions).toHaveTransaction({ success: true });
+
+    // Entry at seqno=1 must be updated; entry at seqno=2 must still have actualPnlNano=0
+    const entry1 = await executor.getAuditEntry(STRATEGY_ID, 1n);
+    const entry2 = await executor.getAuditEntry(STRATEGY_ID, 2n);
+
+    expect(entry1).not.toBeNull();
+    expect(entry1!.actualPnlNano).toBe(-BigInt(toNano('0.03')));
+    expect(entry1!.gasUsedNano).toBe(toNano('0.001'));
+
+    expect(entry2).not.toBeNull();
+    expect(entry2!.actualPnlNano).toBe(0n);   // not overwritten
+  });
+
   // ---- emergency halt ----
 
   it('owner can halt all strategy execution', async () => {
