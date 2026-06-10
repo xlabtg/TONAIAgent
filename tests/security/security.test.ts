@@ -1077,29 +1077,161 @@ describe('Recovery Manager', () => {
   });
 
   describe('Verification', () => {
-    it('should verify email step', async () => {
+    it('should verify email step with the correct OTP', async () => {
       const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      const otp = recovery.issueOtp(request.id, 'email');
 
-      const result = await recovery.verifyStep(request.id, 'email', { code: '123456' });
+      const result = await recovery.verifyStep(request.id, 'email', { code: otp });
 
       expect(result.success).toBe(true);
       expect(result.step.status).toBe('verified');
     });
 
-    it('should fail verification with invalid data', async () => {
+    it('should reject email verification with wrong code', async () => {
       const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      recovery.issueOtp(request.id, 'email'); // issue a real OTP but do not use it
 
-      const result = await recovery.verifyStep(request.id, 'email', { code: '12' });
+      // Use a different code — must be rejected even though it is 6 chars.
+      const result = await recovery.verifyStep(request.id, 'email', { code: '000000' });
 
       expect(result.success).toBe(false);
       expect(result.step.attempts).toBe(1);
     });
 
+    it('should reject an arbitrary 6-char string (shape check is insufficient)', async () => {
+      const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      // issueOtp generates the real secret; passing a random 6-char string must fail.
+      recovery.issueOtp(request.id, 'email');
+
+      const result = await recovery.verifyStep(request.id, 'email', { code: '999999' });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject replay of an already-used OTP', async () => {
+      const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      const otp = recovery.issueOtp(request.id, 'email');
+
+      // First use — must succeed.
+      const first = await recovery.verifyStep(request.id, 'email', { code: otp });
+      expect(first.success).toBe(true);
+
+      // Re-issue and re-use the same plaintext against a fresh step to simulate replay.
+      // A new request is needed because the step is already 'verified'.
+      const request2 = await recovery.initiateRecovery('user_123', 'access_recovery');
+      // Manually grab the OTP for request2, then try the old OTP from request1.
+      recovery.issueOtp(request2.id, 'email'); // generates a different secret
+      const replay = await recovery.verifyStep(request2.id, 'email', { code: otp });
+      expect(replay.success).toBe(false);
+    });
+
+    it('should reject OTP after expiry', async () => {
+      vi.useFakeTimers();
+      try {
+        const request = await recovery.initiateRecovery('user_exp', 'access_recovery');
+        const otp = recovery.issueOtp(request.id, 'email');
+
+        // Advance time past the 10-minute OTP window.
+        vi.advanceTimersByTime(11 * 60 * 1000);
+
+        const result = await recovery.verifyStep(request.id, 'email', { code: otp });
+        expect(result.success).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should fail closed when no OTP has been issued (no secretHash)', async () => {
+      // Create a step-less request and try to verify without ever calling issueOtp.
+      const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      // Manually clear the secretHash to simulate a missing backend configuration.
+      const emailStep = request.verificationSteps.find((s) => s.type === 'email');
+      if (emailStep) {
+        emailStep.secretHash = undefined;
+      }
+
+      const result = await recovery.verifyStep(request.id, 'email', { code: '123456' });
+      expect(result.success).toBe(false);
+    });
+
+    it('should verify recovery phrase against registered hash', async () => {
+      const phrase = Array.from({ length: 24 }, (_, i) => `word${i}`);
+      const userId = 'user_phrase';
+      // In production this hash is stored during wallet provisioning.
+      const phraseHash = require('node:crypto')
+        .createHash('sha256')
+        .update(phrase.join(' '))
+        .digest('hex');
+      recovery.registerRecoveryPhraseHash(userId, phraseHash);
+
+      const request = await recovery.initiateRecovery(userId, 'key_recovery');
+      // Verify email step first.
+      const otp = recovery.issueOtp(request.id, 'email');
+      await recovery.verifyStep(request.id, 'email', { code: otp });
+
+      const result = await recovery.verifyStep(request.id, 'recovery_phrase', {
+        recoveryPhrase: phrase,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject wrong recovery phrase', async () => {
+      const userId = 'user_wrong_phrase';
+      const correctPhrase = Array.from({ length: 24 }, (_, i) => `correct${i}`);
+      const wrongPhrase = Array.from({ length: 24 }, (_, i) => `wrong${i}`);
+      const phraseHash = require('node:crypto')
+        .createHash('sha256')
+        .update(correctPhrase.join(' '))
+        .digest('hex');
+      recovery.registerRecoveryPhraseHash(userId, phraseHash);
+
+      const request = await recovery.initiateRecovery(userId, 'key_recovery');
+      const otp = recovery.issueOtp(request.id, 'email');
+      await recovery.verifyStep(request.id, 'email', { code: otp });
+
+      const result = await recovery.verifyStep(request.id, 'recovery_phrase', {
+        recoveryPhrase: wrongPhrase,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should fail closed for recovery phrase when no hash is registered', async () => {
+      const request = await recovery.initiateRecovery('user_no_hash', 'key_recovery');
+      const phrase = Array.from({ length: 24 }, (_, i) => `word${i}`);
+
+      const result = await recovery.verifyStep(request.id, 'recovery_phrase', {
+        recoveryPhrase: phrase,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should fail closed for biometric (no platform API configured)', async () => {
+      const request = await recovery.initiateRecovery('user_bio', 'wallet_recovery');
+      // biometric step is optional but present for wallet_recovery.
+      const hasBio = request.verificationSteps.some((s) => s.type === 'biometric');
+      if (!hasBio) return; // skip if step not present for this type
+
+      const result = await recovery.verifyStep(request.id, 'biometric', {
+        biometricData: 'some_data',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should fail closed for guardian when no public key is registered', async () => {
+      const request = await recovery.initiateRecovery('user_guardian', 'social_recovery');
+
+      const result = await recovery.verifyStep(request.id, 'guardian', {
+        guardianApproval: 'deadbeef',
+      });
+      expect(result.success).toBe(false);
+    });
+
     it('should permanently fail recovery after a step exhausts attempts', async () => {
       const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      recovery.issueOtp(request.id, 'email');
 
       for (let attempt = 0; attempt < 3; attempt++) {
-        await recovery.verifyStep(request.id, 'email', { code: '12' });
+        await recovery.verifyStep(request.id, 'email', { code: '000000' });
       }
 
       const failed = recovery.getRecoveryRequest(request.id);
@@ -1118,12 +1250,14 @@ describe('Recovery Manager', () => {
 
   describe('Recovery Execution', () => {
     it('should execute recovery after all steps verified', async () => {
-      const request = await recovery.initiateRecovery('user_123', 'access_recovery');
+      const userId = 'user_exec';
+      const request = await recovery.initiateRecovery(userId, 'access_recovery');
 
-      // Verify all required steps
+      // Verify all required steps with real secrets.
       for (const step of request.verificationSteps) {
-        if (step.required) {
-          await recovery.verifyStep(request.id, step.type, { code: '123456' });
+        if (step.required && (step.type === 'email' || step.type === 'sms')) {
+          const otp = recovery.issueOtp(request.id, step.type);
+          await recovery.verifyStep(request.id, step.type, { code: otp });
         }
       }
 

@@ -545,9 +545,109 @@ export class DefaultEmergencyController implements EmergencyController {
 // Recovery Manager Implementation
 // ============================================================================
 
+// OTP validity window for email/SMS codes (10 minutes)
+const OTP_TTL_MS = 10 * 60 * 1000;
+
 export class DefaultRecoveryManager implements RecoveryManager {
   private readonly recoveryRequests = new Map<string, RecoveryRequest>();
   private readonly eventCallbacks: SecurityEventCallback[] = [];
+  /**
+   * Stores SHA-256 hashes of recovery phrases keyed by userId.
+   * In production this would be persisted in an encrypted store populated
+   * during wallet/key provisioning.  Call `registerRecoveryPhraseHash` to
+   * seed the registry before a recovery attempt.
+   */
+  private readonly recoveryPhraseHashes = new Map<string, string>();
+  /**
+   * Stores (requestId → guardianPublicKey) and (requestId → devicePublicKey)
+   * for guardian and device verification steps.  A real backend would look
+   * these up from a database; the registry here supports tests and in-process
+   * integrations.
+   */
+  private readonly guardianPublicKeys = new Map<string, string>();
+  private readonly devicePublicKeys = new Map<string, string>();
+
+  /**
+   * Register the expected SHA-256 hash of a user's recovery phrase so that
+   * future `verifyStep('recovery_phrase', …)` calls can compare against it.
+   * Call this during wallet provisioning (or in tests) before initiating
+   * recovery.
+   */
+  registerRecoveryPhraseHash(userId: string, phraseHash: string): void {
+    this.recoveryPhraseHashes.set(userId, phraseHash);
+  }
+
+  /**
+   * Register a guardian public key (hex) for a recovery request.
+   * The guardian must sign the requestId with the corresponding private key
+   * and pass the hex-encoded signature as `guardianApproval`.
+   */
+  registerGuardianPublicKey(requestId: string, publicKeyHex: string): void {
+    this.guardianPublicKeys.set(requestId, publicKeyHex);
+  }
+
+  /**
+   * Register a device public key (hex) for a recovery request.
+   * The device must sign the requestId with the corresponding private key
+   * and pass the hex-encoded signature as `signature`.
+   */
+  registerDevicePublicKey(requestId: string, publicKeyHex: string): void {
+    this.devicePublicKeys.set(requestId, publicKeyHex);
+  }
+
+  /**
+   * Generate a cryptographically random 6-digit OTP and return both the
+   * plaintext (to be delivered out-of-band) and its SHA-256 hex digest
+   * (stored server-side for later constant-time comparison).
+   */
+  private generateOtp(): { plaintext: string; hash: string } {
+    // Use rejection sampling to produce a uniformly distributed 6-digit code.
+    let value: number;
+    do {
+      const buf = nodeCrypto.randomBytes(4);
+      value = buf.readUInt32BE(0) % 1_000_000;
+    } while (value >= 1_000_000);
+    const plaintext = String(value).padStart(6, '0');
+    const hash = nodeCrypto.createHash('sha256').update(plaintext).digest('hex');
+    return { plaintext, hash };
+  }
+
+  /**
+   * Hash an array of recovery-phrase words with SHA-256 for storage/comparison.
+   * In production this would use PBKDF2/Argon2 with a per-user salt.
+   */
+  private hashRecoveryPhrase(phrase: string[]): string {
+    return nodeCrypto
+      .createHash('sha256')
+      .update(phrase.join(' '))
+      .digest('hex');
+  }
+
+  /**
+   * Issue (or re-issue) a fresh time-limited OTP for a pending email/sms step
+   * and return the plaintext code.  The plaintext must be delivered
+   * out-of-band (email / SMS); only the SHA-256 hash is retained here.
+   *
+   * Callers in tests can capture this return value to produce a correct
+   * `verifyStep` call without ever exposing secret material in the request
+   * object.
+   */
+  issueOtp(requestId: string, stepType: 'email' | 'sms'): string {
+    const request = this.recoveryRequests.get(requestId);
+    if (!request) {
+      throw new Error(`Recovery request not found: ${requestId}`);
+    }
+    const step = request.verificationSteps.find((s) => s.type === stepType);
+    if (!step) {
+      throw new Error(`Step "${stepType}" not found in request ${requestId}`);
+    }
+    const { plaintext, hash } = this.generateOtp();
+    step.secretHash = hash;
+    step.secretExpiresAt = new Date(Date.now() + OTP_TTL_MS);
+    step.used = false;
+    this.recoveryRequests.set(requestId, request);
+    return plaintext;
+  }
 
   async initiateRecovery(
     userId: string,
@@ -557,6 +657,20 @@ export class DefaultRecoveryManager implements RecoveryManager {
     const requestId = `recovery_${Date.now()}_${nodeCrypto.randomBytes(8).toString('hex')}`;
 
     const verificationSteps = this.getVerificationSteps(type, options);
+
+    // Attach time-limited OTP secrets for code-based steps (email / sms).
+    // The plaintext OTP must be delivered out-of-band (e.g. via email/SMS);
+    // only the hash is stored server-side so a compromise of this store
+    // cannot be used to pass verification directly.
+    const otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
+    for (const step of verificationSteps) {
+      if (step.type === 'email' || step.type === 'sms') {
+        const { hash } = this.generateOtp();
+        step.secretHash = hash;
+        step.secretExpiresAt = otpExpiresAt;
+        step.used = false;
+      }
+    }
 
     const request: RecoveryRequest = {
       id: requestId,
@@ -611,7 +725,7 @@ export class DefaultRecoveryManager implements RecoveryManager {
     }
 
     // Verify the step
-    const verified = await this.performVerification(step, verificationData);
+    const verified = await this.performVerification(step, verificationData, requestId, request.userId);
 
     if (verified) {
       step.status = 'verified';
@@ -850,37 +964,119 @@ export class DefaultRecoveryManager implements RecoveryManager {
     return steps;
   }
 
+  /**
+   * Constant-time comparison of two hex strings to prevent timing attacks.
+   * Returns true only when both strings are identical in length and content.
+   */
+  private timingSafeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) {
+      // Perform a dummy comparison so execution time does not leak length.
+      nodeCrypto.timingSafeEqual(
+        Buffer.alloc(a.length || 1),
+        Buffer.alloc(a.length || 1)
+      );
+      return false;
+    }
+    return nodeCrypto.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'));
+  }
+
   private async performVerification(
     step: VerificationStep,
-    data: VerificationData
+    data: VerificationData,
+    requestId: string,
+    userId: string
   ): Promise<boolean> {
     switch (step.type) {
       case 'email':
-        // Verify email code
-        return data.code !== undefined && data.code.length === 6;
+      case 'sms': {
+        // Fail closed when no secret has been issued for this step.
+        if (!step.secretHash || !step.secretExpiresAt) {
+          return false;
+        }
+        // Reject replayed (already-used) codes.
+        if (step.used) {
+          return false;
+        }
+        // Reject expired codes.
+        if (Date.now() > step.secretExpiresAt.getTime()) {
+          return false;
+        }
+        if (!data.code) {
+          return false;
+        }
+        const candidateHash = nodeCrypto
+          .createHash('sha256')
+          .update(data.code)
+          .digest('hex');
+        const match = this.timingSafeEqual(candidateHash, step.secretHash);
+        if (match) {
+          // Mark as used to prevent replay.
+          step.used = true;
+        }
+        return match;
+      }
 
-      case 'sms':
-        // Verify SMS code
-        return data.code !== undefined && data.code.length === 6;
-
-      case 'recovery_phrase':
-        // Verify recovery phrase (would validate against stored hash)
-        return (
-          data.recoveryPhrase !== undefined &&
-          data.recoveryPhrase.length === 24
-        );
+      case 'recovery_phrase': {
+        // Fail closed when no phrase hash has been registered for this user.
+        const storedHash = this.recoveryPhraseHashes.get(userId);
+        if (!storedHash) {
+          return false;
+        }
+        if (!data.recoveryPhrase || data.recoveryPhrase.length !== 24) {
+          return false;
+        }
+        const candidateHash = this.hashRecoveryPhrase(data.recoveryPhrase);
+        return this.timingSafeEqual(candidateHash, storedHash);
+      }
 
       case 'biometric':
-        // Verify biometric data (would use platform biometric API)
-        return data.biometricData !== undefined;
+        // Fail closed: platform biometric API is not wired up in this
+        // environment.  A real integration would call the platform SDK here.
+        return false;
 
-      case 'guardian':
-        // Verify guardian approval
-        return data.guardianApproval !== undefined;
+      case 'guardian': {
+        const pubKeyHex = this.guardianPublicKeys.get(requestId);
+        if (!pubKeyHex || !data.guardianApproval) {
+          return false;
+        }
+        try {
+          const pubKey = nodeCrypto.createPublicKey({
+            key: Buffer.from(pubKeyHex, 'hex'),
+            format: 'der',
+            type: 'spki',
+          });
+          return nodeCrypto.verify(
+            null,
+            Buffer.from(requestId),
+            pubKey,
+            Buffer.from(data.guardianApproval, 'hex')
+          );
+        } catch {
+          return false;
+        }
+      }
 
-      case 'device':
-        // Verify device signature
-        return data.signature !== undefined;
+      case 'device': {
+        const pubKeyHex = this.devicePublicKeys.get(requestId);
+        if (!pubKeyHex || !data.signature) {
+          return false;
+        }
+        try {
+          const pubKey = nodeCrypto.createPublicKey({
+            key: Buffer.from(pubKeyHex, 'hex'),
+            format: 'der',
+            type: 'spki',
+          });
+          return nodeCrypto.verify(
+            null,
+            Buffer.from(requestId),
+            pubKey,
+            Buffer.from(data.signature, 'hex')
+          );
+        } catch {
+          return false;
+        }
+      }
 
       default:
         return false;

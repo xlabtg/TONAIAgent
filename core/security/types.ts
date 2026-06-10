@@ -639,6 +639,12 @@ export interface VerificationStep {
   verifiedAt?: Date;
   attempts: number;
   maxAttempts: number;
+  /** SHA-256 hex of the expected secret (OTP or phrase). Present only for server-side steps. */
+  secretHash?: string;
+  /** When the one-time secret expires (for OTP-based steps). */
+  secretExpiresAt?: Date;
+  /** True once the secret has been successfully consumed (prevents replay). */
+  used?: boolean;
 }
 
 // ============================================================================
