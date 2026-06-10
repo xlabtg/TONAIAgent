@@ -104,8 +104,9 @@ export class RetryEngine {
     const base = policy.initialDelayMs * Math.pow(policy.backoffMultiplier, attempt - 1);
     const capped = Math.min(base, policy.maxDelayMs);
     if (!policy.jitter) return capped;
-    // Full jitter: random value between 0 and capped
-    return Math.floor(Math.random() * capped);
+    // Equal jitter: delay in [capped/2, capped), so the lower bound grows with attempt
+    const half = capped / 2;
+    return Math.floor(half + Math.random() * half);
   }
 
   // ============================================================================
