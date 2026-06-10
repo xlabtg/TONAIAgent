@@ -643,6 +643,35 @@ describe('DistributedScheduler — event-driven execution', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(events.filter((e) => e.type === 'job.triggered').length).toBe(0);
   });
+
+  it('LOGIC-21: single event triggers a job exactly once (no double-trigger from dual subscriptions)', async () => {
+    const triggered: SchedulerEvent[] = [];
+    scheduler.subscribe((e) => { if (e.type === 'job.triggered') triggered.push(e); });
+
+    scheduler.registerJob(makeJobInput({ triggerTopics: ['exact.topic'], maxRetries: 0 }));
+    scheduler.getEventBus().publish({ topic: 'exact.topic', source: 'test', payload: {} });
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Must be triggered exactly once — not twice (old dual-subscription bug)
+    expect(triggered.length).toBe(1);
+  });
+
+  it('LOGIC-21: single event triggers a job exactly once even with multiple trigger topics', async () => {
+    const triggered: SchedulerEvent[] = [];
+    scheduler.subscribe((e) => { if (e.type === 'job.triggered') triggered.push(e); });
+
+    scheduler.registerJob(makeJobInput({
+      triggerTopics: ['topic.a', 'topic.b'],
+      maxRetries: 0,
+    }));
+    // Publish an event matching the first topic only
+    scheduler.getEventBus().publish({ topic: 'topic.a', source: 'test', payload: {} });
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    expect(triggered.length).toBe(1);
+  });
 });
 
 // ============================================================================

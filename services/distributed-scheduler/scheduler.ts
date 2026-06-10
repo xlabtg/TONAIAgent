@@ -418,21 +418,6 @@ export class DistributedScheduler {
       }
     }
 
-    // Subscribe to trigger topics for event/hybrid jobs
-    if (
-      (input.executionMode === 'event' || input.executionMode === 'hybrid') &&
-      input.triggerTopics?.length
-    ) {
-      for (const topic of input.triggerTopics) {
-        this.eventBus.subscribe(topic, (event) => {
-          const job = this.jobs.get(jobId);
-          if (job && job.status === 'pending') {
-            void this.triggerJob(job, 'event', event);
-          }
-        });
-      }
-    }
-
     const job: ScheduledJob = {
       jobId,
       name: input.name,
