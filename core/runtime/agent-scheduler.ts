@@ -316,6 +316,12 @@ export class AgentScheduler {
     const callback = this.executionCallbacks.get(agentId);
     if (!callback) return false;
 
+    const scheduled = this.scheduledAgents.get(agentId);
+    if (scheduled?.timerId) {
+      clearTimeout(scheduled.timerId);
+      scheduled.timerId = undefined;
+    }
+
     await this.executeAgent(agentId);
     return true;
   }
@@ -385,6 +391,11 @@ export class AgentScheduler {
   private scheduleNextRun(agentId: string): void {
     const scheduled = this.scheduledAgents.get(agentId);
     if (!scheduled || !this.running || scheduled.isPaused) return;
+
+    if (scheduled.timerId) {
+      clearTimeout(scheduled.timerId);
+      scheduled.timerId = undefined;
+    }
 
     const now = Date.now();
     const targetTime = scheduled.nextRunAt.getTime();
