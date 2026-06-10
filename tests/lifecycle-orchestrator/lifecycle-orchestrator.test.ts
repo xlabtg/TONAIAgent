@@ -573,6 +573,76 @@ describe('LifecycleOrchestrator.runHealthCheck', () => {
 });
 
 // ============================================================================
+// startHealthCheckLoop (autoHealthChecks)
+// ============================================================================
+
+describe('LifecycleOrchestrator.startHealthCheckLoop', () => {
+  it('should call runHealthCheck on the configured interval when autoHealthChecks is enabled', async () => {
+    vi.useFakeTimers();
+    try {
+      const intervalMs = 30_000;
+      const orch = createLifecycleOrchestrator({
+        autoHealthChecks: true,
+        healthCheckIntervalMs: intervalMs,
+      });
+
+      const input = makeInput({ autoActivate: true });
+      await orch.registerAgent(input);
+      await orch.transitionState({ agentId: input.agentId, targetState: 'running', requestedBy: 'user', reason: 'test' });
+
+      expect(orch.getAgent(input.agentId).latestHealthCheck).toBeNull();
+
+      // Advance past one interval tick
+      await vi.advanceTimersByTimeAsync(intervalMs);
+
+      expect(orch.getAgent(input.agentId).latestHealthCheck).not.toBeNull();
+
+      orch.shutdown();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should not start the interval when autoHealthChecks is disabled', async () => {
+    vi.useFakeTimers();
+    try {
+      const intervalMs = 30_000;
+      const orch = createLifecycleOrchestrator({
+        autoHealthChecks: false,
+        healthCheckIntervalMs: intervalMs,
+      });
+
+      const input = makeInput({ autoActivate: true });
+      await orch.registerAgent(input);
+      await orch.transitionState({ agentId: input.agentId, targetState: 'running', requestedBy: 'user', reason: 'test' });
+
+      await vi.advanceTimersByTimeAsync(intervalMs);
+
+      expect(orch.getAgent(input.agentId).latestHealthCheck).toBeNull();
+
+      orch.shutdown();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should clear the timer on shutdown (no open handle)', () => {
+    vi.useFakeTimers();
+    try {
+      const orch = createLifecycleOrchestrator({
+        autoHealthChecks: true,
+        healthCheckIntervalMs: 10_000,
+      });
+
+      // shutdown must not throw and must clear the timer
+      expect(() => orch.shutdown()).not.toThrow();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// ============================================================================
 // Scaling Engine
 // ============================================================================
 
