@@ -466,6 +466,73 @@ describe('AgentScheduler', () => {
       expect(executionCount).toBe(countBeforeUnschedule);
     });
   });
+
+  describe('timer leak — LOGIC-16', () => {
+    it('should call clearTimeout when the callback resolves before the execution timeout', async () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+
+      const longTimeoutScheduler = createAgentScheduler({
+        minIntervalMs: 100,
+        maxIntervalMs: 60000,
+        executionTimeoutMs: 30000,
+      });
+      longTimeoutScheduler.start();
+
+      let executions = 0;
+      longTimeoutScheduler.scheduleAgent(
+        'agent-fast-cb',
+        { value: 100, unit: 'milliseconds' },
+        async () => {
+          executions++;
+        }
+      );
+
+      // Wait for at least one execution to complete
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      // clearTimeout must have been called to clean up the dangling execution timer
+      expect(executions).toBeGreaterThanOrEqual(1);
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+
+      longTimeoutScheduler.stop();
+      clearTimeoutSpy.mockRestore();
+    });
+
+    it('should not fire a timeout rejection after the callback has already resolved', async () => {
+      const failedEvents: string[] = [];
+
+      const trackingScheduler = createAgentScheduler({
+        minIntervalMs: 100,
+        maxIntervalMs: 60000,
+        executionTimeoutMs: 200,
+      });
+      trackingScheduler.start();
+
+      trackingScheduler.subscribe((event) => {
+        if (event.type === 'cycle.failed') {
+          failedEvents.push(String(event.data?.['error']));
+        }
+      });
+
+      trackingScheduler.scheduleAgent(
+        'agent-no-leak',
+        { value: 100, unit: 'milliseconds' },
+        async () => {
+          // Resolves immediately — well before the 200 ms timeout
+        }
+      );
+
+      // Run enough cycles to exceed the timeout period several times over
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      trackingScheduler.stop();
+
+      // A leaked timer would fire its reject after the callback already resolved,
+      // producing a spurious 'Execution timeout' cycle.failed event.
+      const timeoutErrors = failedEvents.filter((msg) => msg.toLowerCase().includes('timeout'));
+      expect(timeoutErrors).toHaveLength(0);
+    });
+  });
 });
 
 // ============================================================================

@@ -421,14 +421,15 @@ export class AgentScheduler {
 
     try {
       // Execute with timeout
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
           () => reject(new Error('Execution timeout')),
           this.config.executionTimeoutMs
         );
+        callback()
+          .then(() => { clearTimeout(timer); resolve(); })
+          .catch((err: unknown) => { clearTimeout(timer); reject(err); });
       });
-
-      await Promise.race([callback(), timeoutPromise]);
     } catch (error) {
       // Log error but continue scheduling
       this.emitEvent('cycle.failed', agentId, {

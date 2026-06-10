@@ -608,20 +608,21 @@ export class ExecutionLoop {
     agentState: AgentRuntimeState,
     marketData: MarketDataSnapshot
   ): Promise<TradeSignal> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(
-        () => reject(new RuntimeError('Strategy execution timeout', 'STRATEGY_ERROR')),
-        this.config.strategyTimeoutMs
-      );
-    });
-
     const executePromise = this.strategyExecutor.execute(
       agentState.config.strategyId,
       marketData,
       agentState.config.strategyParams
     );
 
-    return Promise.race([executePromise, timeoutPromise]);
+    return new Promise<TradeSignal>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new RuntimeError('Strategy execution timeout', 'STRATEGY_ERROR')),
+        this.config.strategyTimeoutMs
+      );
+      executePromise
+        .then((val) => { clearTimeout(timer); resolve(val); })
+        .catch((err: unknown) => { clearTimeout(timer); reject(err); });
+    });
   }
 
   private async validateRisk(
