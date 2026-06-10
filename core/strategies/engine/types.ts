@@ -651,6 +651,8 @@ export interface BacktestConfig {
   feeModel: FeeModel;
   dataGranularity: Timeframe;
   monteCarlo?: MonteCarloConfig;
+  /** Number of time steps to skip at the start before signals are honored. */
+  warmupPeriod?: number;
 }
 
 export interface SlippageModel {
