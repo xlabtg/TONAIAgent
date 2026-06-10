@@ -484,7 +484,7 @@ export class DefaultCrossBorderPaymentsManager implements CrossBorderPaymentsMan
       limits: {
         minAmount: '10',
         maxAmount: this.config.maxTransactionAmount,
-        dailyLimit: (BigInt(this.config.maxTransactionAmount) * BigInt(10)).toString(),
+        dailyLimit: (this.parseAmountToBigInt(this.config.maxTransactionAmount) * BigInt(10) / BigInt(1_000_000)).toString(),
       },
     };
   }
@@ -505,7 +505,7 @@ export class DefaultCrossBorderPaymentsManager implements CrossBorderPaymentsMan
       : baseRate * (1 - markup);
 
     const sourceAmount = params.amount;
-    const destinationAmount = (BigInt(sourceAmount) * BigInt(Math.floor(effectiveRate * 1000000)) / BigInt(1000000)).toString();
+    const destinationAmount = (this.parseAmountToBigInt(sourceAmount) * BigInt(Math.floor(effectiveRate * 1000000)) / BigInt(1000000) / BigInt(1000000)).toString();
 
     const quote: ExchangeQuote = {
       id: quoteId,
@@ -541,7 +541,7 @@ export class DefaultCrossBorderPaymentsManager implements CrossBorderPaymentsMan
       destinationAmount: quote.destinationAmount,
       lockedAt: now,
       expiresAt: new Date(now.getTime() + duration * 1000),
-      depositRequired: (BigInt(quote.sourceAmount) * BigInt(5) / BigInt(100)).toString(),
+      depositRequired: (this.parseAmountToBigInt(quote.sourceAmount) * BigInt(5) / BigInt(100) / BigInt(1_000_000)).toString(),
       depositPaid: false,
     };
 
@@ -904,12 +904,19 @@ export class DefaultCrossBorderPaymentsManager implements CrossBorderPaymentsMan
     const requiredActions: string[] = [];
 
     // Amount-based compliance checks
-    const amount = BigInt(params.amount);
-    const highValueThreshold = BigInt('10000');
+    const HIGH_VALUE_THRESHOLD = 10_000_000_000n; // 10000 in smallest units (6 decimal places)
+    const amount = this.parseAmountToBigInt(params.amount);
 
-    if (amount >= highValueThreshold) {
+    if (amount >= HIGH_VALUE_THRESHOLD) {
       documentsNeeded.push('proof_of_funds');
       documentsNeeded.push('purpose_declaration');
+      issues.push({
+        type: 'high_value_transfer',
+        severity: 'critical',
+        description: 'High-value transfer requires proof of funds and purpose declaration',
+        resolution: 'Provide proof_of_funds and purpose_declaration documents before proceeding',
+      });
+      requiredActions.push('Provide proof of funds and purpose declaration');
     }
 
     // Purpose-based checks
@@ -1325,6 +1332,22 @@ export class DefaultCrossBorderPaymentsManager implements CrossBorderPaymentsMan
 
   private generateId(prefix: string): string {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Parses a decimal or integer amount string into BigInt using smallest-unit scaling (6 decimal places).
+  // Throws a descriptive Error instead of a cryptic SyntaxError if the input is not a valid number.
+  private parseAmountToBigInt(amount: string): bigint {
+    if (!/^-?\d+(\.\d+)?$/.test(amount)) {
+      throw new Error(`Invalid amount format: "${amount}". Expected a decimal or integer string.`);
+    }
+    const SCALE = 1_000_000n;
+    const dotIndex = amount.indexOf('.');
+    if (dotIndex === -1) {
+      return BigInt(amount) * SCALE;
+    }
+    const intPart = amount.slice(0, dotIndex);
+    const fracPart = amount.slice(dotIndex + 1).padEnd(6, '0').slice(0, 6);
+    return BigInt(intPart) * SCALE + BigInt(fracPart);
   }
 }
 
