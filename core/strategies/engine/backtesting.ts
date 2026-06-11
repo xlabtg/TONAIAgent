@@ -63,6 +63,8 @@ export interface BacktestState {
   trades: SimulatedTrade[];
   drawdown: number;
   maxEquity: number;
+  /** Prices from the previous time step, used for crossover trigger evaluation. */
+  previousPrices: Map<string, number>;
 }
 
 export interface Position {
@@ -247,6 +249,7 @@ export class BacktestingEngine {
       unrealizedPnl: 0,
       realizedPnl: 0,
       trades: [],
+      previousPrices: new Map(),
       drawdown: 0,
       maxEquity: config.initialCapital,
     };
@@ -379,6 +382,7 @@ export class BacktestingEngine {
   }> {
     const equityCurve: EquityPoint[] = [];
     const warnings: BacktestWarning[] = [];
+    const warmupSteps = config.warmupPeriod ?? 0;
 
     // Get all timestamps
     const allTimestamps = new Set<number>();
@@ -390,7 +394,8 @@ export class BacktestingEngine {
     const sortedTimestamps = Array.from(allTimestamps).sort();
 
     // Simulate each time step
-    for (const ts of sortedTimestamps) {
+    for (let stepIndex = 0; stepIndex < sortedTimestamps.length; stepIndex++) {
+      const ts = sortedTimestamps[stepIndex]!;
       const timestamp = new Date(ts);
       state.timestamp = timestamp;
 
@@ -405,8 +410,9 @@ export class BacktestingEngine {
 
       this.updatePositions(state, currentPrices);
 
-      // Check triggers (simplified)
-      const shouldExecute = this.checkTriggers(definition, state, currentPrices, timestamp);
+      // Only execute signals after the warm-up period has elapsed
+      const inWarmup = stepIndex < warmupSteps;
+      const shouldExecute = !inWarmup && this.checkTriggers(definition, state, currentPrices, timestamp);
 
       if (shouldExecute) {
         // Check conditions
@@ -424,6 +430,9 @@ export class BacktestingEngine {
           state.trades.push(...trades);
         }
       }
+
+      // Save prices for crossover evaluation in the next step
+      state.previousPrices = new Map(currentPrices);
 
       // Check risk controls
       this.checkRiskControls(definition, state, currentPrices);
@@ -468,32 +477,41 @@ export class BacktestingEngine {
 
   private checkTriggers(
     definition: StrategySpec,
-    _state: BacktestState,
+    state: BacktestState,
     prices: Map<string, number>,
     _timestamp: Date
   ): boolean {
-    // Simplified trigger checking for backtest
-    // In a real implementation, this would evaluate all trigger conditions
-
     for (const trigger of definition.triggers) {
       if (!trigger.enabled) continue;
 
       if (trigger.config.type === 'schedule') {
-        // For backtest, we'll trigger at each time step
-        // In production, would check cron expression
+        // Treat every time step as a schedule tick in backtest
         return true;
       }
 
       if (trigger.config.type === 'price') {
         const config = trigger.config as { token: string; operator: string; value: number };
         const price = prices.get(config.token);
-        if (price && this.compareValues(price, config.operator, config.value)) {
+        if (price === undefined) continue;
+
+        if (config.operator === 'crosses_above' || config.operator === 'crosses_below') {
+          const previousPrice = state.previousPrices.get(config.token);
+          if (previousPrice === undefined) continue;
+          if (config.operator === 'crosses_above' &&
+              previousPrice <= config.value && price > config.value) {
+            return true;
+          }
+          if (config.operator === 'crosses_below' &&
+              previousPrice >= config.value && price < config.value) {
+            return true;
+          }
+        } else if (this.compareValues(price, config.operator, config.value)) {
           return true;
         }
       }
     }
 
-    return true; // Default to executing for backtest
+    return false;
   }
 
   private checkConditions(
@@ -691,10 +709,6 @@ export class BacktestingEngine {
         return actual <= expected;
       case 'equals':
         return Math.abs(actual - expected) < 0.0001;
-      case 'crosses_above':
-      case 'crosses_below':
-        // Would need previous value tracking
-        return false;
       default:
         return false;
     }
