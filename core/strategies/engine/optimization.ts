@@ -139,14 +139,14 @@ export class OptimizationEngine {
           // Update optimizer with result
           optimizer.observe(params, evaluation.objectiveValue, evaluation.valid);
 
-          // Track best result
-          if (evaluation.valid) {
-            if (!bestResult || this.isBetter(evaluation, bestResult, config.objective)) {
-              bestResult = evaluation;
-              iterationsWithoutImprovement = 0;
-            } else {
-              iterationsWithoutImprovement++;
-            }
+          // Track best result; count every non-improving evaluation (including
+          // invalid ones) toward the patience counter so early stopping can
+          // trigger even when constraints are frequently violated.
+          if (evaluation.valid && (!bestResult || this.isBetter(evaluation, bestResult, config.objective))) {
+            bestResult = evaluation;
+            iterationsWithoutImprovement = 0;
+          } else {
+            iterationsWithoutImprovement++;
           }
 
           // Record convergence point
@@ -160,6 +160,11 @@ export class OptimizationEngine {
           if (iterationsWithoutImprovement >= this.config.earlyStoppingPatience) {
             break;
           }
+        }
+
+        // Propagate early stopping out of the inner for-loop
+        if (iterationsWithoutImprovement >= this.config.earlyStoppingPatience) {
+          break;
         }
 
         // Check for convergence
