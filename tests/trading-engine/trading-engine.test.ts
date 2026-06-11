@@ -531,6 +531,60 @@ describe('SimulationTradeExecutor', () => {
     });
   });
 
+  describe('BUY with non-zero feeRate (LOGIC-11)', () => {
+    it('should reject BUY when balance equals tradeValue but feeRate > 0', async () => {
+      // BTC price = 1000, amount = 1 → tradeValue = 1000
+      // feeRate = 0.001 → fee = 1, required = 1001
+      // balance = 1000 → must be rejected (balance < tradeValue + fee)
+      const feeExecutor = createSimulationTradeExecutor(portfolioManager, historyRepo, {
+        ...DEFAULT_TRADING_ENGINE_CONFIG,
+        feeRate: 0.001,
+      });
+      portfolioManager.initPortfolio('fee-agent', { USD: 1000, BTC: 0 });
+      const result = await feeExecutor.execute(
+        makeSignal({ action: 'BUY', asset: 'BTC', amount: '1' }),
+        'fee-agent',
+        makePrices({ BTC: 1000 })
+      );
+      expect(result.status).toBe('rejected');
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/[Ii]nsufficient/);
+    });
+
+    it('should not drive balance negative after BUY with feeRate > 0', async () => {
+      // balance = 1001, tradeValue = 1000, fee = 1 → exactly covers cost
+      const feeExecutor = createSimulationTradeExecutor(portfolioManager, historyRepo, {
+        ...DEFAULT_TRADING_ENGINE_CONFIG,
+        feeRate: 0.001,
+      });
+      portfolioManager.initPortfolio('fee-agent-2', { USD: 1001, BTC: 0 });
+      const result = await feeExecutor.execute(
+        makeSignal({ action: 'BUY', asset: 'BTC', amount: '1' }),
+        'fee-agent-2',
+        makePrices({ BTC: 1000 })
+      );
+      expect(result.status).toBe('executed');
+      const usdBalance = portfolioManager.getBalance('fee-agent-2', 'USD');
+      expect(usdBalance).toBeGreaterThanOrEqual(0);
+      expect(usdBalance).toBeCloseTo(0, 6);
+    });
+
+    it('should include fee in rejection message when feeRate > 0', async () => {
+      const feeExecutor = createSimulationTradeExecutor(portfolioManager, historyRepo, {
+        ...DEFAULT_TRADING_ENGINE_CONFIG,
+        feeRate: 0.01,
+      });
+      portfolioManager.initPortfolio('fee-agent-3', { USD: 100, BTC: 0 });
+      const result = await feeExecutor.execute(
+        makeSignal({ action: 'BUY', asset: 'BTC', amount: '1' }),
+        'fee-agent-3',
+        makePrices({ BTC: 1000 })
+      );
+      expect(result.status).toBe('rejected');
+      expect(result.message).toMatch(/fee/i);
+    });
+  });
+
   describe('Auto portfolio initialization', () => {
     it('should auto-initialize portfolio if agent has no portfolio', async () => {
       const result = await executor.execute(

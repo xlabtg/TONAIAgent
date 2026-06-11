@@ -154,14 +154,18 @@ export class SimulationTradeExecutor {
     // Check sufficient balance
     const quoteCurrency = this.config.quoteCurrency;
 
+    // Compute fee upfront so the BUY check can include it
+    const fee = tradeValue * this.config.feeRate;
+
     if (signal.action === 'BUY') {
       const usdBalance = this.portfolioManager.getBalance(agentId, quoteCurrency);
-      if (usdBalance < tradeValue) {
+      const required = tradeValue + fee;
+      if (usdBalance < required) {
         return {
           success: false,
           status: 'rejected',
           signal,
-          message: `Insufficient ${quoteCurrency} balance. Required: $${tradeValue.toFixed(2)}, Available: $${usdBalance.toFixed(2)}`,
+          message: `Insufficient ${quoteCurrency} balance. Required: $${required.toFixed(2)} (trade $${tradeValue.toFixed(2)} + fee $${fee.toFixed(2)}), Available: $${usdBalance.toFixed(2)}`,
           agentId,
           executedAt: new Date(),
           durationMs: Date.now() - startedAt,
@@ -182,9 +186,6 @@ export class SimulationTradeExecutor {
         };
       }
     }
-
-    // Apply fee (0 in simulation MVP)
-    const fee = tradeValue * this.config.feeRate;
 
     // Apply balance changes
     if (signal.action === 'BUY') {
