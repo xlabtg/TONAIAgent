@@ -1215,8 +1215,11 @@ export class LifecycleOrchestrator {
 
   private startHealthCheckLoop(): void {
     if (this.healthCheckTimer !== null) return;
-    // We defer starting the timer to avoid running it in unit tests unless explicitly needed.
-    // The timer is started lazily on the first registerAgent() call in a non-test environment.
+    this.healthCheckTimer = setInterval(() => {
+      for (const agentId of this.agents.keys()) {
+        void this.runHealthCheck(agentId);
+      }
+    }, this.config.healthCheckIntervalMs);
   }
 
   /** Shut down the orchestrator (clears health check timer) */
