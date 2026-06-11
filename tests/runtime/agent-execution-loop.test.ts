@@ -405,6 +405,40 @@ describe('AgentScheduler', () => {
     });
   });
 
+  describe('triggerNow', () => {
+    it('should not produce a double execution after triggerNow (LOGIC-09)', async () => {
+      vi.useFakeTimers();
+
+      let executionCount = 0;
+      const intervalMs = 5000;
+
+      try {
+        scheduler.scheduleAgent(
+          'agent-001',
+          { value: intervalMs, unit: 'milliseconds' },
+          async () => {
+            executionCount++;
+          }
+        );
+
+        // Advance time close to the scheduled run but not yet
+        vi.advanceTimersByTime(intervalMs - 100);
+        expect(executionCount).toBe(0);
+
+        // triggerNow must cancel the pending timer and run exactly one execution
+        await scheduler.triggerNow('agent-001');
+        expect(executionCount).toBe(1);
+
+        // Advance past where the orphaned timer would have fired (+100ms more = interval + 0ms)
+        vi.advanceTimersByTime(200);
+        // The old orphaned timer must NOT fire — still exactly 1 execution
+        expect(executionCount).toBe(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe('control methods', () => {
     it('should pause and resume agents', async () => {
       let executionCount = 0;
