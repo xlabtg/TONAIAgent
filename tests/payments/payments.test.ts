@@ -193,6 +193,83 @@ describe('CrossBorderPaymentsManager', () => {
   it('should be enabled', () => {
     expect(crossBorder.config.enabled).toBe(true);
   });
+
+  describe('checkCompliance — LOGIC-18', () => {
+    const baseParams = {
+      sourceCountry: 'US',
+      destinationCountry: 'DE',
+      currency: 'USDT' as const,
+      purpose: 'Business services payment for Q1 consulting',
+      senderType: 'business' as const,
+      recipientType: 'business' as const,
+    };
+
+    it('should return compliant=false for high-value transfer without required documents', async () => {
+      const result = await crossBorder.checkCompliance({
+        ...baseParams,
+        amount: '15000',
+      });
+
+      expect(result.compliant).toBe(false);
+      expect(result.documentsNeeded).toContain('proof_of_funds');
+      expect(result.documentsNeeded).toContain('purpose_declaration');
+      expect(result.requiredActions.length).toBeGreaterThan(0);
+      expect(result.issues.some(i => i.severity === 'critical')).toBe(true);
+    });
+
+    it('should return compliant=true for low-value transfer with valid purpose', async () => {
+      const result = await crossBorder.checkCompliance({
+        ...baseParams,
+        amount: '500',
+      });
+
+      expect(result.compliant).toBe(true);
+      expect(result.documentsNeeded).not.toContain('proof_of_funds');
+    });
+
+    it('should not throw for decimal amount string', async () => {
+      await expect(
+        crossBorder.checkCompliance({
+          ...baseParams,
+          amount: '100.5',
+        })
+      ).resolves.toBeDefined();
+    });
+
+    it('should throw descriptive error for invalid amount string', async () => {
+      await expect(
+        crossBorder.checkCompliance({
+          ...baseParams,
+          amount: 'not-a-number',
+        })
+      ).rejects.toThrow('Invalid amount format');
+    });
+  });
+
+  describe('getExchangeRate — LOGIC-18', () => {
+    it('should not throw for decimal amount string', async () => {
+      await expect(
+        crossBorder.getExchangeRate({
+          sourceCurrency: 'TON',
+          destinationCurrency: 'USDT',
+          amount: '100.5',
+          direction: 'buy',
+        })
+      ).resolves.toBeDefined();
+    });
+
+    it('should return a quote for integer amount string', async () => {
+      const quote = await crossBorder.getExchangeRate({
+        sourceCurrency: 'TON',
+        destinationCurrency: 'USDT',
+        amount: '1000',
+        direction: 'sell',
+      });
+
+      expect(quote.sourceAmount).toBe('1000');
+      expect(quote.destinationAmount).toBeDefined();
+    });
+  });
 });
 
 // ============================================================================
