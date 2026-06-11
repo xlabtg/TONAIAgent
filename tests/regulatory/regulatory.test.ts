@@ -1084,3 +1084,60 @@ describe('Edge Cases', () => {
     });
   });
 });
+
+// ============================================================================
+// LOGIC-20: CSPRNG ID generation tests
+// ============================================================================
+
+describe('CSPRNG ID generation (LOGIC-20)', () => {
+  it('KycAmlManager: generated IDs should not be predictable (no Math.random)', async () => {
+    const kycAml = createKycAmlManager({ enabled: true, tieredCompliance: true, defaultTier: 'basic' });
+    const result1 = await kycAml.processKyc({
+      userId: 'user_csprng_1',
+      requestedTier: 'basic',
+      documents: [],
+      submittedAt: new Date(),
+    });
+    const result2 = await kycAml.processKyc({
+      userId: 'user_csprng_2',
+      requestedTier: 'basic',
+      documents: [],
+      submittedAt: new Date(),
+    });
+    expect(result1.applicationId).toBeDefined();
+    expect(result2.applicationId).toBeDefined();
+    expect(result1.applicationId).not.toBe(result2.applicationId);
+    // CSPRNG hex component is 24 hex chars (12 bytes * 2)
+    const hexPart1 = result1.applicationId!.split('_').pop();
+    const hexPart2 = result2.applicationId!.split('_').pop();
+    expect(hexPart1).toMatch(/^[0-9a-f]{24}$/);
+    expect(hexPart2).toMatch(/^[0-9a-f]{24}$/);
+  });
+
+  it('AiGovernanceManager: generated IDs should not be predictable (no Math.random)', async () => {
+    const aiGov = createAiGovernanceManager({ enabled: true });
+    const auditor = { type: 'internal' as const, credentials: ['iso27001'] };
+    const audit1 = await aiGov.scheduleAudit({
+      modelId: 'model_csprng_1',
+      auditType: 'internal',
+      scope: ['fairness'],
+      auditor,
+      frequency: 'annual',
+    });
+    const audit2 = await aiGov.scheduleAudit({
+      modelId: 'model_csprng_2',
+      auditType: 'internal',
+      scope: ['fairness'],
+      auditor,
+      frequency: 'annual',
+    });
+    expect(audit1.auditId).toBeDefined();
+    expect(audit2.auditId).toBeDefined();
+    expect(audit1.auditId).not.toBe(audit2.auditId);
+    // CSPRNG hex component is 24 hex chars (12 bytes * 2)
+    const hexPart1 = audit1.auditId.split('_').pop();
+    const hexPart2 = audit2.auditId.split('_').pop();
+    expect(hexPart1).toMatch(/^[0-9a-f]{24}$/);
+    expect(hexPart2).toMatch(/^[0-9a-f]{24}$/);
+  });
+});

@@ -4,6 +4,7 @@
  * human oversight, and algorithmic auditing capabilities.
  */
 
+import { randomBytes } from 'crypto';
 import {
   AiRiskClass,
   AiSystemClassification,
@@ -602,7 +603,7 @@ export class AiGovernanceManager {
   // ============================================================================
 
   private generateId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${prefix}_${Date.now()}_${randomBytes(12).toString('hex')}`;
   }
 
   private determineEuAiActClass(params: ClassifyAiSystemParams): AiRiskClass {

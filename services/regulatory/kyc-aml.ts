@@ -4,6 +4,7 @@
  * and transaction monitoring capabilities.
  */
 
+import { randomBytes } from 'crypto';
 import {
   KycTier,
   KycTierConfig,
@@ -904,7 +905,7 @@ export class KycAmlManager {
   // ============================================================================
 
   private generateId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${prefix}_${Date.now()}_${randomBytes(12).toString('hex')}`;
   }
 
   private logAuditEvent(id: string, action: string, userId: string, details: Record<string, unknown>): void {
