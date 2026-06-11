@@ -248,6 +248,30 @@ describe('RetryEngine', () => {
     expect(delay).toBeLessThanOrEqual(1000);
   });
 
+  it('should never return a jittered delay below half of the capped value (LOGIC-17 fix)', () => {
+    const policy = { maxAttempts: 5, initialDelayMs: 1000, backoffMultiplier: 2, maxDelayMs: 60_000, jitter: true };
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      const base = policy.initialDelayMs * Math.pow(policy.backoffMultiplier, attempt - 1);
+      const capped = Math.min(base, policy.maxDelayMs);
+      const floor = capped / 2;
+      for (let run = 0; run < 50; run++) {
+        const delay = engine.calculateDelay(attempt, policy);
+        expect(delay).toBeGreaterThanOrEqual(floor);
+      }
+    }
+  });
+
+  it('should have monotonically increasing lower bound across attempts with jitter (LOGIC-17 fix)', () => {
+    const policy = { maxAttempts: 5, initialDelayMs: 1000, backoffMultiplier: 2, maxDelayMs: 60_000, jitter: true };
+    let prevMin = 0;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const delays = Array.from({ length: 50 }, () => engine.calculateDelay(attempt, policy));
+      const minDelay = Math.min(...delays);
+      expect(minDelay).toBeGreaterThan(prevMin);
+      prevMin = minDelay;
+    }
+  });
+
   it('should record executions', () => {
     const record = makeExecutionRecord('job_1', true);
     engine.recordExecution(record);
