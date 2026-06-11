@@ -451,6 +451,32 @@ describe('FactoryContractManager', () => {
       const retrieved = factory.getUpgradeProposal(proposal.proposalId);
       expect(retrieved!.approvals).toHaveLength(1); // not duplicated
     });
+
+    // LOGIC-15: A single key must not be able to drive approvalCount to
+    // approvalsRequired alone by calling ApproveUpgrade repeatedly.
+    it('LOGIC-15: repeated approval from one key must not execute a 2-of-N proposal', async () => {
+      const proposal = await factory.proposeUpgrade({
+        targetContract: '0:contract_multisig',
+        newCodeHash: '0xdeadbeef',
+        upgradeType: 'factory',
+        proposer: '0:single_owner',
+        approvalsRequired: 2,
+        payload: 'payload',
+        migrationNotes: 'LOGIC-15 regression test',
+      });
+
+      expect(proposal.status).toBe('pending');
+      expect(proposal.approvals).toHaveLength(1);
+
+      // Attempt a second approval from the same address — must be ignored.
+      await factory.approveUpgrade(proposal.proposalId, '0:single_owner');
+
+      const retrieved = factory.getUpgradeProposal(proposal.proposalId);
+      // The duplicate approval must not be recorded.
+      expect(retrieved!.approvals).toHaveLength(1);
+      // The proposal must NOT be executed — one key cannot satisfy a 2-of-N threshold.
+      expect(retrieved!.status).toBe('pending');
+    });
   });
 
   describe('access control', () => {

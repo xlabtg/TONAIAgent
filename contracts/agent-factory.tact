@@ -85,6 +85,16 @@ message ApproveUpgrade {
     proposalId: Int as uint64;
 }
 
+/// Register an address as an upgrade approver (admin).
+message AddUpgradeAdmin {
+    admin: Address;
+}
+
+/// Remove an address from the upgrade approver set.
+message RemoveUpgradeAdmin {
+    admin: Address;
+}
+
 /// Registry entry stored per deployed agent.
 struct AgentRecord {
     contractAddress: Address;
@@ -147,6 +157,12 @@ contract AgentFactory with Deployable, Ownable {
     // Upgrade proposals
     upgradeProposals: map<Int, UpgradeProposal>;
     upgradeNonce: Int as uint64;
+
+    // Multi-sig admin set: registered upgrade approvers (Address -> Bool)
+    upgradeAdmins: map<Address, Bool>;
+
+    // Per-proposal approver dedup: key = sha256(proposalId XOR addressBits) -> Bool
+    proposalApprovers: map<Int, Bool>;
 
     // Counters (for stats / off-chain indexing)
     totalAgentsDeployed: Int as uint64;
@@ -258,14 +274,29 @@ contract AgentFactory with Deployable, Ownable {
         self.treasury = msg.treasury;
     }
 
+    // ---- admin: manage upgrade approver set ----
+    receive(msg: AddUpgradeAdmin) {
+        self.requireOwner();
+        self.upgradeAdmins.set(msg.admin, true);
+    }
+
+    receive(msg: RemoveUpgradeAdmin) {
+        self.requireOwner();
+        self.upgradeAdmins.set(msg.admin, false);
+    }
+
     // ---- upgrade management ----
     receive(msg: ProposeUpgrade) {
         self.requireOwner();
         self.upgradeNonce = self.upgradeNonce + 1;
-        // Proposer counts as the first approval; auto-execute if threshold is 1.
+        // Proposer (owner) counts as the first approval; record it to prevent re-approval.
+        let nonce: Int = self.upgradeNonce;
+        let ownerApproverKey: Int = self.approverKey(nonce, self.owner);
+        self.proposalApprovers.set(ownerApproverKey, true);
+        // Auto-execute if threshold is 1 (owner alone satisfies it).
         let autoExecuted: Bool = msg.approvalsRequired <= 1;
-        self.upgradeProposals.set(self.upgradeNonce, UpgradeProposal{
-            proposalId: self.upgradeNonce,
+        self.upgradeProposals.set(nonce, UpgradeProposal{
+            proposalId: nonce,
             newCodeHash: msg.newCodeHash,
             upgradeType: msg.upgradeType,
             approvalsRequired: msg.approvalsRequired,
@@ -277,12 +308,24 @@ contract AgentFactory with Deployable, Ownable {
     }
 
     receive(msg: ApproveUpgrade) {
-        self.requireOwner();
+        // Sender must be a registered upgrade admin (owner is always eligible).
+        let s: Address = sender();
+        let isOwner: Bool = s == self.owner;
+        let adminEntry: Bool? = self.upgradeAdmins.get(s);
+        let isAdmin: Bool = adminEntry != null && adminEntry!!;
+        require(isOwner || isAdmin, "AgentFactory: not an upgrade admin");
+
         let proposal: UpgradeProposal? = self.upgradeProposals.get(msg.proposalId);
         require(proposal != null, "AgentFactory: proposal not found");
         let p: UpgradeProposal = proposal!!;
         require(!p.executed, "AgentFactory: already executed");
 
+        // Reject duplicate approval from the same address.
+        let approverKey: Int = self.approverKey(msg.proposalId, s);
+        let alreadyApproved: Bool? = self.proposalApprovers.get(approverKey);
+        require(alreadyApproved == null || !alreadyApproved!!, "AgentFactory: already approved");
+
+        self.proposalApprovers.set(approverKey, true);
         p.approvalCount = p.approvalCount + 1;
         if (p.approvalCount >= p.approvalsRequired) {
             p.executed = true;
@@ -322,6 +365,12 @@ contract AgentFactory with Deployable, Ownable {
         return self.upgradeProposals.get(proposalId);
     }
 
+    get fun isUpgradeAdmin(addr: Address): Bool {
+        if (addr == self.owner) { return true; }
+        let entry: Bool? = self.upgradeAdmins.get(addr);
+        return entry != null && entry!!;
+    }
+
     // ---- private helpers ----
 
     fun addressKey(addr: Address): Int {
@@ -333,5 +382,12 @@ contract AgentFactory with Deployable, Ownable {
         // Combine owner address bits and deployment nonce for a unique key
         let ownerBits: Int = ownerAddress.asSlice().loadUint(256);
         return (ownerBits ^ (nonce * 0x9e3779b97f4a7c15)) & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    }
+
+    fun approverKey(proposalId: Int, addr: Address): Int {
+        // Compose a flat map key from proposal ID and approver address bits.
+        // XOR with proposalId * large prime to reduce collision risk.
+        let addrBits: Int = addr.asSlice().loadUint(256);
+        return (addrBits ^ (proposalId * 0xc4ceb9fe1a85ec53)) & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     }
 }
