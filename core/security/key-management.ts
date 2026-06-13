@@ -1434,7 +1434,28 @@ export class SecureKeyManager implements KeyManagementService {
   }
 
   /**
-   * Add a signature to a signing request
+   * Add a signature to a signing request.
+   *
+   * The incoming signature is verified against the request message. Only
+   * signatures that verify (`verified === true`) count toward the
+   * `requiredSignatures` threshold that flips a request to
+   * `ready_to_broadcast` (LOGIC-24 / issue #434). Previously the gate compared
+   * the raw `collectedSignatures.length`, so a junk signature — or a buggy
+   * signer — could push a fund-moving request to "ready" without contributing a
+   * valid signature, defeating the threshold guarantee.
+   *
+   * Each public key may occupy at most one signature slot, so a single signer
+   * cannot fill a multi-sig quorum on their own. A previously-stored *unverified*
+   * attempt for a public key is replaced by a later submission for the same key
+   * (so a junk pre-submission cannot block that key's real signer), but a slot
+   * that already holds a *verified* signature is immutable and a second
+   * submission for it is rejected.
+   *
+   * @param requestId - The signing request to add the signature to
+   * @param signature - The signature to verify and record
+   * @returns The updated signing request
+   * @throws If the request is missing, terminal (expired/failed), or the public
+   *   key already contributed a verified signature
    */
   async addSignature(requestId: string, signature: SignatureInfo): Promise<SigningRequest> {
     const request = this.signingRequests.get(requestId);
@@ -1446,7 +1467,7 @@ export class SecureKeyManager implements KeyManagementService {
       throw new Error(`Cannot add signature to request with status: ${request.status}`);
     }
 
-    // Verify signature
+    // Verify signature against the request message.
     const verified = await this.storage.verify(
       signature.publicKey,
       request.message,
@@ -1458,10 +1479,31 @@ export class SecureKeyManager implements KeyManagementService {
       verified,
     };
 
-    request.collectedSignatures.push(signatureWithVerification);
+    // Enforce one slot per public key so a single signer cannot fill multiple
+    // slots in a multi-sig quorum (LOGIC-24).
+    const existingIndex = request.collectedSignatures.findIndex(
+      (s) => s.publicKey === signature.publicKey
+    );
+    if (existingIndex >= 0) {
+      const existing = request.collectedSignatures[existingIndex];
+      if (existing.verified) {
+        // The slot is already satisfied by a valid signature; reject a second
+        // submission for the same key and never downgrade it to unverified.
+        throw new Error(
+          `Public key ${signature.publicKey} has already contributed a verified signature`
+        );
+      }
+      // Replace a prior unverified attempt for the same key.
+      request.collectedSignatures[existingIndex] = signatureWithVerification;
+    } else {
+      request.collectedSignatures.push(signatureWithVerification);
+    }
 
-    // Check if we have enough signatures
-    if (request.collectedSignatures.length >= request.requiredSignatures) {
+    // Count ONLY verified signatures toward the threshold (LOGIC-24). Because
+    // each public key holds at most one slot, this is the number of distinct
+    // verified signers.
+    const verifiedSignatures = request.collectedSignatures.filter((s) => s.verified).length;
+    if (verifiedSignatures >= request.requiredSignatures) {
       request.status = 'ready_to_broadcast';
     } else {
       request.status = 'collecting_signatures';

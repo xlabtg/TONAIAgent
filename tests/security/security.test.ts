@@ -56,6 +56,7 @@ import {
   RiskContext,
   TransactionHistory,
   CustodyMode,
+  SignatureInfo,
 } from '../../core/security';
 
 // ============================================================================
@@ -240,6 +241,176 @@ describe('Key Management', () => {
       const entropyPart = sampleId.split('_').pop() ?? '';
       // crypto.randomBytes(8).toString('hex') produces 16 hex chars
       expect(entropyPart).toMatch(/^[0-9a-f]{16}$/);
+    });
+  });
+
+  // ==========================================================================
+  // Threshold signature verification (LOGIC-24 / issue #434)
+  //
+  // addSignature() must count ONLY verified signatures toward the
+  // requiredSignatures threshold, and a single public key must not be able to
+  // occupy more than one signature slot. Previously the quorum gate compared
+  // the raw collectedSignatures.length, so junk/duplicate signatures could
+  // drive a fund-moving request to ready_to_broadcast.
+  // ==========================================================================
+  describe('Threshold signature verification (LOGIC-24)', () => {
+    // SecureKeyManager never exposes private keys, so tests reach the storage
+    // backend (where SoftwareKeyStorage holds the test key pairs) to produce
+    // genuine signatures. addSignature verifies signature.publicKey as the
+    // storage key id, so signing under a generated key id yields verified=true.
+    function storageOf(km: SecureKeyManager): SoftwareKeyStorage {
+      return (km as unknown as { storage: SoftwareKeyStorage }).storage;
+    }
+
+    // A 2-of-N threshold request requires MPC shares (requiredSignatures is
+    // derived from the MPC threshold; a non-MPC key needs only one signature).
+    const mpcConfig = {
+      threshold: 2,
+      totalShares: 3,
+      recoveryEnabled: true,
+      recoveryThreshold: 2,
+      keyDerivationEnabled: true,
+    };
+
+    async function createTwoOfNRequest(km: SecureKeyManager) {
+      const key = await km.generateKey('user_multisig', 'master', {
+        mpcEnabled: true,
+        mpcConfig,
+      });
+      const request = await km.createSigningRequest(key.id, 'transfer 1000 TON to treasury', {
+        transactionId: 'tx_multisig_1',
+      });
+      // Precondition: the request genuinely needs two signatures.
+      expect(request.requiredSignatures).toBe(2);
+      return request;
+    }
+
+    // Produce a SignatureInfo that will verify (publicKey = a real storage key id).
+    async function validSignature(
+      km: SecureKeyManager,
+      message: string,
+      signerId: string
+    ): Promise<SignatureInfo> {
+      const signerKey = await km.generateKey(signerId, 'signing');
+      const signature = await storageOf(km).sign(signerKey.id, message);
+      return {
+        signerId,
+        signerType: 'user',
+        signature,
+        publicKey: signerKey.id,
+        signedAt: new Date(),
+        verified: false, // addSignature recomputes this
+      };
+    }
+
+    // Produce a SignatureInfo that will NOT verify (junk signature under a key
+    // id that does not exist in storage — exactly the attacker/buggy-signer case).
+    function junkSignature(signerId: string, publicKey: string): SignatureInfo {
+      return {
+        signerId,
+        signerType: 'user',
+        signature: 'deadbeef'.repeat(8),
+        publicKey,
+        signedAt: new Date(),
+        verified: false,
+      };
+    }
+
+    it('counts only verified signatures toward the ready_to_broadcast threshold', async () => {
+      const request = await createTwoOfNRequest(keyManager);
+      const message = request.message;
+
+      // One valid signature: not enough on its own (1 of 2).
+      const first = await keyManager.addSignature(
+        request.id,
+        await validSignature(keyManager, message, 'signer_a')
+      );
+      expect(first.status).toBe('collecting_signatures');
+      expect(first.collectedSignatures.filter((s) => s.verified).length).toBe(1);
+
+      // One INVALID signature from a different key: stored but not counted, so
+      // the request must stay in collecting_signatures (this is the bug).
+      const second = await keyManager.addSignature(
+        request.id,
+        junkSignature('attacker', 'unknown_public_key')
+      );
+      expect(second.status).toBe('collecting_signatures');
+      // The collection now holds one valid + one invalid signature...
+      expect(second.collectedSignatures.length).toBe(2);
+      // ...but only one of them counts toward the quorum.
+      expect(second.collectedSignatures.filter((s) => s.verified).length).toBe(1);
+
+      // Only a genuine second valid signature flips it to ready_to_broadcast.
+      const third = await keyManager.addSignature(
+        request.id,
+        await validSignature(keyManager, message, 'signer_b')
+      );
+      expect(third.status).toBe('ready_to_broadcast');
+      expect(third.collectedSignatures.filter((s) => s.verified).length).toBe(2);
+    });
+
+    it('never reaches ready_to_broadcast on invalid signatures alone', async () => {
+      const request = await createTwoOfNRequest(keyManager);
+
+      await keyManager.addSignature(request.id, junkSignature('attacker_1', 'junk_key_1'));
+      const result = await keyManager.addSignature(
+        request.id,
+        junkSignature('attacker_2', 'junk_key_2')
+      );
+
+      // Two junk signatures must NOT satisfy a 2-of-N quorum.
+      expect(result.status).toBe('collecting_signatures');
+      expect(result.status).not.toBe('ready_to_broadcast');
+      expect(result.collectedSignatures.filter((s) => s.verified).length).toBe(0);
+    });
+
+    it('rejects a second signature from a public key that already contributed', async () => {
+      const request = await createTwoOfNRequest(keyManager);
+      const message = request.message;
+
+      const sig = await validSignature(keyManager, message, 'signer_a');
+      await keyManager.addSignature(request.id, sig);
+
+      // The same signer (same public key) cannot occupy a second slot.
+      await expect(keyManager.addSignature(request.id, { ...sig })).rejects.toThrow(
+        /already contributed a verified signature/
+      );
+
+      const current = await keyManager.getSigningRequest(request.id);
+      expect(current?.collectedSignatures.length).toBe(1);
+      expect(current?.status).toBe('collecting_signatures');
+    });
+
+    it('lets the real signer replace an attacker\'s unverified pre-submission for the same key', async () => {
+      const request = await createTwoOfNRequest(keyManager);
+      const message = request.message;
+
+      // The real signer's key id is public; an attacker pre-submits junk under it.
+      const signerKey = await keyManager.generateKey('signer_a', 'signing');
+      await keyManager.addSignature(request.id, {
+        signerId: 'attacker',
+        signerType: 'user',
+        signature: 'deadbeef'.repeat(8),
+        publicKey: signerKey.id,
+        signedAt: new Date(),
+        verified: false,
+      });
+
+      // The genuine signature for the same key replaces the junk slot.
+      const realSignature = await storageOf(keyManager).sign(signerKey.id, message);
+      const updated = await keyManager.addSignature(request.id, {
+        signerId: 'signer_a',
+        signerType: 'user',
+        signature: realSignature,
+        publicKey: signerKey.id,
+        signedAt: new Date(),
+        verified: false,
+      });
+
+      // One slot per key, now verified — the pre-submission did not lock it out.
+      expect(updated.collectedSignatures.length).toBe(1);
+      expect(updated.collectedSignatures.filter((s) => s.verified).length).toBe(1);
+      expect(updated.status).toBe('collecting_signatures');
     });
   });
 
