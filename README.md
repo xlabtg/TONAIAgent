@@ -535,4 +535,4 @@ npm run validate:mvp   # verify MVP dependency rules
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+License — see [LICENSE](LICENSE) for details.
