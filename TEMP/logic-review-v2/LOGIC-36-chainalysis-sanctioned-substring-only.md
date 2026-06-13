@@ -5,6 +5,7 @@
 **Stage:** Stage 3 — Compliance & sanctions hardening
 **Suggested labels:** `bug`, `security`, `severity:high`, `area:regulatory`, `stage:3-compliance-hardening`, `audit:logic-review-v2`
 **Location:** `services/regulatory/providers/chainalysis.ts:140-176`
+**Filed as:** [#446](https://github.com/xlabtg/TONAIAgent/issues/446)
 
 ## Problem
 

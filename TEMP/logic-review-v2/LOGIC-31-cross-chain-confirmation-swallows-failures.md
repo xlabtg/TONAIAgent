@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:high`, `area:reliability`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `connectors/cross-chain-liquidity/execution.ts:379-405 (consumed at :142-163)`
+**Filed as:** [#441](https://github.com/xlabtg/TONAIAgent/issues/441)
 
 ## Problem
 

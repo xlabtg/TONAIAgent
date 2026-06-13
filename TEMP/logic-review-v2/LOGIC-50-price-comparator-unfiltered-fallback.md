@@ -5,6 +5,7 @@
 **Stage:** Stage 5 — Runtime reliability & resource hygiene
 **Suggested labels:** `bug`, `severity:medium`, `area:financial`, `stage:5-runtime-hygiene`, `audit:logic-review-v2`
 **Location:** `connectors/liquidity-router/price_comparator.ts:62-77`
+**Filed as:** [#460](https://github.com/xlabtg/TONAIAgent/issues/460)
 
 ## Problem
 

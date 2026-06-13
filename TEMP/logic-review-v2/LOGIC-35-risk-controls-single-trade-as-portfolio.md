@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:medium`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `core/trading/live/risk-controls.ts:282-289`
+**Filed as:** [#445](https://github.com/xlabtg/TONAIAgent/issues/445)
 
 ## Problem
 

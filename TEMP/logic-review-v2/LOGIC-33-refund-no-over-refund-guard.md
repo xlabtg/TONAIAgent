@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:medium`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `services/payments/payment-gateway.ts:377-408`
+**Filed as:** [#443](https://github.com/xlabtg/TONAIAgent/issues/443)
 
 ## Problem
 

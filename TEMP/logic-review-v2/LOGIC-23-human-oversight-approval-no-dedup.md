@@ -5,6 +5,7 @@
 **Stage:** Stage 1 — Safety re-wiring & fail-open access control
 **Suggested labels:** `bug`, `security`, `severity:high`, `area:security`, `stage:1-safety-rewiring`, `audit:logic-review-v2`
 **Location:** `core/ai-safety/human-oversight.ts:508-543`
+**Filed as:** [#433](https://github.com/xlabtg/TONAIAgent/issues/433)
 
 ## Problem
 

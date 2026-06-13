@@ -5,6 +5,7 @@
 **Stage:** Stage 4 — Strategy / backtest / optimizer integrity
 **Suggested labels:** `bug`, `severity:high`, `area:strategy`, `stage:4-strategy-integrity`, `audit:logic-review-v2`
 **Location:** `core/strategies/engine/backtesting.ts:602-617, 650-666, 767-841`
+**Filed as:** [#450](https://github.com/xlabtg/TONAIAgent/issues/450)
 
 ## Problem
 

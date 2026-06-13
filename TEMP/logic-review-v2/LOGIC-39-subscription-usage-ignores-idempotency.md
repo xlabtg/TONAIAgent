@@ -5,6 +5,7 @@
 **Stage:** Stage 3 — Compliance & sanctions hardening
 **Suggested labels:** `bug`, `severity:medium`, `area:financial`, `stage:3-compliance-hardening`, `audit:logic-review-v2`
 **Location:** `services/payments/subscription-engine.ts:808-830 (UsageReport.idempotencyKey at :141)`
+**Filed as:** [#449](https://github.com/xlabtg/TONAIAgent/issues/449)
 
 ## Problem
 

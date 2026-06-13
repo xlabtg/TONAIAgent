@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:high`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `services/portfolio-allocator/index.ts:159-188`
+**Filed as:** [#438](https://github.com/xlabtg/TONAIAgent/issues/438)
 
 ## Problem
 

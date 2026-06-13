@@ -5,6 +5,7 @@
 **Stage:** Stage 5 — Runtime reliability & resource hygiene
 **Suggested labels:** `bug`, `severity:medium`, `area:reliability`, `stage:5-runtime-hygiene`, `audit:logic-review-v2`
 **Location:** `core/runtime/agent-manager.ts:587-599 & 693-696 (events from core/runtime/execution-loop.ts:437,504,542)`
+**Filed as:** [#459](https://github.com/xlabtg/TONAIAgent/issues/459)
 
 ## Problem
 

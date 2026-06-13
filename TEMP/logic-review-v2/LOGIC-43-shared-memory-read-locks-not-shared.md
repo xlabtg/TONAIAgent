@@ -5,6 +5,7 @@
 **Stage:** Stage 4 — Strategy / backtest / optimizer integrity
 **Suggested labels:** `bug`, `severity:medium`, `area:reliability`, `stage:4-strategy-integrity`, `audit:logic-review-v2`
 **Location:** `core/multi-agent/memory/shared-memory.ts:108-146`
+**Filed as:** [#453](https://github.com/xlabtg/TONAIAgent/issues/453)
 
 ## Problem
 

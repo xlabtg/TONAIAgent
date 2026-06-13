@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:high`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `services/ecosystem-fund/treasury.ts:471-523`
+**Filed as:** [#439](https://github.com/xlabtg/TONAIAgent/issues/439)
 
 ## Problem
 

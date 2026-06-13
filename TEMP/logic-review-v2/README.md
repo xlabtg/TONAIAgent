@@ -26,45 +26,45 @@ the missing-field branch leaves oversight *more* readily triggered (fail-closed)
 
 | ID | Title | Area | File | Issue |
 |----|-------|------|------|-------|
-| LOGIC-23 | [Multi-party approval quorum can be satisfied by a single approver (no dedup / no authority check)](./LOGIC-23-human-oversight-approval-no-dedup.md) | Security | `core/ai-safety/human-oversight.ts` | _(pending)_ |
-| LOGIC-24 | [Threshold signing counts unverified signatures toward the required-signature quorum](./LOGIC-24-key-management-unverified-signature-count.md) | Security | `core/security/key-management.ts` | _(pending)_ |
-| LOGIC-25 | [PII redaction never fires: detector emits `warn` while the engine only redacts on `block`](./LOGIC-25-guardrails-pii-redaction-dead.md) | Security | `core/ai/safety/guardrails.ts` | _(pending)_ |
-| LOGIC-26 | [capturePayment accepts `pending` payments, bypassing the authorization step](./LOGIC-26-payment-capture-accepts-pending.md) | Financial | `services/payments/payment-gateway.ts` | _(pending)_ |
-| LOGIC-28 | [Portfolio allocator never re-normalizes after the minFraction floor → capital over-allocation](./LOGIC-28-portfolio-allocator-no-renormalize.md) | Financial | `services/portfolio-allocator/index.ts` | _(pending)_ |
-| LOGIC-29 | [executeDisbursement never debits the treasury balance / allocated balance](./LOGIC-29-treasury-disbursement-no-debit.md) | Financial | `services/ecosystem-fund/treasury.ts` | _(pending)_ |
-| LOGIC-30 | [releaseCollateral is not idempotent → margin debited twice on repeat release](./LOGIC-30-collateral-release-not-idempotent.md) | Financial | `services/clearing-house/collateral-management.ts` | _(pending)_ |
-| LOGIC-31 | [Cross-chain waitForConfirmation reports success on missing connector / still-pending tx](./LOGIC-31-cross-chain-confirmation-swallows-failures.md) | Reliability | `connectors/cross-chain-liquidity/execution.ts` | _(pending)_ |
-| LOGIC-32 | [Loss socialization zeroes the full deficit while honouring a cap → phantom recovery](./LOGIC-32-default-resolution-phantom-recovery.md) | Financial | `services/clearing-house/default-resolution.ts` | _(pending)_ |
-| LOGIC-36 | [Sanctions screening flags only when category contains the substring "sanction"; risk score & cluster ignored](./LOGIC-36-chainalysis-sanctioned-substring-only.md) | Regulatory | `services/regulatory/providers/chainalysis.ts` | _(pending)_ |
-| LOGIC-40 | [Backtest trades never carry per-trade pnl → win rate, expectancy and returns are always zero](./LOGIC-40-backtest-trades-missing-pnl.md) | Strategy | `core/strategies/engine/backtesting.ts` | _(pending)_ |
-| LOGIC-45 | [Worker pool hands out a busy worker when the pool is exhausted (over-subscription)](./LOGIC-45-worker-pool-returns-busy-worker.md) | Reliability | `services/distributed-scheduler/worker-pool.ts` | _(pending)_ |
-| LOGIC-46 | [Retry-engine execution history grows unbounded; retention config is never applied](./LOGIC-46-retry-engine-unbounded-history.md) | Reliability | `services/distributed-scheduler/retry-engine.ts` | _(pending)_ |
-| LOGIC-47 | [Iceberg execution loops forever on an unfilled resting limit order](./LOGIC-47-iceberg-execution-infinite-loop.md) | Reliability | `core/trading/live/execution-engine.ts` | _(pending)_ |
+| LOGIC-23 | [Multi-party approval quorum can be satisfied by a single approver (no dedup / no authority check)](./LOGIC-23-human-oversight-approval-no-dedup.md) | Security | `core/ai-safety/human-oversight.ts` | [#433](https://github.com/xlabtg/TONAIAgent/issues/433) |
+| LOGIC-24 | [Threshold signing counts unverified signatures toward the required-signature quorum](./LOGIC-24-key-management-unverified-signature-count.md) | Security | `core/security/key-management.ts` | [#434](https://github.com/xlabtg/TONAIAgent/issues/434) |
+| LOGIC-25 | [PII redaction never fires: detector emits `warn` while the engine only redacts on `block`](./LOGIC-25-guardrails-pii-redaction-dead.md) | Security | `core/ai/safety/guardrails.ts` | [#435](https://github.com/xlabtg/TONAIAgent/issues/435) |
+| LOGIC-26 | [capturePayment accepts `pending` payments, bypassing the authorization step](./LOGIC-26-payment-capture-accepts-pending.md) | Financial | `services/payments/payment-gateway.ts` | [#436](https://github.com/xlabtg/TONAIAgent/issues/436) |
+| LOGIC-28 | [Portfolio allocator never re-normalizes after the minFraction floor → capital over-allocation](./LOGIC-28-portfolio-allocator-no-renormalize.md) | Financial | `services/portfolio-allocator/index.ts` | [#438](https://github.com/xlabtg/TONAIAgent/issues/438) |
+| LOGIC-29 | [executeDisbursement never debits the treasury balance / allocated balance](./LOGIC-29-treasury-disbursement-no-debit.md) | Financial | `services/ecosystem-fund/treasury.ts` | [#439](https://github.com/xlabtg/TONAIAgent/issues/439) |
+| LOGIC-30 | [releaseCollateral is not idempotent → margin debited twice on repeat release](./LOGIC-30-collateral-release-not-idempotent.md) | Financial | `services/clearing-house/collateral-management.ts` | [#440](https://github.com/xlabtg/TONAIAgent/issues/440) |
+| LOGIC-31 | [Cross-chain waitForConfirmation reports success on missing connector / still-pending tx](./LOGIC-31-cross-chain-confirmation-swallows-failures.md) | Reliability | `connectors/cross-chain-liquidity/execution.ts` | [#441](https://github.com/xlabtg/TONAIAgent/issues/441) |
+| LOGIC-32 | [Loss socialization zeroes the full deficit while honouring a cap → phantom recovery](./LOGIC-32-default-resolution-phantom-recovery.md) | Financial | `services/clearing-house/default-resolution.ts` | [#442](https://github.com/xlabtg/TONAIAgent/issues/442) |
+| LOGIC-36 | [Sanctions screening flags only when category contains the substring "sanction"; risk score & cluster ignored](./LOGIC-36-chainalysis-sanctioned-substring-only.md) | Regulatory | `services/regulatory/providers/chainalysis.ts` | [#446](https://github.com/xlabtg/TONAIAgent/issues/446) |
+| LOGIC-40 | [Backtest trades never carry per-trade pnl → win rate, expectancy and returns are always zero](./LOGIC-40-backtest-trades-missing-pnl.md) | Strategy | `core/strategies/engine/backtesting.ts` | [#450](https://github.com/xlabtg/TONAIAgent/issues/450) |
+| LOGIC-45 | [Worker pool hands out a busy worker when the pool is exhausted (over-subscription)](./LOGIC-45-worker-pool-returns-busy-worker.md) | Reliability | `services/distributed-scheduler/worker-pool.ts` | [#455](https://github.com/xlabtg/TONAIAgent/issues/455) |
+| LOGIC-46 | [Retry-engine execution history grows unbounded; retention config is never applied](./LOGIC-46-retry-engine-unbounded-history.md) | Reliability | `services/distributed-scheduler/retry-engine.ts` | [#456](https://github.com/xlabtg/TONAIAgent/issues/456) |
+| LOGIC-47 | [Iceberg execution loops forever on an unfilled resting limit order](./LOGIC-47-iceberg-execution-infinite-loop.md) | Reliability | `core/trading/live/execution-engine.ts` | [#457](https://github.com/xlabtg/TONAIAgent/issues/457) |
 
 ## Medium severity
 
 | ID | Title | Area | File | Issue |
 |----|-------|------|------|-------|
-| LOGIC-33 | [refundPayment has no upper-bound guard → refund can exceed the captured amount](./LOGIC-33-refund-no-over-refund-guard.md) | Financial | `services/payments/payment-gateway.ts` | _(pending)_ |
-| LOGIC-34 | [Daily-loss percent uses peak value as denominator → loss% understated, breaker trips late](./LOGIC-34-portfolio-protection-peak-denominator.md) | Financial | `core/risk-engine/portfolio-protection.ts` | _(pending)_ |
-| LOGIC-35 | [Live risk-controls use a single trade notional as the portfolio-value proxy](./LOGIC-35-risk-controls-single-trade-as-portfolio.md) | Financial | `core/trading/live/risk-controls.ts` | _(pending)_ |
-| LOGIC-37 | [Downloaded sanctions lists are never integrity-validated (checksum computed but unused)](./LOGIC-37-sanctions-list-checksum-unused.md) | Regulatory | `services/regulatory/providers/list-downloader.ts` | _(pending)_ |
-| LOGIC-38 | [Agent-commerce authorization checks blocked merchant/category after the large-amount approval branch](./LOGIC-38-agent-commerce-block-after-amount.md) | Financial | `services/payments/agent-commerce.ts` | _(pending)_ |
-| LOGIC-39 | [reportUsage ignores its idempotencyKey → duplicate usage events double-bill](./LOGIC-39-subscription-usage-ignores-idempotency.md) | Financial | `services/payments/subscription-engine.ts` | _(pending)_ |
-| LOGIC-41 | [Partial capital allocation favours the lowest-priority requests (priority semantics inverted)](./LOGIC-41-capital-manager-priority-inverted.md) | Strategy | `core/multi-agent/resources/capital-manager.ts` | _(pending)_ |
-| LOGIC-42 | [Genetic optimizer terminates immediately when maxIterations < populationSize](./LOGIC-42-genetic-optimizer-iteration-divided.md) | Strategy | `core/strategies/engine/optimization.ts` | _(pending)_ |
-| LOGIC-43 | [Shared-memory read locks overwrite each other (single map entry per key)](./LOGIC-43-shared-memory-read-locks-not-shared.md) | Reliability | `core/multi-agent/memory/shared-memory.ts` | _(pending)_ |
-| LOGIC-48 | [triggerJobManually has no running-state guard → concurrent double execution](./LOGIC-48-scheduler-manual-trigger-no-running-guard.md) | Reliability | `services/distributed-scheduler/scheduler.ts` | _(pending)_ |
-| LOGIC-49 | [Runtime telemetry double-counts each agent cycle (explicit recordEvent + forwarded loop event)](./LOGIC-49-agent-manager-cycle-double-count.md) | Reliability | `core/runtime/agent-manager.ts` | _(pending)_ |
-| LOGIC-50 | [Liquidity router falls back to unfiltered quotes, bypassing liquidity/impact safety filters](./LOGIC-50-price-comparator-unfiltered-fallback.md) | Financial | `connectors/liquidity-router/price_comparator.ts` | _(pending)_ |
+| LOGIC-33 | [refundPayment has no upper-bound guard → refund can exceed the captured amount](./LOGIC-33-refund-no-over-refund-guard.md) | Financial | `services/payments/payment-gateway.ts` | [#443](https://github.com/xlabtg/TONAIAgent/issues/443) |
+| LOGIC-34 | [Daily-loss percent uses peak value as denominator → loss% understated, breaker trips late](./LOGIC-34-portfolio-protection-peak-denominator.md) | Financial | `core/risk-engine/portfolio-protection.ts` | [#444](https://github.com/xlabtg/TONAIAgent/issues/444) |
+| LOGIC-35 | [Live risk-controls use a single trade notional as the portfolio-value proxy](./LOGIC-35-risk-controls-single-trade-as-portfolio.md) | Financial | `core/trading/live/risk-controls.ts` | [#445](https://github.com/xlabtg/TONAIAgent/issues/445) |
+| LOGIC-37 | [Downloaded sanctions lists are never integrity-validated (checksum computed but unused)](./LOGIC-37-sanctions-list-checksum-unused.md) | Regulatory | `services/regulatory/providers/list-downloader.ts` | [#447](https://github.com/xlabtg/TONAIAgent/issues/447) |
+| LOGIC-38 | [Agent-commerce authorization checks blocked merchant/category after the large-amount approval branch](./LOGIC-38-agent-commerce-block-after-amount.md) | Financial | `services/payments/agent-commerce.ts` | [#448](https://github.com/xlabtg/TONAIAgent/issues/448) |
+| LOGIC-39 | [reportUsage ignores its idempotencyKey → duplicate usage events double-bill](./LOGIC-39-subscription-usage-ignores-idempotency.md) | Financial | `services/payments/subscription-engine.ts` | [#449](https://github.com/xlabtg/TONAIAgent/issues/449) |
+| LOGIC-41 | [Partial capital allocation favours the lowest-priority requests (priority semantics inverted)](./LOGIC-41-capital-manager-priority-inverted.md) | Strategy | `core/multi-agent/resources/capital-manager.ts` | [#451](https://github.com/xlabtg/TONAIAgent/issues/451) |
+| LOGIC-42 | [Genetic optimizer terminates immediately when maxIterations < populationSize](./LOGIC-42-genetic-optimizer-iteration-divided.md) | Strategy | `core/strategies/engine/optimization.ts` | [#452](https://github.com/xlabtg/TONAIAgent/issues/452) |
+| LOGIC-43 | [Shared-memory read locks overwrite each other (single map entry per key)](./LOGIC-43-shared-memory-read-locks-not-shared.md) | Reliability | `core/multi-agent/memory/shared-memory.ts` | [#453](https://github.com/xlabtg/TONAIAgent/issues/453) |
+| LOGIC-48 | [triggerJobManually has no running-state guard → concurrent double execution](./LOGIC-48-scheduler-manual-trigger-no-running-guard.md) | Reliability | `services/distributed-scheduler/scheduler.ts` | [#458](https://github.com/xlabtg/TONAIAgent/issues/458) |
+| LOGIC-49 | [Runtime telemetry double-counts each agent cycle (explicit recordEvent + forwarded loop event)](./LOGIC-49-agent-manager-cycle-double-count.md) | Reliability | `core/runtime/agent-manager.ts` | [#459](https://github.com/xlabtg/TONAIAgent/issues/459) |
+| LOGIC-50 | [Liquidity router falls back to unfiltered quotes, bypassing liquidity/impact safety filters](./LOGIC-50-price-comparator-unfiltered-fallback.md) | Financial | `connectors/liquidity-router/price_comparator.ts` | [#460](https://github.com/xlabtg/TONAIAgent/issues/460) |
 
 ## Low severity
 
 | ID | Title | Area | File | Issue |
 |----|-------|------|------|-------|
-| LOGIC-27 | [resetDailyLimits re-enables trading for agents still in breach (latent)](./LOGIC-27-reset-daily-limits-reenables-breached.md) | Financial | `core/risk-engine/trade-validator.ts` | _(pending)_ |
-| LOGIC-44 | [Capital-contention detection off-by-one misses two-agent contention](./LOGIC-44-conflict-resolver-contention-off-by-one.md) | Reliability | `core/multi-agent/resources/conflict-resolver.ts` | _(pending)_ |
-| LOGIC-51 | [Liquidity-risk metric saturates at 1, losing resolution for severe undercollateralization](./LOGIC-51-clearing-audit-liquidity-risk-saturates.md) | Financial | `services/clearing-house/audit.ts` | _(pending)_ |
+| LOGIC-27 | [resetDailyLimits re-enables trading for agents still in breach (latent)](./LOGIC-27-reset-daily-limits-reenables-breached.md) | Financial | `core/risk-engine/trade-validator.ts` | [#437](https://github.com/xlabtg/TONAIAgent/issues/437) |
+| LOGIC-44 | [Capital-contention detection off-by-one misses two-agent contention](./LOGIC-44-conflict-resolver-contention-off-by-one.md) | Reliability | `core/multi-agent/resources/conflict-resolver.ts` | [#454](https://github.com/xlabtg/TONAIAgent/issues/454) |
+| LOGIC-51 | [Liquidity-risk metric saturates at 1, losing resolution for severe undercollateralization](./LOGIC-51-clearing-audit-liquidity-risk-saturates.md) | Financial | `services/clearing-house/audit.ts` | [#461](https://github.com/xlabtg/TONAIAgent/issues/461) |
 
 ## Suggested labels
 
@@ -85,52 +85,52 @@ Until then, every issue body carries its severity/area/stage as text.
 
 | ID | Finding | Severity | Issue |
 |----|---------|----------|-------|
-| LOGIC-23 | [Multi-party approval quorum can be satisfied by a single approver (no dedup / no authority check)](./LOGIC-23-human-oversight-approval-no-dedup.md) | High | _(pending)_ |
-| LOGIC-24 | [Threshold signing counts unverified signatures toward the required-signature quorum](./LOGIC-24-key-management-unverified-signature-count.md) | High | _(pending)_ |
-| LOGIC-25 | [PII redaction never fires: detector emits `warn` while the engine only redacts on `block`](./LOGIC-25-guardrails-pii-redaction-dead.md) | High | _(pending)_ |
-| LOGIC-26 | [capturePayment accepts `pending` payments, bypassing the authorization step](./LOGIC-26-payment-capture-accepts-pending.md) | High | _(pending)_ |
-| LOGIC-27 | [resetDailyLimits re-enables trading for agents still in breach (latent)](./LOGIC-27-reset-daily-limits-reenables-breached.md) | Low | _(pending)_ |
+| LOGIC-23 | [Multi-party approval quorum can be satisfied by a single approver (no dedup / no authority check)](./LOGIC-23-human-oversight-approval-no-dedup.md) | High | [#433](https://github.com/xlabtg/TONAIAgent/issues/433) |
+| LOGIC-24 | [Threshold signing counts unverified signatures toward the required-signature quorum](./LOGIC-24-key-management-unverified-signature-count.md) | High | [#434](https://github.com/xlabtg/TONAIAgent/issues/434) |
+| LOGIC-25 | [PII redaction never fires: detector emits `warn` while the engine only redacts on `block`](./LOGIC-25-guardrails-pii-redaction-dead.md) | High | [#435](https://github.com/xlabtg/TONAIAgent/issues/435) |
+| LOGIC-26 | [capturePayment accepts `pending` payments, bypassing the authorization step](./LOGIC-26-payment-capture-accepts-pending.md) | High | [#436](https://github.com/xlabtg/TONAIAgent/issues/436) |
+| LOGIC-27 | [resetDailyLimits re-enables trading for agents still in breach (latent)](./LOGIC-27-reset-daily-limits-reenables-breached.md) | Low | [#437](https://github.com/xlabtg/TONAIAgent/issues/437) |
 
 ### Stage 2 — Funds & accounting correctness
 
 | ID | Finding | Severity | Issue |
 |----|---------|----------|-------|
-| LOGIC-28 | [Portfolio allocator never re-normalizes after the minFraction floor → capital over-allocation](./LOGIC-28-portfolio-allocator-no-renormalize.md) | High | _(pending)_ |
-| LOGIC-29 | [executeDisbursement never debits the treasury balance / allocated balance](./LOGIC-29-treasury-disbursement-no-debit.md) | High | _(pending)_ |
-| LOGIC-30 | [releaseCollateral is not idempotent → margin debited twice on repeat release](./LOGIC-30-collateral-release-not-idempotent.md) | High | _(pending)_ |
-| LOGIC-31 | [Cross-chain waitForConfirmation reports success on missing connector / still-pending tx](./LOGIC-31-cross-chain-confirmation-swallows-failures.md) | High | _(pending)_ |
-| LOGIC-32 | [Loss socialization zeroes the full deficit while honouring a cap → phantom recovery](./LOGIC-32-default-resolution-phantom-recovery.md) | High | _(pending)_ |
-| LOGIC-33 | [refundPayment has no upper-bound guard → refund can exceed the captured amount](./LOGIC-33-refund-no-over-refund-guard.md) | Medium | _(pending)_ |
-| LOGIC-34 | [Daily-loss percent uses peak value as denominator → loss% understated, breaker trips late](./LOGIC-34-portfolio-protection-peak-denominator.md) | Medium | _(pending)_ |
-| LOGIC-35 | [Live risk-controls use a single trade notional as the portfolio-value proxy](./LOGIC-35-risk-controls-single-trade-as-portfolio.md) | Medium | _(pending)_ |
+| LOGIC-28 | [Portfolio allocator never re-normalizes after the minFraction floor → capital over-allocation](./LOGIC-28-portfolio-allocator-no-renormalize.md) | High | [#438](https://github.com/xlabtg/TONAIAgent/issues/438) |
+| LOGIC-29 | [executeDisbursement never debits the treasury balance / allocated balance](./LOGIC-29-treasury-disbursement-no-debit.md) | High | [#439](https://github.com/xlabtg/TONAIAgent/issues/439) |
+| LOGIC-30 | [releaseCollateral is not idempotent → margin debited twice on repeat release](./LOGIC-30-collateral-release-not-idempotent.md) | High | [#440](https://github.com/xlabtg/TONAIAgent/issues/440) |
+| LOGIC-31 | [Cross-chain waitForConfirmation reports success on missing connector / still-pending tx](./LOGIC-31-cross-chain-confirmation-swallows-failures.md) | High | [#441](https://github.com/xlabtg/TONAIAgent/issues/441) |
+| LOGIC-32 | [Loss socialization zeroes the full deficit while honouring a cap → phantom recovery](./LOGIC-32-default-resolution-phantom-recovery.md) | High | [#442](https://github.com/xlabtg/TONAIAgent/issues/442) |
+| LOGIC-33 | [refundPayment has no upper-bound guard → refund can exceed the captured amount](./LOGIC-33-refund-no-over-refund-guard.md) | Medium | [#443](https://github.com/xlabtg/TONAIAgent/issues/443) |
+| LOGIC-34 | [Daily-loss percent uses peak value as denominator → loss% understated, breaker trips late](./LOGIC-34-portfolio-protection-peak-denominator.md) | Medium | [#444](https://github.com/xlabtg/TONAIAgent/issues/444) |
+| LOGIC-35 | [Live risk-controls use a single trade notional as the portfolio-value proxy](./LOGIC-35-risk-controls-single-trade-as-portfolio.md) | Medium | [#445](https://github.com/xlabtg/TONAIAgent/issues/445) |
 
 ### Stage 3 — Compliance & sanctions hardening
 
 | ID | Finding | Severity | Issue |
 |----|---------|----------|-------|
-| LOGIC-36 | [Sanctions screening flags only when category contains the substring "sanction"; risk score & cluster ignored](./LOGIC-36-chainalysis-sanctioned-substring-only.md) | High | _(pending)_ |
-| LOGIC-37 | [Downloaded sanctions lists are never integrity-validated (checksum computed but unused)](./LOGIC-37-sanctions-list-checksum-unused.md) | Medium | _(pending)_ |
-| LOGIC-38 | [Agent-commerce authorization checks blocked merchant/category after the large-amount approval branch](./LOGIC-38-agent-commerce-block-after-amount.md) | Medium | _(pending)_ |
-| LOGIC-39 | [reportUsage ignores its idempotencyKey → duplicate usage events double-bill](./LOGIC-39-subscription-usage-ignores-idempotency.md) | Medium | _(pending)_ |
+| LOGIC-36 | [Sanctions screening flags only when category contains the substring "sanction"; risk score & cluster ignored](./LOGIC-36-chainalysis-sanctioned-substring-only.md) | High | [#446](https://github.com/xlabtg/TONAIAgent/issues/446) |
+| LOGIC-37 | [Downloaded sanctions lists are never integrity-validated (checksum computed but unused)](./LOGIC-37-sanctions-list-checksum-unused.md) | Medium | [#447](https://github.com/xlabtg/TONAIAgent/issues/447) |
+| LOGIC-38 | [Agent-commerce authorization checks blocked merchant/category after the large-amount approval branch](./LOGIC-38-agent-commerce-block-after-amount.md) | Medium | [#448](https://github.com/xlabtg/TONAIAgent/issues/448) |
+| LOGIC-39 | [reportUsage ignores its idempotencyKey → duplicate usage events double-bill](./LOGIC-39-subscription-usage-ignores-idempotency.md) | Medium | [#449](https://github.com/xlabtg/TONAIAgent/issues/449) |
 
 ### Stage 4 — Strategy / backtest / optimizer integrity
 
 | ID | Finding | Severity | Issue |
 |----|---------|----------|-------|
-| LOGIC-40 | [Backtest trades never carry per-trade pnl → win rate, expectancy and returns are always zero](./LOGIC-40-backtest-trades-missing-pnl.md) | High | _(pending)_ |
-| LOGIC-41 | [Partial capital allocation favours the lowest-priority requests (priority semantics inverted)](./LOGIC-41-capital-manager-priority-inverted.md) | Medium | _(pending)_ |
-| LOGIC-42 | [Genetic optimizer terminates immediately when maxIterations < populationSize](./LOGIC-42-genetic-optimizer-iteration-divided.md) | Medium | _(pending)_ |
-| LOGIC-43 | [Shared-memory read locks overwrite each other (single map entry per key)](./LOGIC-43-shared-memory-read-locks-not-shared.md) | Medium | _(pending)_ |
-| LOGIC-44 | [Capital-contention detection off-by-one misses two-agent contention](./LOGIC-44-conflict-resolver-contention-off-by-one.md) | Low | _(pending)_ |
+| LOGIC-40 | [Backtest trades never carry per-trade pnl → win rate, expectancy and returns are always zero](./LOGIC-40-backtest-trades-missing-pnl.md) | High | [#450](https://github.com/xlabtg/TONAIAgent/issues/450) |
+| LOGIC-41 | [Partial capital allocation favours the lowest-priority requests (priority semantics inverted)](./LOGIC-41-capital-manager-priority-inverted.md) | Medium | [#451](https://github.com/xlabtg/TONAIAgent/issues/451) |
+| LOGIC-42 | [Genetic optimizer terminates immediately when maxIterations < populationSize](./LOGIC-42-genetic-optimizer-iteration-divided.md) | Medium | [#452](https://github.com/xlabtg/TONAIAgent/issues/452) |
+| LOGIC-43 | [Shared-memory read locks overwrite each other (single map entry per key)](./LOGIC-43-shared-memory-read-locks-not-shared.md) | Medium | [#453](https://github.com/xlabtg/TONAIAgent/issues/453) |
+| LOGIC-44 | [Capital-contention detection off-by-one misses two-agent contention](./LOGIC-44-conflict-resolver-contention-off-by-one.md) | Low | [#454](https://github.com/xlabtg/TONAIAgent/issues/454) |
 
 ### Stage 5 — Runtime reliability & resource hygiene
 
 | ID | Finding | Severity | Issue |
 |----|---------|----------|-------|
-| LOGIC-45 | [Worker pool hands out a busy worker when the pool is exhausted (over-subscription)](./LOGIC-45-worker-pool-returns-busy-worker.md) | High | _(pending)_ |
-| LOGIC-46 | [Retry-engine execution history grows unbounded; retention config is never applied](./LOGIC-46-retry-engine-unbounded-history.md) | High | _(pending)_ |
-| LOGIC-47 | [Iceberg execution loops forever on an unfilled resting limit order](./LOGIC-47-iceberg-execution-infinite-loop.md) | High | _(pending)_ |
-| LOGIC-48 | [triggerJobManually has no running-state guard → concurrent double execution](./LOGIC-48-scheduler-manual-trigger-no-running-guard.md) | Medium | _(pending)_ |
-| LOGIC-49 | [Runtime telemetry double-counts each agent cycle (explicit recordEvent + forwarded loop event)](./LOGIC-49-agent-manager-cycle-double-count.md) | Medium | _(pending)_ |
-| LOGIC-50 | [Liquidity router falls back to unfiltered quotes, bypassing liquidity/impact safety filters](./LOGIC-50-price-comparator-unfiltered-fallback.md) | Medium | _(pending)_ |
-| LOGIC-51 | [Liquidity-risk metric saturates at 1, losing resolution for severe undercollateralization](./LOGIC-51-clearing-audit-liquidity-risk-saturates.md) | Low | _(pending)_ |
+| LOGIC-45 | [Worker pool hands out a busy worker when the pool is exhausted (over-subscription)](./LOGIC-45-worker-pool-returns-busy-worker.md) | High | [#455](https://github.com/xlabtg/TONAIAgent/issues/455) |
+| LOGIC-46 | [Retry-engine execution history grows unbounded; retention config is never applied](./LOGIC-46-retry-engine-unbounded-history.md) | High | [#456](https://github.com/xlabtg/TONAIAgent/issues/456) |
+| LOGIC-47 | [Iceberg execution loops forever on an unfilled resting limit order](./LOGIC-47-iceberg-execution-infinite-loop.md) | High | [#457](https://github.com/xlabtg/TONAIAgent/issues/457) |
+| LOGIC-48 | [triggerJobManually has no running-state guard → concurrent double execution](./LOGIC-48-scheduler-manual-trigger-no-running-guard.md) | Medium | [#458](https://github.com/xlabtg/TONAIAgent/issues/458) |
+| LOGIC-49 | [Runtime telemetry double-counts each agent cycle (explicit recordEvent + forwarded loop event)](./LOGIC-49-agent-manager-cycle-double-count.md) | Medium | [#459](https://github.com/xlabtg/TONAIAgent/issues/459) |
+| LOGIC-50 | [Liquidity router falls back to unfiltered quotes, bypassing liquidity/impact safety filters](./LOGIC-50-price-comparator-unfiltered-fallback.md) | Medium | [#460](https://github.com/xlabtg/TONAIAgent/issues/460) |
+| LOGIC-51 | [Liquidity-risk metric saturates at 1, losing resolution for severe undercollateralization](./LOGIC-51-clearing-audit-liquidity-risk-saturates.md) | Low | [#461](https://github.com/xlabtg/TONAIAgent/issues/461) |

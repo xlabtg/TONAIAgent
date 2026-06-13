@@ -5,6 +5,7 @@
 **Stage:** Stage 5 — Runtime reliability & resource hygiene
 **Suggested labels:** `bug`, `severity:high`, `area:reliability`, `stage:5-runtime-hygiene`, `audit:logic-review-v2`
 **Location:** `core/trading/live/execution-engine.ts:471-500`
+**Filed as:** [#457](https://github.com/xlabtg/TONAIAgent/issues/457)
 
 ## Problem
 

@@ -5,6 +5,7 @@
 **Stage:** Stage 4 — Strategy / backtest / optimizer integrity
 **Suggested labels:** `bug`, `severity:medium`, `area:strategy`, `stage:4-strategy-integrity`, `audit:logic-review-v2`
 **Location:** `core/multi-agent/resources/capital-manager.ts:90-101 (TaskPriority defined at core/multi-agent/types.ts:301)`
+**Filed as:** [#451](https://github.com/xlabtg/TONAIAgent/issues/451)
 
 ## Problem
 

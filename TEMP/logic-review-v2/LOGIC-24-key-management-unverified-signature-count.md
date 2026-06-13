@@ -5,6 +5,7 @@
 **Stage:** Stage 1 — Safety re-wiring & fail-open access control
 **Suggested labels:** `bug`, `security`, `severity:high`, `area:security`, `stage:1-safety-rewiring`, `audit:logic-review-v2`
 **Location:** `core/security/key-management.ts:1439-1472`
+**Filed as:** [#434](https://github.com/xlabtg/TONAIAgent/issues/434)
 
 ## Problem
 

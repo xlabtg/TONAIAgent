@@ -5,6 +5,7 @@
 **Stage:** Stage 1 — Safety re-wiring & fail-open access control
 **Suggested labels:** `bug`, `security`, `severity:high`, `area:security`, `stage:1-safety-rewiring`, `audit:logic-review-v2`
 **Location:** `core/ai/safety/guardrails.ts:296-307 + core/ai/orchestration/engine.ts:241-247`
+**Filed as:** [#435](https://github.com/xlabtg/TONAIAgent/issues/435)
 
 ## Problem
 

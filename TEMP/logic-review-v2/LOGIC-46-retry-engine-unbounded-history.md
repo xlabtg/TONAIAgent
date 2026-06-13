@@ -5,6 +5,7 @@
 **Stage:** Stage 5 — Runtime reliability & resource hygiene
 **Suggested labels:** `bug`, `severity:high`, `area:reliability`, `stage:5-runtime-hygiene`, `audit:logic-review-v2`
 **Location:** `services/distributed-scheduler/retry-engine.ts:69-73 (config at services/distributed-scheduler/scheduler.ts:50)`
+**Filed as:** [#456](https://github.com/xlabtg/TONAIAgent/issues/456)
 
 ## Problem
 

@@ -5,6 +5,7 @@
 **Stage:** Stage 1 — Safety re-wiring & fail-open access control
 **Suggested labels:** `bug`, `severity:low`, `area:financial`, `stage:1-safety-rewiring`, `audit:logic-review-v2`
 **Location:** `core/risk-engine/trade-validator.ts:426-440`
+**Filed as:** [#437](https://github.com/xlabtg/TONAIAgent/issues/437)
 
 ## Problem
 

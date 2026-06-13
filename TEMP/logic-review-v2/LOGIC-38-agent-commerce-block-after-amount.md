@@ -5,6 +5,7 @@
 **Stage:** Stage 3 — Compliance & sanctions hardening
 **Suggested labels:** `bug`, `severity:medium`, `area:financial`, `stage:3-compliance-hardening`, `audit:logic-review-v2`
 **Location:** `services/payments/agent-commerce.ts:516-552`
+**Filed as:** [#448](https://github.com/xlabtg/TONAIAgent/issues/448)
 
 ## Problem
 

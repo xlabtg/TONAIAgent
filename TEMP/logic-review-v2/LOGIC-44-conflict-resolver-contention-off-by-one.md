@@ -5,6 +5,7 @@
 **Stage:** Stage 4 — Strategy / backtest / optimizer integrity
 **Suggested labels:** `bug`, `severity:low`, `area:reliability`, `stage:4-strategy-integrity`, `audit:logic-review-v2`
 **Location:** `core/multi-agent/resources/conflict-resolver.ts:193-216`
+**Filed as:** [#454](https://github.com/xlabtg/TONAIAgent/issues/454)
 
 ## Problem
 

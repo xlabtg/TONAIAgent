@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:medium`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `core/risk-engine/portfolio-protection.ts:428-430`
+**Filed as:** [#444](https://github.com/xlabtg/TONAIAgent/issues/444)
 
 ## Problem
 

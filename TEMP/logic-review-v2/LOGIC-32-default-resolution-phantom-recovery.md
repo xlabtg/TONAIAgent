@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:high`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `services/clearing-house/default-resolution.ts:570-599`
+**Filed as:** [#442](https://github.com/xlabtg/TONAIAgent/issues/442)
 
 ## Problem
 

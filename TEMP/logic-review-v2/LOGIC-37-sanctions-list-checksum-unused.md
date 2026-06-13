@@ -5,6 +5,7 @@
 **Stage:** Stage 3 — Compliance & sanctions hardening
 **Suggested labels:** `bug`, `security`, `severity:medium`, `area:regulatory`, `stage:3-compliance-hardening`, `audit:logic-review-v2`
 **Location:** `services/regulatory/providers/list-downloader.ts:314-329`
+**Filed as:** [#447](https://github.com/xlabtg/TONAIAgent/issues/447)
 
 ## Problem
 

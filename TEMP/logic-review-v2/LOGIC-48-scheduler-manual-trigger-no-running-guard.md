@@ -5,6 +5,7 @@
 **Stage:** Stage 5 — Runtime reliability & resource hygiene
 **Suggested labels:** `bug`, `severity:medium`, `area:reliability`, `stage:5-runtime-hygiene`, `audit:logic-review-v2`
 **Location:** `services/distributed-scheduler/scheduler.ts:561-567`
+**Filed as:** [#458](https://github.com/xlabtg/TONAIAgent/issues/458)
 
 ## Problem
 

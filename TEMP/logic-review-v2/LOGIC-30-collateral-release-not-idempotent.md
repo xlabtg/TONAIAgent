@@ -5,6 +5,7 @@
 **Stage:** Stage 2 — Funds & accounting correctness
 **Suggested labels:** `bug`, `severity:high`, `area:financial`, `stage:2-funds-correctness`, `audit:logic-review-v2`
 **Location:** `services/clearing-house/collateral-management.ts:194-228`
+**Filed as:** [#440](https://github.com/xlabtg/TONAIAgent/issues/440)
 
 ## Problem
 

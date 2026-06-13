@@ -5,6 +5,7 @@
 **Stage:** Stage 5 — Runtime reliability & resource hygiene
 **Suggested labels:** `bug`, `severity:low`, `area:financial`, `stage:5-runtime-hygiene`, `audit:logic-review-v2`
 **Location:** `services/clearing-house/audit.ts:309-314`
+**Filed as:** [#461](https://github.com/xlabtg/TONAIAgent/issues/461)
 
 ## Problem
 

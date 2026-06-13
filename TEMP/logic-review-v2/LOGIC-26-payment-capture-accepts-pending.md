@@ -5,6 +5,7 @@
 **Stage:** Stage 1 — Safety re-wiring & fail-open access control
 **Suggested labels:** `bug`, `severity:high`, `area:financial`, `stage:1-safety-rewiring`, `audit:logic-review-v2`
 **Location:** `services/payments/payment-gateway.ts:332-354`
+**Filed as:** [#436](https://github.com/xlabtg/TONAIAgent/issues/436)
 
 ## Problem
 
