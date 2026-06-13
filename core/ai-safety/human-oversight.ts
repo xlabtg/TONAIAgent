@@ -96,6 +96,13 @@ export interface ApprovalInput {
   approverId: string;
   decision: 'approved' | 'denied';
   reason?: string;
+  /**
+   * Role the approver is acting as for this decision. Used to verify the
+   * approver is authorised for the request's level when no approver allow-list
+   * is configured. When an allow-list (`approvalWorkflow.approvers`) is
+   * configured, the registered roles take precedence and this field is ignored.
+   */
+  approverRole?: string;
 }
 
 export interface ApprovalStatus {
@@ -520,26 +527,98 @@ export class DefaultHumanOversightManager implements HumanOversightManager {
       throw new Error('Approval request has expired');
     }
 
-    // Add approval
-    request.approvals.push({
-      approverId: approval.approverId,
-      decision: approval.decision,
-      reason: approval.reason,
-      timestamp: new Date(),
-    });
+    // Only approvers authorised for the request's level may contribute to its
+    // quorum (LOGIC-23). Otherwise an unauthorised caller could push the
+    // request over the line.
+    if (!this.isApproverAuthorized(request.level, approval)) {
+      throw new Error(
+        `Approver ${approval.approverId} is not authorized for approval level ${request.level}`
+      );
+    }
 
-    // Check if request should be approved or denied
+    // Coalesce votes by approverId: a repeat submission from an approver who
+    // already voted updates their decision instead of adding another row. This
+    // prevents a single approver from satisfying a multi-party quorum by calling
+    // submitApproval() repeatedly (LOGIC-23).
+    const existing = request.approvals.find((a) => a.approverId === approval.approverId);
+    if (existing) {
+      existing.decision = approval.decision;
+      existing.reason = approval.reason;
+      existing.timestamp = new Date();
+    } else {
+      request.approvals.push({
+        approverId: approval.approverId,
+        decision: approval.decision,
+        reason: approval.reason,
+        timestamp: new Date(),
+      });
+    }
+
+    // Check if request should be approved or denied. Counts are evaluated over
+    // DISTINCT approver IDs, not raw rows.
     const level = this.config.approvalWorkflow.levels.find((l) => l.level === request.level);
     const requiredApprovals = level?.requiredApprovers || 1;
 
-    const approveCount = request.approvals.filter((a) => a.decision === 'approved').length;
-    const denyCount = request.approvals.filter((a) => a.decision === 'denied').length;
+    const approveCount = this.countDistinctDecisions(request, 'approved');
+    const denyCount = this.countDistinctDecisions(request, 'denied');
 
     if (approveCount >= requiredApprovals) {
       request.status = 'approved';
     } else if (denyCount > 0) {
       request.status = 'denied';
     }
+  }
+
+  /**
+   * Counts the number of DISTINCT approvers whose latest decision matches the
+   * given value. Because votes are coalesced by approverId in submitApproval,
+   * each approver contributes at most once.
+   */
+  private countDistinctDecisions(request: ApprovalRequest, decision: 'approved' | 'denied'): number {
+    const latestByApprover = new Map<string, 'approved' | 'denied'>();
+    for (const a of request.approvals) {
+      latestByApprover.set(a.approverId, a.decision);
+    }
+    let count = 0;
+    for (const d of latestByApprover.values()) {
+      if (d === decision) count++;
+    }
+    return count;
+  }
+
+  /**
+   * Verifies that an approver is permitted to vote on a request at the given
+   * level. When an approver allow-list (`approvalWorkflow.approvers`) is
+   * configured the check is fail-closed: only registered approvers may vote, and
+   * only with their registered roles. Otherwise the role declared inline on the
+   * approval (supplied by the authenticated layer) is checked against the
+   * level's `approverRoles`. Levels without role restrictions, and legacy
+   * callers that provide no role information, are allowed — the distinct-approver
+   * quorum still prevents single-approver self-dealing.
+   */
+  private isApproverAuthorized(levelNumber: number, approval: ApprovalInput): boolean {
+    const level = this.config.approvalWorkflow.levels.find((l) => l.level === levelNumber);
+    const allowedRoles = level?.approverRoles ?? [];
+    const registry = this.config.approvalWorkflow.approvers ?? [];
+
+    let roles: string[];
+    if (registry.length > 0) {
+      // Operator opted into an explicit allow-list -> fail-closed.
+      const entry = registry.find((a) => a.approverId === approval.approverId);
+      if (!entry) return false;
+      roles = entry.roles;
+    } else {
+      // Trust the role declared by the authenticated caller, if any.
+      roles = approval.approverRole ? [approval.approverRole] : [];
+    }
+
+    // Enforce role membership only when the level restricts roles and we have
+    // role information to check against.
+    if (allowedRoles.length > 0 && roles.length > 0) {
+      return roles.some((r) => allowedRoles.includes(r));
+    }
+
+    return true;
   }
 
   getApprovalRequest(requestId: string): ApprovalRequest | null {
@@ -570,7 +649,8 @@ export class DefaultHumanOversightManager implements HumanOversightManager {
 
     const level = this.config.approvalWorkflow.levels.find((l) => l.level === request.level);
     const requiredApprovals = level?.requiredApprovers || 1;
-    const approvalCount = request.approvals.filter((a) => a.decision === 'approved').length;
+    // Count DISTINCT approvers, not raw rows (LOGIC-23).
+    const approvalCount = this.countDistinctDecisions(request, 'approved');
 
     return {
       requestId,
