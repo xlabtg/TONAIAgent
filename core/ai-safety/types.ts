@@ -773,6 +773,19 @@ export interface ApprovalWorkflowConfig {
   levels: ApprovalLevel[];
   timeouts: ApprovalTimeout[];
   escalation: boolean;
+  /**
+   * Optional allow-list mapping approver identities to the roles they hold.
+   * When provided, the approval workflow becomes fail-closed: only registered
+   * approvers may contribute to a quorum, and only with their registered roles.
+   * When omitted, callers may declare an approver's role inline via
+   * {@link ApprovalInput.approverRole} (supplied by the authenticated layer).
+   */
+  approvers?: ApproverIdentity[];
+}
+
+export interface ApproverIdentity {
+  approverId: string;
+  roles: string[];
 }
 
 export interface ApprovalLevel {

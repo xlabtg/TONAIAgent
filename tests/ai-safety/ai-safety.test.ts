@@ -1071,6 +1071,172 @@ describe('HumanOversightManager', () => {
       expect(status.status).toBe('pending');
       expect(status.requiredApprovals).toBeGreaterThan(0);
     });
+
+    // ------------------------------------------------------------------
+    // LOGIC-23 — multi-party quorum must be satisfied by DISTINCT,
+    // AUTHORIZED approvers (not raw row count, no self-dealing).
+    // ------------------------------------------------------------------
+    describe('Multi-party quorum (LOGIC-23)', () => {
+      // Level 3 ("Critical"): requiredApprovers = 3, roles risk_manager/admin.
+      const newCriticalRequest = () =>
+        oversight.requestApproval({
+          agentId: 'agent-quorum',
+          action: 'large_withdrawal',
+          parameters: { amount: 50000 },
+          requestedBy: 'agent-quorum',
+          requiredLevel: 3,
+        });
+
+      it('does not let a single approver satisfy a multi-party quorum', async () => {
+        const request = await newCriticalRequest();
+
+        // The same operator submits three approvals (a buggy retry loop or a
+        // compromised/malicious operator). This must NOT reach the 3-of-3 quorum.
+        for (let i = 0; i < 3; i++) {
+          await oversight.submitApproval(request.id, {
+            approverId: 'operator-A',
+            approverRole: 'admin',
+            decision: 'approved',
+          });
+        }
+
+        const updated = oversight.getApprovalRequest(request.id);
+        expect(updated?.status).toBe('pending');
+        // Repeat submissions are coalesced into a single distinct approval.
+        expect(updated?.approvals.length).toBe(1);
+      });
+
+      it('reaches quorum only with the required number of distinct approvers', async () => {
+        const request = await newCriticalRequest();
+
+        await oversight.submitApproval(request.id, {
+          approverId: 'rm-1',
+          approverRole: 'risk_manager',
+          decision: 'approved',
+        });
+        expect(oversight.getApprovalRequest(request.id)?.status).toBe('pending');
+
+        await oversight.submitApproval(request.id, {
+          approverId: 'rm-2',
+          approverRole: 'risk_manager',
+          decision: 'approved',
+        });
+        expect(oversight.getApprovalRequest(request.id)?.status).toBe('pending');
+
+        await oversight.submitApproval(request.id, {
+          approverId: 'admin-1',
+          approverRole: 'admin',
+          decision: 'approved',
+        });
+        expect(oversight.getApprovalRequest(request.id)?.status).toBe('approved');
+      });
+
+      it('coalesces a repeat submission as a vote update (latest decision wins)', async () => {
+        const request = await newCriticalRequest();
+
+        await oversight.submitApproval(request.id, {
+          approverId: 'rm-1',
+          approverRole: 'risk_manager',
+          decision: 'approved',
+        });
+        // The same approver changes their mind.
+        await oversight.submitApproval(request.id, {
+          approverId: 'rm-1',
+          approverRole: 'risk_manager',
+          decision: 'denied',
+          reason: 'reconsidered',
+        });
+
+        const updated = oversight.getApprovalRequest(request.id);
+        expect(updated?.approvals.length).toBe(1);
+        expect(updated?.approvals[0].decision).toBe('denied');
+        expect(updated?.status).toBe('denied');
+      });
+
+      it('rejects an approver whose role is not authorized for the request level', async () => {
+        const request = await newCriticalRequest();
+
+        // 'trader' is authorized for level 1 only, not the level-3 ("Critical") request.
+        await expect(
+          oversight.submitApproval(request.id, {
+            approverId: 'trader-1',
+            approverRole: 'trader',
+            decision: 'approved',
+          })
+        ).rejects.toThrow();
+
+        const updated = oversight.getApprovalRequest(request.id);
+        expect(updated?.status).toBe('pending');
+        expect(updated?.approvals.length).toBe(0);
+      });
+
+      it('checkApprovalStatus counts distinct approvers, not raw rows', async () => {
+        const request = await newCriticalRequest();
+        for (let i = 0; i < 3; i++) {
+          await oversight.submitApproval(request.id, {
+            approverId: 'operator-A',
+            approverRole: 'admin',
+            decision: 'approved',
+          });
+        }
+
+        const status = oversight.checkApprovalStatus(request.id);
+        expect(status.approvalCount).toBe(1);
+        expect(status.requiredApprovals).toBe(3);
+      });
+
+      it('enforces a configured approver allow-list (registry, fail-closed)', async () => {
+        const oversightWithRegistry = createHumanOversightManager({
+          approvalWorkflow: {
+            enabled: true,
+            escalation: true,
+            levels: [
+              {
+                level: 2,
+                name: 'Elevated',
+                requiredApprovers: 2,
+                approverRoles: ['risk_manager'],
+                threshold: { type: 'value', min: 0 },
+              },
+            ],
+            timeouts: [{ level: 2, timeout: 120, action: 'escalate' }],
+            approvers: [
+              { approverId: 'rm-1', roles: ['risk_manager'] },
+              { approverId: 'rm-2', roles: ['risk_manager'] },
+            ],
+          },
+        });
+
+        const request = await oversightWithRegistry.requestApproval({
+          agentId: 'agent-reg',
+          action: 'transfer',
+          parameters: {},
+          requestedBy: 'agent-reg',
+          requiredLevel: 2,
+        });
+
+        // An identity outside the allow-list cannot contribute (fail-closed).
+        await expect(
+          oversightWithRegistry.submitApproval(request.id, {
+            approverId: 'intruder',
+            decision: 'approved',
+          })
+        ).rejects.toThrow();
+
+        // Registered approvers contribute; two distinct ones reach the quorum.
+        await oversightWithRegistry.submitApproval(request.id, {
+          approverId: 'rm-1',
+          decision: 'approved',
+        });
+        expect(oversightWithRegistry.getApprovalRequest(request.id)?.status).toBe('pending');
+
+        await oversightWithRegistry.submitApproval(request.id, {
+          approverId: 'rm-2',
+          decision: 'approved',
+        });
+        expect(oversightWithRegistry.getApprovalRequest(request.id)?.status).toBe('approved');
+      });
+    });
   });
 
   describe('Dashboard', () => {
