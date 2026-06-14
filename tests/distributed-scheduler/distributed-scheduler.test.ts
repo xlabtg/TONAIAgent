@@ -482,6 +482,95 @@ describe('RetryEngine', () => {
 });
 
 // ============================================================================
+// RetryEngine — execution-history retention (LOGIC-46)
+// ============================================================================
+
+describe('RetryEngine — execution-history retention (LOGIC-46)', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  it('prunes execution records older than executionHistoryRetentionMs on insert', () => {
+    const engine = createRetryEngine({ executionHistoryRetentionMs: 7 * DAY_MS });
+    const now = Date.now();
+
+    // An old record (8 days ago) followed by a fresh one (now).
+    engine.recordExecution(makeExecutionRecord('job_old', true, 0, new Date(now - 8 * DAY_MS)));
+    engine.recordExecution(makeExecutionRecord('job_old', true, 1, new Date(now)));
+
+    const history = engine.getExecutionHistory('job_old');
+    expect(history.length).toBe(1);
+    expect(history[0].attempt).toBe(1);
+    expect(engine.getTotalExecutionCount()).toBe(1);
+  });
+
+  it('keeps records within the retention window', () => {
+    const engine = createRetryEngine({ executionHistoryRetentionMs: 7 * DAY_MS });
+    const now = Date.now();
+
+    engine.recordExecution(makeExecutionRecord('job_recent', true, 0, new Date(now - 2 * DAY_MS)));
+    engine.recordExecution(makeExecutionRecord('job_recent', true, 1, new Date(now)));
+
+    expect(engine.getExecutionHistory('job_recent').length).toBe(2);
+  });
+
+  it('bounds per-job history by count via maxExecutionHistoryPerJob', () => {
+    const engine = createRetryEngine({
+      executionHistoryRetentionMs: 7 * DAY_MS,
+      maxExecutionHistoryPerJob: 5,
+    });
+
+    for (let i = 0; i < 20; i++) {
+      engine.recordExecution(makeExecutionRecord('job_capped', true, i));
+    }
+
+    const history = engine.getExecutionHistory('job_capped');
+    expect(history.length).toBe(5);
+    // Only the most recent records are retained.
+    expect(history.map((r) => r.attempt)).toEqual([15, 16, 17, 18, 19]);
+  });
+
+  it('does not leak unbounded history for a recurring job reusing the same jobId', () => {
+    const engine = createRetryEngine({
+      executionHistoryRetentionMs: 7 * DAY_MS,
+      maxExecutionHistoryPerJob: 100,
+    });
+
+    // Simulate a long-running recurring job recording thousands of executions.
+    for (let i = 0; i < 5_000; i++) {
+      engine.recordExecution(makeExecutionRecord('job_recurring', i % 7 !== 0, i));
+    }
+
+    expect(engine.getExecutionHistory('job_recurring', 10_000).length).toBeLessThanOrEqual(100);
+    expect(engine.getTotalExecutionCount()).toBeLessThanOrEqual(100);
+  });
+
+  it('sweepExecutionHistory evicts aged-out records for idle jobs', () => {
+    const engine = createRetryEngine({ executionHistoryRetentionMs: 7 * DAY_MS });
+    const now = Date.now();
+
+    engine.recordExecution(makeExecutionRecord('job_idle', true, 0, new Date(now - 10 * DAY_MS)));
+    engine.recordExecution(makeExecutionRecord('job_fresh', true, 0, new Date(now)));
+
+    // The idle job's single old record survived insert-time pruning (no newer
+    // record for that job), but a sweep relative to "now" should evict it.
+    const evicted = engine.sweepExecutionHistory(new Date(now));
+    expect(evicted).toBe(1);
+    expect(engine.getExecutionHistory('job_idle').length).toBe(0);
+    expect(engine.getExecutionHistory('job_fresh').length).toBe(1);
+  });
+
+  it('disables age-based pruning when retention is 0', () => {
+    const engine = createRetryEngine({ executionHistoryRetentionMs: 0 });
+    const now = Date.now();
+
+    engine.recordExecution(makeExecutionRecord('job_keep', true, 0, new Date(now - 100 * DAY_MS)));
+    engine.recordExecution(makeExecutionRecord('job_keep', true, 1, new Date(now)));
+
+    expect(engine.getExecutionHistory('job_keep').length).toBe(2);
+    expect(engine.sweepExecutionHistory(new Date(now))).toBe(0);
+  });
+});
+
+// ============================================================================
 // OnChainListenerManager
 // ============================================================================
 
@@ -1362,15 +1451,20 @@ describe('Factory functions', () => {
 // Test Utility Functions
 // ============================================================================
 
-function makeExecutionRecord(jobId: string, success: boolean, attempt = 0): ExecutionRecord {
+function makeExecutionRecord(
+  jobId: string,
+  success: boolean,
+  attempt = 0,
+  startedAt: Date = new Date(),
+): ExecutionRecord {
   return {
     executionId: `exec_${jobId}_${attempt}`,
     jobId,
     workerId: 'worker_1',
     trigger: 'manual',
     triggerEvent: null,
-    startedAt: new Date(),
-    completedAt: new Date(),
+    startedAt,
+    completedAt: startedAt,
     durationMs: 100,
     success,
     error: success ? null : 'Simulated failure',

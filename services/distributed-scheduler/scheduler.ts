@@ -243,6 +243,8 @@ export class DistributedScheduler {
 
   // Cron polling
   private cronTimer: ReturnType<typeof setInterval> | null = null;
+  // Periodic execution-history retention sweep
+  private historySweepTimer: ReturnType<typeof setInterval> | null = null;
   private running = false;
 
   // Event subscribers
@@ -267,7 +269,9 @@ export class DistributedScheduler {
 
     // Initialise sub-systems
     this.eventBus = createEventBus();
-    this.retryEngine = createRetryEngine();
+    this.retryEngine = createRetryEngine({
+      executionHistoryRetentionMs: this.config.executionHistoryRetentionMs,
+    });
     this.onChainManager = createOnChainListenerManager(
       this.eventBus,
       this.config.onChainPollIntervalMs,
@@ -328,6 +332,22 @@ export class DistributedScheduler {
       }
     }, this.config.cronPollIntervalMs);
 
+    // Periodically sweep aged-out execution history so idle jobs that stopped
+    // recording don't retain stale records forever. Cap the interval at 1 hour
+    // so retention is enforced reasonably even for very long windows.
+    const sweepIntervalMs = Math.max(
+      1_000,
+      Math.min(this.config.executionHistoryRetentionMs, 60 * 60 * 1000),
+    );
+    this.historySweepTimer = setInterval(() => {
+      this.retryEngine.sweepExecutionHistory();
+    }, sweepIntervalMs);
+    // Don't keep the event loop alive solely for the retention sweep.
+    const sweepTimer = this.historySweepTimer as { unref?: () => void };
+    if (typeof sweepTimer.unref === 'function') {
+      sweepTimer.unref();
+    }
+
     this.emit({ type: 'worker.started', timestamp: new Date(), data: { config: this.config } });
   }
 
@@ -341,6 +361,11 @@ export class DistributedScheduler {
     if (this.cronTimer !== null) {
       clearInterval(this.cronTimer);
       this.cronTimer = null;
+    }
+
+    if (this.historySweepTimer !== null) {
+      clearInterval(this.historySweepTimer);
+      this.historySweepTimer = null;
     }
 
     // Clear pending retry timers
