@@ -75,6 +75,12 @@ export interface Payment {
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+  /**
+   * Cumulative amount refunded so far, as a base-unit string. Tracked so that
+   * sequential partial refunds can be summed and bounded by the captured total.
+   * Absent/undefined is equivalent to "0" (nothing refunded yet).
+   */
+  refundedAmount?: string;
 }
 
 export interface PaymentParty {

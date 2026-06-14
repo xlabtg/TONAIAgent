@@ -381,12 +381,40 @@ export class DefaultPaymentGateway implements PaymentGateway {
   async refundPayment(paymentId: string, amount?: string, reason?: string): Promise<RefundResult> {
     const payment = await this.getPaymentOrThrow(paymentId);
 
-    if (payment.status !== 'completed') {
+    // Only a completed payment (or one with an outstanding balance after a
+    // prior partial refund) can be refunded. Allowing 'partially_refunded'
+    // here is what lets the remaining balance be refunded across multiple
+    // calls — see issue #443 (LOGIC-33).
+    if (payment.status !== 'completed' && payment.status !== 'partially_refunded') {
       throw new Error(`Cannot refund payment with status: ${payment.status}`);
     }
 
-    const refundAmount = amount || payment.amount;
-    const isPartialRefund = BigInt(refundAmount) < BigInt(payment.amount);
+    const capturedAmount = BigInt(payment.amount);
+    const alreadyRefunded = BigInt(payment.refundedAmount || '0');
+    const refundableBalance = capturedAmount - alreadyRefunded;
+
+    // Default to refunding the remaining (un-refunded) balance, not the full
+    // captured amount, so a refund with no explicit amount after a partial
+    // refund settles the remainder rather than over-refunding.
+    const refundAmount = amount ?? refundableBalance.toString();
+    const refundAmountBigInt = BigInt(refundAmount);
+
+    if (refundAmountBigInt <= 0n) {
+      throw new Error('Refund amount must be positive');
+    }
+
+    // Upper-bound guard: a single request — or the cumulative total across
+    // sequential partial refunds — may never exceed the captured amount.
+    if (refundAmountBigInt > refundableBalance) {
+      throw new Error(
+        `Refund amount ${refundAmount} exceeds refundable balance ${refundableBalance.toString()}`
+      );
+    }
+
+    const totalRefunded = alreadyRefunded + refundAmountBigInt;
+    payment.refundedAmount = totalRefunded.toString();
+
+    const isPartialRefund = totalRefunded < capturedAmount;
 
     payment.status = isPartialRefund ? 'partially_refunded' : 'refunded';
     payment.updatedAt = new Date();
@@ -398,6 +426,7 @@ export class DefaultPaymentGateway implements PaymentGateway {
       refundAmount,
       reason,
       isPartialRefund,
+      totalRefunded: payment.refundedAmount,
     });
 
     this.emitEvent('payment.refunded', 'payment', paymentId, 'refunded', { refundId, amount: refundAmount });
