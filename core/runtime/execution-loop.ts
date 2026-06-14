@@ -468,6 +468,14 @@ export class ExecutionLoop {
         const completedAt = new Date();
         const durationMs = performance.now() - startTime;
 
+        this.emitEvent('cycle.completed', agentState.agentId, {
+          cycleId,
+          action: signal.action,
+          durationMs,
+          riskRejected: true,
+          reasons: riskValidation.rejectionReasons,
+        });
+
         return {
           cycleId,
           agentId: agentState.agentId,

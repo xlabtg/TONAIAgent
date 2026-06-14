@@ -583,21 +583,6 @@ export class AgentManager {
         }
       }
 
-      // Record event for monitoring
-      this.monitor.recordEvent({
-        id: `evt-${Date.now()}`,
-        type: result.success ? 'cycle.completed' : 'cycle.failed',
-        timestamp: new Date(),
-        agentId,
-        data: {
-          cycleId: result.cycleId,
-          durationMs: result.durationMs,
-          action: result.signal?.action,
-          error: result.error,
-          value: result.trade?.value,
-        },
-      });
-
       // Update monitor state
       this.monitor.updateAgentState(this.stateManager.requireAgent(agentId));
 
