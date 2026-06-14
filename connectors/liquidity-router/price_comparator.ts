@@ -47,7 +47,7 @@ export class PriceComparator {
   /**
    * Compares quotes and returns a ranked comparison.
    *
-   * @throws LiquidityRouterError 'NO_LIQUIDITY' if all quotes fail the
+   * @throws LiquidityRouterError 'INSUFFICIENT_LIQUIDITY' if all quotes fail the
    *         liquidity/impact filters.
    * @throws LiquidityRouterError 'NO_ROUTES' if quotes array is empty.
    */
@@ -65,19 +65,20 @@ export class PriceComparator {
       q.priceImpactPercent <= this.maxPriceImpactPercent
     );
 
-    // If nothing passes the filter, fall back to unfiltered set
-    const candidates = qualified.length > 0 ? qualified : quotes;
-
-    if (candidates.length === 0) {
+    if (qualified.length === 0) {
       throw new LiquidityRouterError(
         `All quotes failed quality checks (minLiquidity=${this.minLiquidityUsd}, maxPriceImpact=${this.maxPriceImpactPercent}%)`,
         'INSUFFICIENT_LIQUIDITY',
-        { quotesChecked: quotes.length }
+        {
+          quotesChecked: quotes.length,
+          minLiquidityUsd: this.minLiquidityUsd,
+          maxPriceImpactPercent: this.maxPriceImpactPercent,
+        }
       );
     }
 
     // Sort by: 1) highest expected output, 2) lowest price impact, 3) lowest fee
-    const ranked = [...candidates].sort((a, b) => {
+    const ranked = [...qualified].sort((a, b) => {
       const outA = parseFloat(a.expectedAmountOut);
       const outB = parseFloat(b.expectedAmountOut);
       if (outB !== outA) return outB - outA;                       // higher output first
