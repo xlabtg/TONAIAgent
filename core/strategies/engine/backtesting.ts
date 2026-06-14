@@ -435,7 +435,8 @@ export class BacktestingEngine {
       state.previousPrices = new Map(currentPrices);
 
       // Check risk controls
-      this.checkRiskControls(definition, state, currentPrices);
+      const riskTrades = this.checkRiskControls(definition, state, currentPrices);
+      state.trades.push(...riskTrades);
 
       // Calculate equity
       const equity = this.calculateEquity(state, currentPrices);
@@ -621,7 +622,9 @@ export class BacktestingEngine {
     definition: StrategySpec,
     state: BacktestState,
     _prices: Map<string, number>
-  ): void {
+  ): SimulatedTrade[] {
+    const trades: SimulatedTrade[] = [];
+
     for (const control of definition.riskControls) {
       if (!control.enabled) continue;
 
@@ -635,8 +638,22 @@ export class BacktestingEngine {
           if (loss >= config.percentage / 100) {
             // Trigger stop loss - close position
             const value = position.amount * position.currentPrice;
+            const pnl = position.unrealizedPnl;
+
             state.cash += value;
-            state.realizedPnl += position.unrealizedPnl;
+            state.realizedPnl += pnl;
+            trades.push({
+              id: `trade_${state.timestamp.getTime()}_${token}_stop_loss`,
+              timestamp: state.timestamp,
+              type: 'sell',
+              token,
+              amount: position.amount,
+              price: position.currentPrice,
+              value,
+              fees: 0,
+              slippage: 0,
+              pnl,
+            });
             state.positions.delete(token);
           }
         }
@@ -657,7 +674,20 @@ export class BacktestingEngine {
 
             state.cash += value;
             state.realizedPnl += pnl;
+            trades.push({
+              id: `trade_${state.timestamp.getTime()}_${token}_take_profit`,
+              timestamp: state.timestamp,
+              type: 'sell',
+              token,
+              amount: sellAmount,
+              price: position.currentPrice,
+              value,
+              fees: 0,
+              slippage: 0,
+              pnl,
+            });
             position.amount -= sellAmount;
+            position.unrealizedPnl = (position.currentPrice - position.entryPrice) * position.amount;
 
             if (position.amount <= 0) {
               state.positions.delete(token);
@@ -666,6 +696,8 @@ export class BacktestingEngine {
         }
       }
     }
+
+    return trades;
   }
 
   private calculateSlippage(model: SlippageModel, amount: number, _price: number): number {
@@ -764,9 +796,10 @@ export class BacktestingEngine {
     const calmarRatio = maxDrawdown > 0 ? annualizedReturn / maxDrawdown : annualizedReturn;
 
     // Trade statistics
-    const winningTrades = trades.filter(t => (t.pnl ?? 0) > 0);
-    const losingTrades = trades.filter(t => (t.pnl ?? 0) <= 0);
-    const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
+    const closedTrades = trades.filter(t => t.type === 'sell' && t.pnl !== undefined);
+    const winningTrades = closedTrades.filter(t => (t.pnl ?? 0) > 0);
+    const losingTrades = closedTrades.filter(t => (t.pnl ?? 0) < 0);
+    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
     const avgWin = winningTrades.length > 0
       ? winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0) / winningTrades.length
       : 0;
@@ -838,7 +871,9 @@ export class BacktestingEngine {
     trades: SimulatedTrade[],
     config: { simulations: number; confidenceLevel: number }
   ): MonteCarloResult {
-    const returns = trades.map(t => (t.pnl ?? 0) / t.value);
+    const returns = trades
+      .filter(t => t.type === 'sell' && t.pnl !== undefined)
+      .map(t => (t.pnl ?? 0) / t.value);
     const distribution: number[] = [];
 
     for (let i = 0; i < config.simulations; i++) {

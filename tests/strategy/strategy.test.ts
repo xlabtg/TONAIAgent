@@ -27,6 +27,8 @@ import {
   // Backtesting
   createBacktestingEngine,
   BacktestingEngine,
+  HistoricalDataProvider,
+  OHLCV,
 
   // Optimization
   createOptimizationEngine,
@@ -150,6 +152,39 @@ function createMockDSL(): StrategyDSL {
       }],
     },
   };
+}
+
+function createPriceSeries(token: string, prices: number[]): OHLCV[] {
+  return prices.map((close, index) => ({
+    timestamp: new Date(Date.UTC(2024, 0, index + 1)),
+    open: close,
+    high: close,
+    low: close,
+    close,
+    volume: token === 'TON' ? 100000 : 1000000,
+  }));
+}
+
+class DeterministicBacktestDataProvider implements HistoricalDataProvider {
+  async getPrices(token: string): Promise<OHLCV[]> {
+    return createPriceSeries(token, token === 'TON' ? [10, 12, 12] : [1, 1, 1]);
+  }
+
+  async getVolume(token: string): Promise<{ timestamp: Date; volume: number; volumeUsd: number }[]> {
+    return createPriceSeries(token, [1, 1, 1]).map(point => ({
+      timestamp: point.timestamp,
+      volume: point.volume,
+      volumeUsd: point.volume * point.close,
+    }));
+  }
+
+  async getLiquidity(): Promise<{ timestamp: Date; liquidity: number; liquidityUsd: number }[]> {
+    return createPriceSeries('TON', [1, 1, 1]).map(point => ({
+      timestamp: point.timestamp,
+      liquidity: 1000000,
+      liquidityUsd: 1000000,
+    }));
+  }
 }
 
 // ============================================================================
@@ -789,6 +824,104 @@ describe('Backtesting Engine', () => {
       expect(result.performance.metrics.sharpeRatio).toBeDefined();
       expect(result.performance.metrics.maxDrawdown).toBeDefined();
       expect(result.performance.trades.totalTrades).toBeDefined();
+    });
+
+    it('should record realized pnl on profitable closing trades', async () => {
+      const strategy: Strategy = {
+        id: 'strategy_take_profit',
+        name: 'Take Profit Strategy',
+        description: 'Buy TON once and close after deterministic price appreciation',
+        type: 'rule_based',
+        version: 1,
+        status: 'active',
+        userId: 'user_test',
+        agentId: 'agent_test',
+        definition: {
+          triggers: [{
+            id: 'trigger_1',
+            type: 'schedule',
+            name: 'Daily Trigger',
+            enabled: true,
+            config: { type: 'schedule', cron: '0 0 * * *' },
+          }],
+          conditions: [{
+            id: 'condition_1',
+            name: 'Only first buy',
+            type: 'portfolio',
+            rules: [{
+              id: 'rule_1',
+              field: 'balance',
+              operator: 'greater_than',
+              value: 950,
+              valueType: 'static',
+            }],
+            required: true,
+          }],
+          actions: [{
+            id: 'action_1',
+            type: 'swap',
+            name: 'Buy TON',
+            priority: 1,
+            config: {
+              type: 'swap',
+              fromToken: 'USDT',
+              toToken: 'TON',
+              amount: { type: 'fixed', value: 100 },
+              slippageTolerance: 0,
+            },
+          }],
+          riskControls: [{
+            id: 'risk_1',
+            type: 'take_profit',
+            name: 'Take Profit',
+            enabled: true,
+            config: { type: 'take_profit', percentage: 10, sellPercentage: 100 },
+            action: { type: 'execute_action' },
+          }],
+          parameters: [],
+          capitalAllocation: {
+            mode: 'fixed',
+            allocatedAmount: 100,
+            minCapital: 50,
+            reservePercentage: 20,
+          },
+        },
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        tags: [],
+        metadata: {},
+      };
+
+      const deterministicBacktester = createBacktestingEngine(new DeterministicBacktestDataProvider());
+      const config: BacktestConfig = {
+        strategyId: strategy.id,
+        period: {
+          start: new Date('2024-01-01'),
+          end: new Date('2024-01-03'),
+        },
+        initialCapital: 1000,
+        slippageModel: { type: 'fixed', baseSlippage: 0 },
+        feeModel: { tradingFee: 0, gasCost: 0 },
+        dataGranularity: '1d',
+        monteCarlo: {
+          enabled: true,
+          simulations: 20,
+          confidenceLevel: 0.95,
+        },
+      };
+
+      const result = await deterministicBacktester.runBacktest(strategy, config);
+      const closingTrade = result.trades.find(trade => trade.type === 'sell');
+
+      expect(result.status).toBe('completed');
+      expect(closingTrade).toBeDefined();
+      expect(closingTrade?.pnl).toBeGreaterThan(0);
+      expect(result.performance.trades.winningTrades).toBe(1);
+      expect(result.performance.trades.losingTrades).toBe(0);
+      expect(result.performance.trades.winRate).toBe(100);
+      expect(result.performance.trades.expectancy).toBeGreaterThan(0);
+      expect(result.monteCarlo?.expectedReturn).toBeGreaterThan(0);
+      expect(result.monteCarlo?.distribution.every(value => value > 0)).toBe(true);
     });
 
     it('should run Monte Carlo simulation', async () => {
