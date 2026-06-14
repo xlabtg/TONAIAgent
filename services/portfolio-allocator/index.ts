@@ -156,10 +156,27 @@ export class PortfolioAllocatorService {
       }
     }
 
-    // Step 4 — Apply minFraction floor (may cause sum > 1; absorbed proportionally)
+    // Step 4 — Apply minFraction floor (may push the sum above 1).
     for (let i = 0; i < agents.length; i++) {
       const lo = Math.min(minFrac, maxExposures[i]!);
       if (fractions[i]! < lo) fractions[i] = lo;
+    }
+
+    // Step 4b — Re-normalise so the fractions never sum to more than 1.
+    //
+    // The minFraction floor above (and the score-proportional weighting) can
+    // push the total above 1 — e.g. enough low-score agents each floored to
+    // `minFraction` so that n * minFraction > 1. Without this step the result
+    // would over-allocate capital (sum(capitalAmount) > totalBalance) and
+    // over-leverage the portfolio. Scaling every fraction by 1/sum restores the
+    // ≤1 invariant while preserving relative proportions; because it only moves
+    // fractions downward it can never breach a maxExposure cap.
+    const total = fractions.reduce((s, f) => s + f, 0);
+    if (total > 1) {
+      const scale = 1 / total;
+      for (let i = 0; i < agents.length; i++) {
+        fractions[i] = fractions[i]! * scale;
+      }
     }
 
     const normalised = fractions;
