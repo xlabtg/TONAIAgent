@@ -24,6 +24,7 @@ import {
   createPortfolioService,
   createKeyManagementService,
   isTerminalOrderStatus,
+  BaseExchangeConnector,
   ConnectorError,
   ExecutionError,
   KeyManagementError,
@@ -33,6 +34,8 @@ import type {
   ExchangeConnectorConfig,
   ExecutionRequest,
   LiveTradingEvent,
+  OrderResult,
+  OrderStatusResult,
   PortfolioState,
   PriceFeed,
 } from '../../core/trading/live';
@@ -355,6 +358,157 @@ describe('ExecutionEngine', () => {
     expect(
       types.some(t => t === 'execution.completed' || t === 'execution.partial' || t === 'execution.failed')
     ).toBe(true);
+  });
+
+  it('should terminate an iceberg whose slices never fill (LOGIC-47)', async () => {
+    // A limit order that rests unfilled (filledQuantity === 0, non-terminal
+    // status) used to leave remainingQuantity unchanged, spinning the slicing
+    // loop forever and re-placing slices indefinitely. The loop must now stop
+    // after a bounded number of unproductive slices.
+    let placeCalls = 0;
+    let cancelCalls = 0;
+
+    class RestingLimitConnector extends BaseExchangeConnector {
+      async connect(): Promise<void> {
+        this._status = 'connected';
+      }
+      async disconnect(): Promise<void> {
+        this._status = 'disconnected';
+      }
+      async getBalances() {
+        return [];
+      }
+      async placeOrder(request): Promise<OrderResult> {
+        placeCalls += 1;
+        return {
+          orderId: `order_${placeCalls}`,
+          exchangeOrderId: `ex_${placeCalls}`,
+          symbol: request.symbol,
+          side: request.side,
+          type: request.type,
+          status: 'open',
+          requestedQuantity: request.quantity,
+          filledQuantity: 0,
+          remainingQuantity: request.quantity,
+          price: request.price,
+          fees: 0,
+          feeToken: 'USDT',
+          transactionIds: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      async cancelOrder(): Promise<boolean> {
+        cancelCalls += 1;
+        return true;
+      }
+      async getOrderStatus(orderId: string): Promise<OrderStatusResult> {
+        return {
+          orderId,
+          exchangeOrderId: orderId,
+          status: 'open',
+          filledQuantity: 0,
+          remainingQuantity: 0,
+          fees: 0,
+          updatedAt: new Date(),
+        };
+      }
+    }
+
+    const restingRegistry = createConnectorRegistry();
+    restingRegistry.register(new RestingLimitConnector(makeConnectorConfig()));
+    await restingRegistry.connectAll();
+
+    const engine = createExecutionEngine(restingRegistry, {
+      // Keep the test fast: no real delay between slices.
+      icebergSliceDelayMs: 0,
+      maxUnproductiveIcebergSlices: 3,
+      maxIcebergSlices: 50,
+    });
+
+    const result = await engine.execute(
+      makeExecutionRequest({ executionStrategy: 'iceberg', quantity: 100, priceLimit: 1 })
+    );
+
+    // The loop exits rather than hanging, and only places a bounded number of
+    // resting slices (one per unproductive iteration), each of which is
+    // cancelled to avoid dangling orders.
+    expect(['completed', 'partially_completed', 'failed']).toContain(result.status);
+    expect(placeCalls).toBe(3);
+    expect(cancelCalls).toBe(3);
+  });
+
+  it('should cap the total number of iceberg slices (LOGIC-47)', async () => {
+    // Even when each slice makes a tiny bit of progress (resetting the
+    // unproductive counter), a hard slice cap bounds the total order count.
+    let placeCalls = 0;
+
+    class TinyFillConnector extends BaseExchangeConnector {
+      async connect(): Promise<void> {
+        this._status = 'connected';
+      }
+      async disconnect(): Promise<void> {
+        this._status = 'disconnected';
+      }
+      async getBalances() {
+        return [];
+      }
+      async placeOrder(request): Promise<OrderResult> {
+        placeCalls += 1;
+        // Fill a vanishingly small amount so remainingQuantity barely shrinks
+        // and the unproductive-slice guard never trips.
+        const filled = request.quantity * 0.001;
+        return {
+          orderId: `order_${placeCalls}`,
+          exchangeOrderId: `ex_${placeCalls}`,
+          symbol: request.symbol,
+          side: request.side,
+          type: request.type,
+          status: 'partially_filled',
+          requestedQuantity: request.quantity,
+          filledQuantity: filled,
+          remainingQuantity: request.quantity - filled,
+          price: request.price,
+          fees: 0,
+          feeToken: 'USDT',
+          transactionIds: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      async cancelOrder(): Promise<boolean> {
+        return true;
+      }
+      async getOrderStatus(orderId: string): Promise<OrderStatusResult> {
+        return {
+          orderId,
+          exchangeOrderId: orderId,
+          status: 'partially_filled',
+          filledQuantity: 0,
+          remainingQuantity: 0,
+          fees: 0,
+          updatedAt: new Date(),
+        };
+      }
+    }
+
+    const tinyRegistry = createConnectorRegistry();
+    tinyRegistry.register(new TinyFillConnector(makeConnectorConfig()));
+    await tinyRegistry.connectAll();
+
+    const maxIcebergSlices = 12;
+    const engine = createExecutionEngine(tinyRegistry, {
+      icebergSliceDelayMs: 0,
+      maxUnproductiveIcebergSlices: 3,
+      maxIcebergSlices,
+    });
+
+    const result = await engine.execute(
+      makeExecutionRequest({ executionStrategy: 'iceberg', quantity: 100, priceLimit: 1 })
+    );
+
+    expect(['completed', 'partially_completed', 'failed']).toContain(result.status);
+    expect(placeCalls).toBe(maxIcebergSlices);
   });
 });
 
