@@ -783,6 +783,134 @@ describe('AgentManager', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should record a triggered completed cycle only once in monitor telemetry', async () => {
+      manager.stop();
+      manager = createTestAgentManager({
+        marketDataProvider: {
+          getPrice: vi.fn(async () => null),
+          getSnapshot: vi.fn(async () => {
+            const now = new Date();
+            return {
+              prices: {
+                TON: {
+                  asset: 'TON',
+                  price: 5,
+                  volume24h: 1000,
+                  timestamp: now,
+                },
+                USDT: {
+                  asset: 'USDT',
+                  price: 1,
+                  volume24h: 1000,
+                  timestamp: now,
+                },
+              },
+              source: 'test',
+              fetchedAt: now,
+            };
+          }),
+        },
+        strategyExecutor: {
+          execute: vi.fn(async () => ({
+            action: 'HOLD',
+            pair: 'TON/USDT',
+            size: 0,
+            confidence: 0.5,
+            reason: 'No test trade',
+            strategyId: 'momentum',
+            generatedAt: new Date(),
+          })),
+        },
+      });
+      manager.start();
+
+      const config = createTestAgentConfig({
+        agentId: 'agent-001',
+        interval: { value: 1, unit: 'minutes' },
+      });
+      await manager.createAgent(config);
+      await manager.startAgent('agent-001');
+
+      const result = await manager.triggerAgent('agent-001');
+      const completedEvents = manager
+        .getAgentEvents('agent-001')
+        .filter((event) => event.type === 'cycle.completed');
+
+      expect(result.success).toBe(true);
+      expect(completedEvents).toHaveLength(1);
+      expect(manager.getTelemetry().totalCycles).toBe(1);
+    });
+
+    it('should record a risk-rejected completed cycle once in monitor telemetry', async () => {
+      manager.stop();
+      manager = createTestAgentManager({
+        marketDataProvider: {
+          getPrice: vi.fn(async () => null),
+          getSnapshot: vi.fn(async () => {
+            const now = new Date();
+            return {
+              prices: {
+                TON: {
+                  asset: 'TON',
+                  price: 5,
+                  volume24h: 1000,
+                  timestamp: now,
+                },
+                USDT: {
+                  asset: 'USDT',
+                  price: 1,
+                  volume24h: 1000,
+                  timestamp: now,
+                },
+              },
+              source: 'test',
+              fetchedAt: now,
+            };
+          }),
+        },
+        strategyExecutor: {
+          execute: vi.fn(async () => ({
+            action: 'BUY',
+            pair: 'TON/USDT',
+            size: 100,
+            confidence: 0.8,
+            reason: 'Deterministic test trade',
+            strategyId: 'momentum',
+            generatedAt: new Date(),
+          })),
+        },
+        riskValidator: {
+          validate: vi.fn(async (signal) => ({
+            approved: false,
+            originalSignal: signal,
+            checks: [],
+            warnings: [],
+            rejectionReasons: ['test risk rejection'],
+          })),
+        },
+      });
+      manager.start();
+
+      const config = createTestAgentConfig({
+        agentId: 'agent-001',
+        interval: { value: 1, unit: 'minutes' },
+      });
+      await manager.createAgent(config);
+      await manager.startAgent('agent-001');
+
+      const result = await manager.triggerAgent('agent-001');
+      const agentEvents = manager.getAgentEvents('agent-001');
+      const completedEvents = agentEvents.filter((event) => event.type === 'cycle.completed');
+      const rejectedEvents = agentEvents.filter((event) => event.type === 'risk.rejected');
+
+      expect(result.success).toBe(true);
+      expect(result.riskValidation?.approved).toBe(false);
+      expect(rejectedEvents).toHaveLength(1);
+      expect(completedEvents).toHaveLength(1);
+      expect(completedEvents[0].data['riskRejected']).toBe(true);
+      expect(manager.getTelemetry().totalCycles).toBe(1);
+    });
+
     it('should increment consecutive errors and auto-error after five failed cycles', async () => {
       manager.stop();
       manager = createTestAgentManager({
