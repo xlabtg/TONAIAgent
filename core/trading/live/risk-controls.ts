@@ -37,7 +37,7 @@ export interface RiskControlsService {
   setRiskProfile(agentId: string, profile: RiskProfile): void;
   getRiskProfile(agentId: string): RiskProfile | undefined;
   checkExecution(request: RiskCheckRequest): RiskCheckResult;
-  recordTrade(agentId: string, value: number, pnl: number): void;
+  recordTrade(agentId: string, value: number, pnl: number, portfolioValue?: number): void;
   resetDailyCounters(agentId: string): void;
   triggerStopLoss(agentId: string): void;
   getAgentRiskStatus(agentId: string): AgentRiskStatus;
@@ -267,7 +267,18 @@ export class DefaultRiskControlsService implements RiskControlsService {
     };
   }
 
-  recordTrade(agentId: string, value: number, pnl: number): void {
+  /**
+   * Record a completed trade for daily-loss tracking and velocity limits.
+   *
+   * @param value          Notional value of this single trade (USD).
+   * @param pnl            Realized PnL of this trade (USD, negative = loss).
+   * @param portfolioValue Current total portfolio value (USD) used as the
+   *   denominator for the daily-loss percentage. When omitted, the stop-loss
+   *   percentage cannot be evaluated here and is left to `checkExecution`,
+   *   which re-derives it from `currentPortfolio.totalValue` on each request.
+   *   The single-trade notional is never substituted for the portfolio value.
+   */
+  recordTrade(agentId: string, value: number, pnl: number, portfolioValue?: number): void {
     const profile = this.profiles.get(agentId) ?? this.getDefaultProfile(agentId);
     const state = this.ensureAgentState(agentId, profile);
 
@@ -278,11 +289,16 @@ export class DefaultRiskControlsService implements RiskControlsService {
       state.dailyLossUSD += Math.abs(pnl);
     }
 
-    // Check if stop-loss should be triggered
-    const portfolioValue = value; // Using current value as proxy
+    // Check if stop-loss should be triggered, using the real portfolio value
+    // as the denominator. Without it the loss percentage is meaningless, so we
+    // defer the breaker to checkExecution rather than use the trade notional.
+    if (portfolioValue === undefined || portfolioValue <= 0) {
+      return;
+    }
+
     const dailyLossLimit = this.getDailyLossLimitValue(profile);
 
-    if (portfolioValue > 0 && dailyLossLimit > 0) {
+    if (dailyLossLimit > 0) {
       const dailyLossPercent = (state.dailyLossUSD / portfolioValue) * 100;
       if (dailyLossPercent >= dailyLossLimit) {
         this.triggerStopLoss(agentId);
