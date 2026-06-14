@@ -227,14 +227,21 @@ describe('PriceComparator', () => {
       expect(comparison.rankedQuotes.some(q => q.dex === 'tonco')).toBe(false);
     });
 
-    it('falls back to unfiltered quotes when all fail quality check', () => {
+    it('throws INSUFFICIENT_LIQUIDITY when all quotes fail quality checks', () => {
       const comparator = createPriceComparator({
         minLiquidityUsd: 999_999_999, // impossibly high
       });
 
-      // Should not throw - falls back to all quotes
-      const comparison = comparator.compare(quotes);
-      expect(comparison.rankedQuotes.length).toBeGreaterThan(0);
+      expect(() => comparator.compare(quotes)).toThrow(LiquidityRouterError);
+      expect(() => comparator.compare(quotes)).toThrow(
+        expect.objectContaining({
+          code: 'INSUFFICIENT_LIQUIDITY',
+          metadata: expect.objectContaining({
+            quotesChecked: quotes.length,
+            minLiquidityUsd: 999_999_999,
+          }),
+        })
+      );
     });
 
     it('returns summary with correct rank numbers', () => {
@@ -496,6 +503,25 @@ describe('LiquidityRouter', () => {
 
       const plan = await router.route({ pair: 'TON/USDT', action: 'BUY', amount: '100' });
       expect(plan.dex).toBe('stonfi');
+    });
+
+    it('throws INSUFFICIENT_LIQUIDITY instead of routing unsafe quotes', async () => {
+      const fetcher = makeMockFetcher({
+        dedust: makeQuote({ dex: 'dedust', tokenIn: 'USDT', tokenOut: 'TON', liquidityUsd: 1_000 }),
+        stonfi: makeQuote({ dex: 'stonfi', tokenIn: 'USDT', tokenOut: 'TON', liquidityUsd: 2_000 }),
+        tonco: makeQuote({ dex: 'tonco', tokenIn: 'USDT', tokenOut: 'TON', liquidityUsd: 3_000 }),
+      });
+      const router = createLiquidityRouter({ minLiquidityUsd: 10_000 }, fetcher);
+
+      await expect(
+        router.route({ pair: 'TON/USDT', action: 'BUY', amount: '100' })
+      ).rejects.toMatchObject({
+        code: 'INSUFFICIENT_LIQUIDITY',
+        metadata: expect.objectContaining({
+          quotesChecked: 3,
+          minLiquidityUsd: 10_000,
+        }),
+      });
     });
   });
 
