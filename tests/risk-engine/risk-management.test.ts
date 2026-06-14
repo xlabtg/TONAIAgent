@@ -597,6 +597,58 @@ describe('PortfolioProtection', () => {
     expect(metrics.totalPortfolioValueUsd).toBe(30000);
   });
 
+  it('should set day-start equity on registration', () => {
+    const protection = createPortfolioProtection();
+    const agent = protection.registerAgent('agent_001', 10000);
+
+    expect(agent.dayStartValueUsd).toBe(10000);
+  });
+
+  it('should compute daily-loss percent against day-start equity, not historical peak', () => {
+    // Regression for issue #444 (LOGIC-34): the daily-loss breaker used the
+    // all-time peak as the denominator, understating the loss after a drawdown
+    // and tripping the breaker too late.
+    const protection = createPortfolioProtection({
+      dailyLossLimitPercent: 3,
+      enableAutoSuspend: false,
+    });
+
+    // Agent peaks at 20000, then draws down to 10000 over prior days.
+    // Pass explicit PnL of 0 so the drawdown itself is not booked as a daily
+    // loss (we only want to exercise today's loss below).
+    protection.registerAgent('agent_001', 20000);
+    protection.updateAgent('agent_001', 10000, 0); // 50% drawdown; peak stays 20000
+
+    // New trading day starts with 10000 of equity.
+    protection.resetDailyCounters();
+    expect(protection.getAgent('agent_001')?.dayStartValueUsd).toBe(10000);
+
+    // A 300 USD loss is 3% of today's 10000 equity → should trip the breaker.
+    // Against the 20000 peak it would only be 1.5% and would NOT trip.
+    protection.updateAgent('agent_001', 9700, -300);
+
+    const agent = protection.getAgent('agent_001');
+    expect(agent?.dailyLossUsd).toBe(300);
+    expect(agent?.tradingDisabledToday).toBe(true);
+
+    const breach = protection
+      .getActiveAlerts()
+      .find(a => a.type === 'daily_loss_breach');
+    expect(breach).toBeDefined();
+    expect(breach?.currentValue).toBeCloseTo(3, 5);
+  });
+
+  it('should re-base day-start equity when daily counters reset', () => {
+    const protection = createPortfolioProtection();
+    protection.registerAgent('agent_001', 10000);
+    protection.updateAgent('agent_001', 8000); // drawdown to 8000
+
+    protection.resetDailyCounters();
+
+    const agent = protection.getAgent('agent_001');
+    expect(agent?.dayStartValueUsd).toBe(8000);
+  });
+
   it('should reset daily counters', () => {
     const protection = createPortfolioProtection();
     protection.registerAgent('agent_001', 10000);
