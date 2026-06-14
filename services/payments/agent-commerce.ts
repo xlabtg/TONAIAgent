@@ -513,6 +513,23 @@ export class DefaultAgentCommerceManager implements AgentCommerceManager {
       };
     }
 
+    // Check blocked merchants — hard deny-list, evaluated before the amount/approval
+    // logic so a blocked counterparty is rejected regardless of amount (LOGIC-38).
+    if (config.limits.blockedMerchants.includes(transaction.merchantId)) {
+      return {
+        authorized: false,
+        reason: 'Merchant is blocked',
+      };
+    }
+
+    // Check blocked categories — hard deny-list, evaluated before the amount/approval logic.
+    if (transaction.category && config.limits.blockedCategories.includes(transaction.category)) {
+      return {
+        authorized: false,
+        reason: 'Category is blocked',
+      };
+    }
+
     // Check amount limits
     if (BigInt(transaction.amount) > BigInt(auth.scope.maxAmount)) {
       // Check if approval is required
@@ -530,22 +547,6 @@ export class DefaultAgentCommerceManager implements AgentCommerceManager {
       return {
         authorized: false,
         reason: 'Amount exceeds maximum authorized amount',
-      };
-    }
-
-    // Check blocked merchants
-    if (config.limits.blockedMerchants.includes(transaction.merchantId)) {
-      return {
-        authorized: false,
-        reason: 'Merchant is blocked',
-      };
-    }
-
-    // Check blocked categories
-    if (transaction.category && config.limits.blockedCategories.includes(transaction.category)) {
-      return {
-        authorized: false,
-        reason: 'Category is blocked',
       };
     }
 

@@ -329,6 +329,66 @@ describe('AgentCommerceManager', () => {
       expect(agent.enabled).toBe(true);
     });
   });
+
+  describe('checkAuthorization — LOGIC-38', () => {
+    it('should deny a blocked merchant even when the amount triggers the approval branch', async () => {
+      await agents.configureAgent('agent-block-merchant', {
+        capabilities: ['autonomous_payment'],
+        limits: {
+          blockedMerchants: ['blocked-merchant'],
+        },
+      });
+
+      // Amount well above maxTransactionAmount ('1000') so it hits the approval branch.
+      const result = await agents.checkAuthorization('agent-block-merchant', {
+        amount: '5000',
+        currency: 'TON',
+        merchantId: 'blocked-merchant',
+        type: 'one_time',
+      });
+
+      expect(result.authorized).toBe(false);
+      expect(result.requiresApproval).toBeFalsy();
+      expect(result.reason).toBe('Merchant is blocked');
+    });
+
+    it('should deny a blocked category even when the amount triggers the approval branch', async () => {
+      await agents.configureAgent('agent-block-category', {
+        capabilities: ['autonomous_payment'],
+        limits: {
+          blockedCategories: ['gambling'],
+        },
+      });
+
+      const result = await agents.checkAuthorization('agent-block-category', {
+        amount: '5000',
+        currency: 'TON',
+        merchantId: 'merchant-1',
+        category: 'gambling',
+        type: 'one_time',
+      });
+
+      expect(result.authorized).toBe(false);
+      expect(result.requiresApproval).toBeFalsy();
+      expect(result.reason).toBe('Category is blocked');
+    });
+
+    it('should still require approval for a large amount to an allowed merchant', async () => {
+      await agents.configureAgent('agent-allowed', {
+        capabilities: ['autonomous_payment'],
+      });
+
+      const result = await agents.checkAuthorization('agent-allowed', {
+        amount: '5000',
+        currency: 'TON',
+        merchantId: 'merchant-1',
+        type: 'one_time',
+      });
+
+      expect(result.authorized).toBe(true);
+      expect(result.requiresApproval).toBe(true);
+    });
+  });
 });
 
 // ============================================================================
