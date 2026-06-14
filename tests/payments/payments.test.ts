@@ -107,6 +107,106 @@ describe('PaymentGateway', () => {
       );
     });
   });
+
+  // ==========================================================================
+  // refundPayment upper-bound guard (issue #443 — LOGIC-33)
+  // ==========================================================================
+  describe('refundPayment upper-bound guard', () => {
+    const baseParams = {
+      type: 'transfer' as const,
+      method: 'ton_wallet' as const,
+      amount: '100',
+      currency: 'TON' as const,
+      sender: { id: 'sender-1' },
+      recipient: { id: 'recipient-1' },
+    };
+
+    // Drive a payment all the way to 'completed' so it is refundable.
+    async function createCompletedPayment() {
+      const payment = await gateway.createPayment(baseParams);
+      await gateway.approve(payment.id, 'approver-1');
+      await gateway.capturePayment(payment.id); // capture -> processPayment -> completed
+      const completed = await gateway.getPayment(payment.id);
+      expect(completed?.status).toBe('completed');
+      return payment.id;
+    }
+
+    it('should reject a refund greater than the captured amount', async () => {
+      const paymentId = await createCompletedPayment();
+
+      await expect(gateway.refundPayment(paymentId, '150')).rejects.toThrow(
+        /exceeds refundable balance/
+      );
+
+      const stored = await gateway.getPayment(paymentId);
+      expect(stored?.status).toBe('completed');
+      expect(stored?.refundedAmount).toBeUndefined();
+    });
+
+    it('should reject a non-positive refund amount', async () => {
+      const paymentId = await createCompletedPayment();
+
+      await expect(gateway.refundPayment(paymentId, '0')).rejects.toThrow(
+        'Refund amount must be positive'
+      );
+    });
+
+    it('should allow a full refund equal to the captured amount', async () => {
+      const paymentId = await createCompletedPayment();
+
+      const result = await gateway.refundPayment(paymentId, '100');
+      expect(result.amount).toBe('100');
+      expect(result.payment.status).toBe('refunded');
+      expect(result.payment.refundedAmount).toBe('100');
+    });
+
+    it('should allow sequential partial refunds up to the captured total', async () => {
+      const paymentId = await createCompletedPayment();
+
+      const first = await gateway.refundPayment(paymentId, '60');
+      expect(first.payment.status).toBe('partially_refunded');
+      expect(first.payment.refundedAmount).toBe('60');
+
+      const second = await gateway.refundPayment(paymentId, '40');
+      expect(second.payment.status).toBe('refunded');
+      expect(second.payment.refundedAmount).toBe('100');
+    });
+
+    it('should reject a partial refund that would exceed the remaining balance', async () => {
+      const paymentId = await createCompletedPayment();
+
+      await gateway.refundPayment(paymentId, '60');
+
+      // Remaining balance is 40; asking for 50 must be rejected.
+      await expect(gateway.refundPayment(paymentId, '50')).rejects.toThrow(
+        /exceeds refundable balance/
+      );
+
+      const stored = await gateway.getPayment(paymentId);
+      expect(stored?.status).toBe('partially_refunded');
+      expect(stored?.refundedAmount).toBe('60');
+    });
+
+    it('should refund the remaining balance when no amount is given after a partial refund', async () => {
+      const paymentId = await createCompletedPayment();
+
+      await gateway.refundPayment(paymentId, '70');
+      const rest = await gateway.refundPayment(paymentId);
+      expect(rest.amount).toBe('30');
+      expect(rest.payment.status).toBe('refunded');
+      expect(rest.payment.refundedAmount).toBe('100');
+    });
+
+    it('should reject any further refund once fully refunded', async () => {
+      const paymentId = await createCompletedPayment();
+
+      await gateway.refundPayment(paymentId, '100');
+
+      await expect(gateway.refundPayment(paymentId, '10')).rejects.toThrow(
+        'Cannot refund payment with status: refunded'
+      );
+    });
+  });
 });
 
 // ============================================================================
