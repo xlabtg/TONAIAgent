@@ -9,7 +9,7 @@
  *   5. Enhanced Risk Engine Integration
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import {
   createRiskEngine,
@@ -234,15 +234,79 @@ describe('TradeValidator', () => {
     expect(result.violations.some(v => v.limitId === 'daily_loss_limit')).toBe(false);
   });
 
-  it('should reset daily limits', () => {
-    const validator = createTradeValidator();
+  it('should clear prior-day records on reset (rollover re-enables trading)', () => {
+    vi.useFakeTimers();
+    try {
+      // Day 1: breach the daily-loss limit, disabling trading.
+      vi.setSystemTime(new Date('2024-01-01T12:00:00Z'));
+      const validator = createTradeValidator();
+      validator.recordTrade('agent_001', -100);
+      validator.checkDailyLossLimit('agent_001', 1000); // 10% >= 3% → disabled
+      expect(validator.isTradingDisabled('agent_001')).toBe(true);
 
-    validator.recordTrade('agent_001', -100);
-    validator.checkDailyLossLimit('agent_001', 1000);
+      // Day 2: a reset scheduler runs. The day-1 record is from a prior period,
+      // so it must be cleared and the agent re-enabled for the new day.
+      vi.setSystemTime(new Date('2024-01-02T00:05:00Z'));
+      validator.resetDailyLimits();
 
-    validator.resetDailyLimits();
+      expect(validator.isTradingDisabled('agent_001')).toBe(false);
+      expect(validator.getDailyLossRecord('agent_001')).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
-    expect(validator.isTradingDisabled('agent_001')).toBe(false);
+  it('should NOT re-enable a current-day record that is still in breach (LOGIC-27)', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2024-01-01T12:00:00Z'));
+      const validator = createTradeValidator();
+
+      // Breach the daily-loss limit for the *current* day.
+      validator.recordTrade('agent_001', -100);
+      validator.checkDailyLossLimit('agent_001', 1000); // 10% >= 3% → disabled
+      expect(validator.isTradingDisabled('agent_001')).toBe(true);
+
+      // A reset fired while the breach is still active for today must NOT clear
+      // it — otherwise the agent could keep trading past its daily-loss limit.
+      validator.resetDailyLimits();
+
+      expect(validator.isTradingDisabled('agent_001')).toBe(true);
+      expect(validator.getDailyLossRecord('agent_001')?.tradingDisabled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should reset only prior-day records while preserving a breached current-day record', () => {
+    vi.useFakeTimers();
+    try {
+      // Day 1: agent_old breaches and is disabled.
+      vi.setSystemTime(new Date('2024-01-01T12:00:00Z'));
+      const validator = createTradeValidator();
+      validator.recordTrade('agent_old', -100);
+      validator.checkDailyLossLimit('agent_old', 1000);
+      expect(validator.isTradingDisabled('agent_old')).toBe(true);
+
+      // Day 2: agent_today breaches and is disabled, then a reset runs.
+      vi.setSystemTime(new Date('2024-01-02T12:00:00Z'));
+      validator.recordTrade('agent_today', -100);
+      validator.checkDailyLossLimit('agent_today', 1000);
+      expect(validator.isTradingDisabled('agent_today')).toBe(true);
+
+      validator.resetDailyLimits();
+
+      // Current-day breach survives the reset.
+      expect(validator.isTradingDisabled('agent_today')).toBe(true);
+
+      // The prior-day (day 1) record is actually removed: travelling back to
+      // day 1 surfaces no record for agent_old.
+      vi.setSystemTime(new Date('2024-01-01T12:00:00Z'));
+      expect(validator.getDailyLossRecord('agent_old')).toBeUndefined();
+      expect(validator.isTradingDisabled('agent_old')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should emit events on validation', () => {
