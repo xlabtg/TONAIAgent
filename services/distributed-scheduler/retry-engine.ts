@@ -27,6 +27,35 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
 };
 
 // ============================================================================
+// Execution-History Retention
+// ============================================================================
+
+/** Default retention window for execution history (7 days). */
+export const DEFAULT_EXECUTION_HISTORY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Hard cap on the number of execution records kept per job. Acts as a second
+ * guard so a single, frequently-retried job cannot accumulate an unbounded
+ * number of records within the retention window.
+ */
+export const DEFAULT_MAX_EXECUTION_HISTORY_PER_JOB = 1_000;
+
+/** Options controlling how the retry engine retains execution history. */
+export interface RetryEngineOptions {
+  /**
+   * Records whose `startedAt` is older than this many milliseconds are pruned
+   * on insert. Set to 0 (or a negative value) to disable age-based pruning.
+   */
+  executionHistoryRetentionMs?: number;
+  /**
+   * Maximum number of execution records kept per job. Older records are
+   * dropped once this limit is exceeded. Set to 0 (or a negative value) to
+   * disable count-based pruning.
+   */
+  maxExecutionHistoryPerJob?: number;
+}
+
+// ============================================================================
 // Retry Engine
 // ============================================================================
 
@@ -59,17 +88,85 @@ export class RetryEngine {
 
   private dlqCounter = 0;
 
+  /** How long execution records are retained before being pruned (ms). */
+  private readonly executionHistoryRetentionMs: number;
+
+  /** Hard cap on the number of execution records kept per job. */
+  private readonly maxExecutionHistoryPerJob: number;
+
+  constructor(options: RetryEngineOptions = {}) {
+    this.executionHistoryRetentionMs =
+      options.executionHistoryRetentionMs ?? DEFAULT_EXECUTION_HISTORY_RETENTION_MS;
+    this.maxExecutionHistoryPerJob =
+      options.maxExecutionHistoryPerJob ?? DEFAULT_MAX_EXECUTION_HISTORY_PER_JOB;
+  }
+
   // ============================================================================
   // Retry Scheduling
   // ============================================================================
 
   /**
    * Record a completed execution attempt (success or failure).
+   *
+   * Applies the configured retention policy on insert so per-job history stays
+   * bounded by age (`executionHistoryRetentionMs`) and count
+   * (`maxExecutionHistoryPerJob`) — preventing unbounded memory growth for
+   * recurring/retried jobs that reuse a `jobId`.
    */
   recordExecution(record: ExecutionRecord): void {
     const history = this.executionHistory.get(record.jobId) ?? [];
     history.push(record);
-    this.executionHistory.set(record.jobId, history);
+    this.executionHistory.set(record.jobId, this.pruneHistory(history));
+  }
+
+  /**
+   * Prune execution records that fall outside the retention window or exceed
+   * the per-job count cap. Pruning is relative to the most recent record so it
+   * behaves deterministically regardless of wall-clock time.
+   */
+  private pruneHistory(history: ExecutionRecord[]): ExecutionRecord[] {
+    let pruned = history;
+
+    // Age-based pruning: drop records older than the retention window, measured
+    // from the newest record's start time (the latest known activity).
+    if (this.executionHistoryRetentionMs > 0 && pruned.length > 0) {
+      let newest = pruned[0].startedAt.getTime();
+      for (const r of pruned) {
+        const t = r.startedAt.getTime();
+        if (t > newest) newest = t;
+      }
+      const cutoff = newest - this.executionHistoryRetentionMs;
+      pruned = pruned.filter((r) => r.startedAt.getTime() >= cutoff);
+    }
+
+    // Count-based pruning: keep only the most recent N records.
+    if (this.maxExecutionHistoryPerJob > 0 && pruned.length > this.maxExecutionHistoryPerJob) {
+      pruned = pruned.slice(pruned.length - this.maxExecutionHistoryPerJob);
+    }
+
+    return pruned;
+  }
+
+  /**
+   * Remove execution records older than the retention window across all jobs.
+   * Intended for a periodic sweep; insert-time pruning already keeps active
+   * jobs bounded, but this also reclaims memory for idle jobs that stopped
+   * recording. Returns the number of records evicted.
+   */
+  sweepExecutionHistory(now: Date = new Date()): number {
+    if (this.executionHistoryRetentionMs <= 0) return 0;
+    const cutoff = now.getTime() - this.executionHistoryRetentionMs;
+    let evicted = 0;
+    for (const [jobId, history] of this.executionHistory) {
+      const kept = history.filter((r) => r.startedAt.getTime() >= cutoff);
+      evicted += history.length - kept.length;
+      if (kept.length === 0) {
+        this.executionHistory.delete(jobId);
+      } else if (kept.length !== history.length) {
+        this.executionHistory.set(jobId, kept);
+      }
+    }
+    return evicted;
   }
 
   /**
@@ -249,6 +346,6 @@ export class RetryEngine {
 /**
  * Create a RetryEngine instance.
  */
-export function createRetryEngine(): RetryEngine {
-  return new RetryEngine();
+export function createRetryEngine(options: RetryEngineOptions = {}): RetryEngine {
+  return new RetryEngine(options);
 }
