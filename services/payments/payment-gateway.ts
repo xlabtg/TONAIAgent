@@ -332,7 +332,11 @@ export class DefaultPaymentGateway implements PaymentGateway {
   async capturePayment(paymentId: string, amount?: string): Promise<Payment> {
     const payment = await this.getPaymentOrThrow(paymentId);
 
-    if (payment.status !== 'authorized' && payment.status !== 'pending') {
+    // A capture must always follow a successful authorization. Accepting a
+    // `pending` payment here would bypass the authorization gate (and any
+    // limit/risk checks attached to it), allowing funds to be moved for a
+    // payment that was never authorised. See issue #436 (LOGIC-26).
+    if (payment.status !== 'authorized') {
       throw new Error(`Cannot capture payment with status: ${payment.status}`);
     }
 

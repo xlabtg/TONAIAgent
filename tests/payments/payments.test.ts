@@ -52,6 +52,61 @@ describe('PaymentGateway', () => {
   it('should have default currency', () => {
     expect(gateway.config.defaultCurrency).toBe('TON');
   });
+
+  // ==========================================================================
+  // capturePayment authorization gate (issue #436 — LOGIC-26)
+  // ==========================================================================
+  describe('capturePayment authorization gate', () => {
+    const baseParams = {
+      type: 'transfer' as const,
+      method: 'ton_wallet' as const,
+      amount: '100',
+      currency: 'TON' as const,
+      sender: { id: 'sender-1' },
+      recipient: { id: 'recipient-1' },
+    };
+
+    it('should throw when capturing a freshly-created pending payment', async () => {
+      const payment = await gateway.createPayment(baseParams);
+      expect(payment.status).toBe('pending');
+
+      await expect(gateway.capturePayment(payment.id)).rejects.toThrow(
+        'Cannot capture payment with status: pending'
+      );
+
+      const stored = await gateway.getPayment(payment.id);
+      expect(stored?.status).toBe('pending');
+    });
+
+    it('should capture only after the payment is authorized', async () => {
+      const payment = await gateway.createPayment(baseParams);
+
+      // Authorize via approval so collected >= required.
+      await gateway.approve(payment.id, 'approver-1');
+      const authorized = await gateway.getPayment(payment.id);
+      expect(authorized?.status).toBe('authorized');
+
+      const captured = await gateway.capturePayment(payment.id);
+      expect(['captured', 'completed']).toContain(captured.status);
+    });
+
+    it('should throw when capturing from non-authorized statuses', async () => {
+      // cancelled
+      const cancelledPayment = await gateway.createPayment(baseParams);
+      await gateway.cancelPayment(cancelledPayment.id);
+      await expect(gateway.capturePayment(cancelledPayment.id)).rejects.toThrow(
+        'Cannot capture payment with status: cancelled'
+      );
+
+      // already completed (capture is not idempotent / re-capturable)
+      const completedPayment = await gateway.createPayment(baseParams);
+      await gateway.approve(completedPayment.id, 'approver-1');
+      const captured = await gateway.capturePayment(completedPayment.id);
+      await expect(gateway.capturePayment(completedPayment.id)).rejects.toThrow(
+        `Cannot capture payment with status: ${captured.status}`
+      );
+    });
+  });
 });
 
 // ============================================================================
