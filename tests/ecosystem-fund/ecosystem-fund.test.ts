@@ -129,6 +129,116 @@ describe('TreasuryManager', () => {
     });
   });
 
+  describe('executeDisbursement', () => {
+    beforeEach(async () => {
+      await treasury.deposit('100000', 'TON');
+    });
+
+    it('should debit the treasury balance when a disbursement completes', async () => {
+      const allocation = await treasury.createAllocation({
+        category: 'grant',
+        recipientId: 'recipient-1',
+        amount: '10000',
+        purpose: 'Grant disbursement test',
+      });
+
+      const balanceBefore = BigInt(await treasury.getBalance());
+      const availableBefore = BigInt(await treasury.getAvailableBalance());
+
+      const disbursement = await treasury.scheduleDisbursement(
+        allocation.id,
+        '10000',
+        new Date()
+      );
+      const executed = await treasury.executeDisbursement(disbursement.id);
+
+      expect(executed.status).toBe('completed');
+      expect(executed.txHash).toBeDefined();
+
+      const balanceAfter = BigInt(await treasury.getBalance());
+      const availableAfter = BigInt(await treasury.getAvailableBalance());
+
+      // The total balance and the unreserved available balance both drop by the
+      // disbursed amount (the allocation here was never approved/reserved).
+      expect(balanceAfter).toBe(balanceBefore - BigInt('10000'));
+      expect(availableAfter).toBe(availableBefore - BigInt('10000'));
+
+      const stats = await treasury.getStats();
+      expect(stats.totalDisbursed).toBe('10000');
+    });
+
+    it('should reject disbursing more than the available balance', async () => {
+      const allocation = await treasury.createAllocation({
+        category: 'grant',
+        recipientId: 'recipient-1',
+        amount: '10000',
+        purpose: 'Over-disbursement test',
+      });
+
+      // Available balance is 80000 (100000 - 20% reserve). Schedule a disbursement
+      // that exceeds it; executing it must throw and leave the books untouched.
+      const disbursement = await treasury.scheduleDisbursement(
+        allocation.id,
+        '90000',
+        new Date()
+      );
+
+      const balanceBefore = await treasury.getBalance();
+      const availableBefore = await treasury.getAvailableBalance();
+
+      await expect(treasury.executeDisbursement(disbursement.id)).rejects.toThrow(
+        'Insufficient treasury balance'
+      );
+
+      expect(await treasury.getBalance()).toBe(balanceBefore);
+      expect(await treasury.getAvailableBalance()).toBe(availableBefore);
+
+      const stats = await treasury.getStats();
+      expect(stats.totalDisbursed).toBe('0');
+    });
+
+    it('should release the reserved allocation amount when disbursing an approved allocation', async () => {
+      const allocation = await treasury.createAllocation({
+        category: 'grant',
+        recipientId: 'recipient-1',
+        amount: '10000',
+        purpose: 'Approved disbursement test',
+      });
+
+      // Approve to move funds into the allocated (reserved) balance.
+      await treasury.approveAllocation(allocation.id, 'signer-1');
+      await treasury.approveAllocation(allocation.id, 'signer-2');
+
+      const treasuryBefore = await treasury.getTreasury();
+      expect(BigInt(treasuryBefore.allocatedBalance)).toBe(BigInt('10000'));
+      const availableBefore = BigInt(treasuryBefore.availableBalance);
+      const balanceBefore = BigInt(treasuryBefore.balance);
+
+      const disbursement = await treasury.scheduleDisbursement(
+        allocation.id,
+        '10000',
+        new Date()
+      );
+      await treasury.executeDisbursement(disbursement.id);
+
+      const treasuryAfter = await treasury.getTreasury();
+
+      // The reserved amount is released from allocatedBalance, the total balance
+      // drops by the disbursed amount, and the available balance is unchanged
+      // (the funds were already set aside at approval time).
+      expect(BigInt(treasuryAfter.allocatedBalance)).toBe(BigInt('0'));
+      expect(BigInt(treasuryAfter.balance)).toBe(balanceBefore - BigInt('10000'));
+      expect(BigInt(treasuryAfter.availableBalance)).toBe(availableBefore);
+
+      // Invariant: available = balance - reserve - allocated.
+      expect(BigInt(treasuryAfter.availableBalance)).toBe(
+        BigInt(treasuryAfter.balance) -
+          BigInt(treasuryAfter.reserveBalance) -
+          BigInt(treasuryAfter.allocatedBalance)
+      );
+    });
+  });
+
   describe('getStats', () => {
     it('should return treasury statistics', async () => {
       await treasury.deposit('100000', 'TON');
