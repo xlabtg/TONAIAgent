@@ -58,6 +58,20 @@ export interface ExecutionEngineConfig {
   simulationMode: boolean;
   /** Whether AML transaction checks are enforced before execution */
   enforceAmlChecks: boolean;
+  /**
+   * Hard upper bound on the number of slices an iceberg execution may place,
+   * independent of fill progress. Guards against unbounded order spam when a
+   * resting limit order never becomes marketable.
+   */
+  maxIcebergSlices: number;
+  /**
+   * Maximum number of consecutive iceberg slices that make zero forward
+   * progress (fill nothing) before the execution is aborted. Prevents the
+   * slicing loop from spinning forever on an unfilled resting limit order.
+   */
+  maxUnproductiveIcebergSlices: number;
+  /** Delay in milliseconds between iceberg slices. */
+  icebergSliceDelayMs: number;
 }
 
 /**
@@ -78,6 +92,9 @@ export const DEFAULT_CONFIG: ExecutionEngineConfig = {
   splitThresholdUSD: 10000,
   simulationMode: false,
   enforceAmlChecks: isAmlEnforcementEnabled(),
+  maxIcebergSlices: 50,
+  maxUnproductiveIcebergSlices: 3,
+  icebergSliceDelayMs: 1000,
 };
 
 // ============================================================================
@@ -469,8 +486,17 @@ export class DefaultExecutionEngine implements ExecutionEngine {
     }
 
     let remainingQuantity = request.quantity;
+    // Track consecutive slices that fill nothing so a resting limit order that
+    // never becomes marketable cannot spin the loop forever (see LOGIC-47).
+    let unproductiveSlices = 0;
 
-    while (remainingQuantity > 0 && (execution.status as string) !== 'cancelled') {
+    for (let sliceCount = 0; remainingQuantity > 0 && (execution.status as string) !== 'cancelled'; sliceCount++) {
+      // Hard cap on the number of placements, independent of fill progress, to
+      // prevent unbounded order spam.
+      if (sliceCount >= this.config.maxIcebergSlices) {
+        break;
+      }
+
       const batchQuantity = Math.min(visibleQuantity, remainingQuantity);
 
       try {
@@ -490,9 +516,27 @@ export class DefaultExecutionEngine implements ExecutionEngine {
           break;
         }
 
+        if (order.filledQuantity > 0) {
+          // Forward progress was made; reset the unproductive-slice counter.
+          unproductiveSlices = 0;
+        } else {
+          // This slice rested without filling. Cancel the dangling order so it
+          // does not linger on the book, and abort once too many consecutive
+          // slices have made zero progress.
+          unproductiveSlices += 1;
+          try {
+            await connector.cancelOrder(order.orderId);
+          } catch {
+            // Best-effort cancellation; ignore failures.
+          }
+          if (unproductiveSlices >= this.config.maxUnproductiveIcebergSlices) {
+            break;
+          }
+        }
+
         // Brief pause between iceberg slices
         if (remainingQuantity > 0) {
-          await sleep(1000);
+          await sleep(this.config.icebergSliceDelayMs);
         }
       } catch {
         break;
