@@ -424,18 +424,19 @@ export class DefaultTradeValidator implements TradeValidator {
   }
 
   resetDailyLimits(): void {
-    // Clear all records from previous days
+    // Only reset records from prior periods. A record keyed to the current day
+    // must never be cleared here: if it is still in breach (tradingDisabled),
+    // re-enabling it would let an agent keep trading past the daily-loss limit
+    // the breaker was meant to enforce (LOGIC-27).
+    //
+    // Records are keyed by `${agentId}:${date}`, so deleting prior-day records
+    // is sufficient to roll over: once the previous day's record is gone, the
+    // agent has no record for the new day and trading is enabled naturally.
     const today = this.getTodayKey();
     for (const [key] of this.dailyLossRecords) {
       if (!key.endsWith(`:${today}`)) {
         this.dailyLossRecords.delete(key);
       }
-    }
-
-    // Re-enable trading for today
-    for (const [, record] of this.dailyLossRecords) {
-      record.tradingDisabled = false;
-      record.disabledAt = undefined;
     }
   }
 
