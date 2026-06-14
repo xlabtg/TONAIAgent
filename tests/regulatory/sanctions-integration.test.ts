@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { createHash } from 'crypto';
 import {
   createSanctionsScreener,
   SanctionsScreener,
@@ -24,6 +25,7 @@ import {
 import {
   createListDownloader,
   ListDownloader,
+  IntegrityValidationError,
 } from '../../services/regulatory/providers/list-downloader';
 
 // ============================================================================
@@ -612,6 +614,180 @@ describe('ListDownloader', () => {
     const results = await downloader.refreshAll();
     expect(results.every((r) => !r.success)).toBe(true);
     expect(results[0].error).toContain('Network failure');
+  });
+});
+
+// ============================================================================
+// ListDownloader Integrity Validation Tests (LOGIC-37)
+// ============================================================================
+
+describe('ListDownloader integrity validation', () => {
+  const OFAC_HEADER =
+    '"Ent_num","SDN_Name","SDN_Type","Program","Title","Call_Sign","Vess_type","Tonnage","GRT","Vess_flag","Vess_owner","Remarks","Add_Num","Address","City","Country","Add_Remarks"';
+
+  /** Build a valid 17-column OFAC CSV with `count` distinct entity rows. */
+  function ofacCsv(count: number): string {
+    const rows = [OFAC_HEADER];
+    for (let i = 0; i < count; i++) {
+      rows.push(
+        `"${i}","Entity ${i}","Entity","SDGT","","","","","","","","2020-01-01","","","","",""`,
+      );
+    }
+    return rows.join('\n');
+  }
+
+  const OFAC_SRC = {
+    list: 'ofac_sdn' as const,
+    url: 'https://example.com/sdn.csv',
+    format: 'ofac_csv' as const,
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('rejects an empty download body and keeps the last-known-good list', async () => {
+    const alerts: { list: string; reason: string }[] = [];
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      onIntegrityAlert: (list, reason) => alerts.push({ list, reason }),
+    });
+
+    // Seed a known-good snapshot first.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(3), { status: 200 }),
+    );
+    await dl.refreshList(OFAC_SRC as any);
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(3);
+
+    // Now an empty body is returned.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('', { status: 200 }));
+    await expect(dl.refreshList(OFAC_SRC as any)).rejects.toThrow(IntegrityValidationError);
+
+    // Last-known-good list is preserved and an alert fired.
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(3);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].reason).toContain('empty');
+  });
+
+  it('rejects a download that parses to zero entries', async () => {
+    const alerts: { list: string; reason: string }[] = [];
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      onIntegrityAlert: (list, reason) => alerts.push({ list, reason }),
+    });
+
+    // Non-empty body, but an upstream error page that parses to nothing.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('<html>503 Service Unavailable</html>', { status: 200 }),
+    );
+
+    await expect(dl.refreshList(OFAC_SRC as any)).rejects.toThrow('parsed zero entries');
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(0);
+    expect(alerts).toHaveLength(1);
+  });
+
+  it('rejects a download with abnormally few entries vs the prior snapshot', async () => {
+    const alerts: { list: string; reason: string }[] = [];
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      maxShrinkRatio: 0.5,
+      onIntegrityAlert: (list, reason) => alerts.push({ list, reason }),
+    });
+
+    // Prior snapshot has 10 entries.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(10), { status: 200 }),
+    );
+    await dl.refreshList(OFAC_SRC as any);
+
+    // A truncated download with 2 entries (< 50% of 10) must be rejected.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(2), { status: 200 }),
+    );
+    await expect(dl.refreshList(OFAC_SRC as any)).rejects.toThrow(IntegrityValidationError);
+
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(10);
+    expect(alerts[0].reason).toContain('dropped below');
+  });
+
+  it('accepts a modest shrink within the allowed ratio', async () => {
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      maxShrinkRatio: 0.5,
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(10), { status: 200 }),
+    );
+    await dl.refreshList(OFAC_SRC as any);
+
+    // 7 entries is above the 50% floor (5) — should be accepted.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(7), { status: 200 }),
+    );
+    const snapshot = await dl.refreshList(OFAC_SRC as any);
+    expect(snapshot.entryCount).toBe(7);
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(7);
+  });
+
+  it('verifies a download against a pinned checksum and rejects a mismatch', async () => {
+    const alerts: { list: string; reason: string }[] = [];
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      pinnedChecksums: { ofac_sdn: 'deadbeef'.repeat(8) }, // wrong, 64-hex
+      onIntegrityAlert: (list, reason) => alerts.push({ list, reason }),
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(3), { status: 200 }),
+    );
+
+    await expect(dl.refreshList(OFAC_SRC as any)).rejects.toThrow('checksum mismatch');
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(0);
+    expect(alerts[0].reason).toContain('checksum mismatch');
+  });
+
+  it('accepts a download whose checksum matches the pinned value', async () => {
+    const content = ofacCsv(3);
+    const expected = createHash('sha256').update(content).digest('hex');
+
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      pinnedChecksums: { ofac_sdn: expected },
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(content, { status: 200 }));
+
+    const snapshot = await dl.refreshList(OFAC_SRC as any);
+    expect(snapshot.checksum).toBe(expected);
+    expect(dl.getEntries('ofac_sdn')).toHaveLength(3);
+  });
+
+  it('rejects when fewer entries than minEntryCount', async () => {
+    const dl = createListDownloader({
+      storagePath: '/tmp/test-sanctions-integrity',
+      minEntryCount: 5,
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(ofacCsv(3), { status: 200 }),
+    );
+
+    await expect(dl.refreshList(OFAC_SRC as any)).rejects.toThrow('below minimum');
+  });
+
+  it('refreshAll reports integrity rejection as a failed result', async () => {
+    const dl = createListDownloader({ storagePath: '/tmp/test-sanctions-integrity' });
+
+    // All four sources return an unparseable error page (zero entries).
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('error page', { status: 200 }),
+    );
+
+    const results = await dl.refreshAll();
+    expect(results.every((r) => !r.success)).toBe(true);
+    expect(results[0].error).toContain('Integrity validation failed');
   });
 });
 
