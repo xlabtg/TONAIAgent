@@ -1307,6 +1307,32 @@ describe('ClearingAuditModule', () => {
       expect(['normal', 'stressed', 'crisis']).toContain(snapshot.marketRegime);
     });
 
+    it('should preserve liquidity-risk resolution for severe collateral shortfalls', () => {
+      const baseParams = {
+        totalNotionalValue: 50_000_000,
+        pendingSettlementValue: 0,
+        totalMarginRequired: 11_000_000,
+        participantRiskSummaries: [],
+        defaultEventsCount: 0,
+      };
+
+      const mildShortfall = module.computeSystemicRisk({
+        ...baseParams,
+        collateralPosted: 10_000_000,
+      });
+      const severeShortfall = module.computeSystemicRisk({
+        ...baseParams,
+        collateralPosted: 1_100_000,
+      });
+
+      expect(mildShortfall.liquidityRisk).toBeCloseTo(1.1, 5);
+      expect(severeShortfall.liquidityRisk).toBeCloseTo(10, 5);
+      expect(severeShortfall.liquidityRisk).toBeGreaterThan(mildShortfall.liquidityRisk);
+      expect(severeShortfall.overallRiskScore).toBeGreaterThan(mildShortfall.overallRiskScore);
+      expect(mildShortfall.marketRegime).not.toBe('crisis');
+      expect(severeShortfall.marketRegime).toBe('crisis');
+    });
+
     it('should list risk snapshots', () => {
       module.computeSystemicRisk({
         totalNotionalValue: 10_000_000,
