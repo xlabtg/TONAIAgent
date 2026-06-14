@@ -165,6 +165,51 @@ describe('PortfolioAllocatorService.allocate', () => {
     const a2 = r.allocations.find(a => a.agentId === 'a2')!;
     expect(a1.allocationFraction).toBeCloseTo(a2.allocationFraction, 5);
   });
+
+  // --- Regression: LOGIC-28 — re-normalize after the minFraction floor -------
+
+  it('does not over-allocate when many low-score agents are floored to minFraction', () => {
+    // 30 agents, each floored to minFraction 0.05 → naive sum would be 1.5 > 1.
+    const minFraction = 0.05;
+    const n = 30;
+    const local = new PortfolioAllocatorService({ minFraction, defaultMaxExposure: 1 });
+    const agents: AgentScoreInput[] = Array.from({ length: n }, (_, i) => ({
+      agentId: `a${i}`,
+      strategy: 'trend',
+      score: 0.001, // tiny scores → tiny weights → all hit the floor
+      maxExposure: 1,
+    }));
+    const totalBalance = 1_000_000;
+    const r = local.allocate(agents, totalBalance);
+
+    const sumFractions = r.allocations.reduce((s, a) => s + a.allocationFraction, 0);
+    const sumCapital = r.allocations.reduce((s, a) => s + a.capitalAmount, 0);
+
+    // Acceptance criteria: invariants hold within floating-point epsilon.
+    expect(sumFractions).toBeLessThanOrEqual(1 + 1e-9);
+    expect(sumCapital).toBeLessThanOrEqual(totalBalance + 1e-6);
+  });
+
+  it('keeps sum(allocationFraction) <= 1 across varied score/cap mixes', () => {
+    const local = new PortfolioAllocatorService();
+    const scenarios: AgentScoreInput[][] = [
+      Array.from({ length: 25 }, (_, i) => ({ agentId: `x${i}`, strategy: 's', score: 0 })),
+      [
+        { agentId: 'a', strategy: 's', score: 90, maxExposure: 0.4 },
+        { agentId: 'b', strategy: 's', score: 5,  maxExposure: 0.4 },
+        { agentId: 'c', strategy: 's', score: 1,  maxExposure: 0.4 },
+      ],
+      Array.from({ length: 40 }, (_, i) => ({ agentId: `y${i}`, strategy: 's', score: i, maxExposure: 0.1 })),
+    ];
+
+    for (const agents of scenarios) {
+      const r = local.allocate(agents, 50_000);
+      const sumFractions = r.allocations.reduce((s, a) => s + a.allocationFraction, 0);
+      const sumCapital = r.allocations.reduce((s, a) => s + a.capitalAmount, 0);
+      expect(sumFractions).toBeLessThanOrEqual(1 + 1e-9);
+      expect(sumCapital).toBeLessThanOrEqual(50_000 + 1e-6);
+    }
+  });
 });
 
 describe('PortfolioAllocatorService.allocateCapital', () => {
