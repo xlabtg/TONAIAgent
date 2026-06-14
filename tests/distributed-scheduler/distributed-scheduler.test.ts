@@ -110,6 +110,142 @@ describe('DEFAULT_WORKER_POOL_CONFIG', () => {
   });
 });
 
+// ============================================================================
+// WorkerPool — concurrency & back-pressure (LOGIC-45 / issue #455)
+// ============================================================================
+
+describe('WorkerPool — concurrency & back-pressure (LOGIC-45)', () => {
+  type SJ = import('../../services/distributed-scheduler').ScheduledJob;
+
+  function makeJob(jobId: string, agentId = 'agent_test'): SJ {
+    return { ...makeJobStub(jobId), agentId, timeoutMs: 10_000 } as SJ;
+  }
+
+  /** Resolve once `cond()` is true, or throw after `timeoutMs`. */
+  async function waitFor(cond: () => boolean, timeoutMs = 1_000): Promise<void> {
+    const start = Date.now();
+    while (!cond()) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error('waitFor timed out');
+      }
+      await new Promise((r) => setTimeout(r, 2));
+    }
+  }
+
+  it('never runs more jobs than maxWorkers and never double-assigns a worker when saturated', async () => {
+    const maxWorkers = 3;
+    const totalJobs = 6;
+
+    // Controllable executor: every job blocks until its gate is released, so we
+    // can saturate the pool and inspect it mid-flight.
+    const gates: Array<(value: Record<string, unknown>) => void> = [];
+    const startOrder: string[] = [];
+    let inFlight = 0;
+    let peakInFlight = 0;
+
+    const pool = createWorkerPool(
+      {
+        minWorkers: 1,
+        maxWorkers,
+        idleTimeoutMs: 1_000,
+        defaultTimeoutMs: 10_000,
+        agentIsolation: true,
+      },
+      (job) => {
+        inFlight++;
+        peakInFlight = Math.max(peakInFlight, inFlight);
+        startOrder.push(job.jobId);
+        return new Promise<Record<string, unknown>>((resolve) => {
+          gates.push((value) => {
+            inFlight--;
+            resolve(value);
+          });
+        });
+      },
+    );
+    pool.start();
+
+    // Dispatch more jobs than the pool can run at once.
+    const recordPromises = Array.from({ length: totalJobs }, (_, i) =>
+      pool.execute(makeJob(`job_${i}`), 'manual', null, 0),
+    );
+
+    // Only maxWorkers jobs should be running; the rest queue (back-pressure).
+    await waitFor(() => startOrder.length === maxWorkers);
+    expect(pool.getBusyWorkerCount()).toBe(maxWorkers);
+    expect(inFlight).toBe(maxWorkers);
+    // The pool must never spawn beyond maxWorkers to absorb the overflow.
+    expect(
+      pool.getWorkers().filter((w) => w.status !== 'stopped').length,
+    ).toBeLessThanOrEqual(maxWorkers);
+
+    // Release the first wave; freed workers must pick up the queued jobs.
+    gates.splice(0, maxWorkers).forEach((release) => release({ ok: true }));
+
+    await waitFor(() => startOrder.length === totalJobs);
+    // Still bounded — queued jobs reused freed workers, no over-subscription.
+    expect(peakInFlight).toBe(maxWorkers);
+    expect(pool.getBusyWorkerCount()).toBeLessThanOrEqual(maxWorkers);
+
+    // Drain the rest and collect every execution record.
+    gates.splice(0).forEach((release) => release({ ok: true }));
+    const records = await Promise.all(recordPromises);
+
+    // Every job ran (and succeeded) exactly once.
+    expect(records).toHaveLength(totalJobs);
+    records.forEach((r) => expect(r.success).toBe(true));
+    expect(new Set(records.map((r) => r.jobId)).size).toBe(totalJobs);
+
+    // At most maxWorkers distinct workers were ever used, and concurrency was
+    // never exceeded — the over-subscription bug cannot occur.
+    expect(new Set(records.map((r) => r.workerId)).size).toBeLessThanOrEqual(maxWorkers);
+    expect(peakInFlight).toBeLessThanOrEqual(maxWorkers);
+
+    pool.stop();
+  });
+
+  it('queues an over-limit job and hands it a worker only once one frees up', async () => {
+    const gates: Array<(value: Record<string, unknown>) => void> = [];
+    const pool = createWorkerPool(
+      {
+        minWorkers: 1,
+        maxWorkers: 1,
+        idleTimeoutMs: 1_000,
+        defaultTimeoutMs: 10_000,
+        agentIsolation: true,
+      },
+      () =>
+        new Promise<Record<string, unknown>>((resolve) => {
+          gates.push(resolve);
+        }),
+    );
+    pool.start();
+
+    const first = pool.execute(makeJob('job_a'), 'manual', null, 0);
+    const second = pool.execute(makeJob('job_b'), 'manual', null, 0);
+
+    // Wait until the first job has actually started occupying the only worker.
+    await waitFor(() => gates.length === 1);
+    expect(pool.getBusyWorkerCount()).toBe(1);
+    // The second job must be waiting, not assigned to the busy worker.
+    const busyJobs = pool.getWorkers().map((w) => w.currentJobId).filter(Boolean);
+    expect(busyJobs).toEqual(['job_a']);
+
+    // Free the worker → the queued job runs on the same (now idle) worker.
+    gates[0]({ ok: true });
+    await waitFor(() => gates.length === 2);
+    expect(pool.getBusyWorkerCount()).toBe(1);
+
+    gates[1]({ ok: true });
+    const [recA, recB] = await Promise.all([first, second]);
+    expect(recA.success).toBe(true);
+    expect(recB.success).toBe(true);
+    expect(recA.workerId).toBe(recB.workerId); // reused the same single worker
+
+    pool.stop();
+  });
+});
+
 describe('DEFAULT_RETRY_POLICY', () => {
   it('should have exponential backoff', () => {
     expect(DEFAULT_RETRY_POLICY.backoffMultiplier).toBeGreaterThan(1);

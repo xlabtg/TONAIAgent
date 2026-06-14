@@ -79,6 +79,13 @@ export class WorkerPool {
   private readonly config: WorkerPoolConfig;
   private readonly executor: JobExecutor;
   private readonly workers: Map<string, Worker> = new Map();
+  /**
+   * Back-pressure queue of jobs waiting for a worker to free up.
+   * Populated when the pool is saturated (all workers busy at maxWorkers).
+   * Each waiter is resolved with a freshly reserved (busy) worker as soon as
+   * one becomes available, preserving FIFO fairness.
+   */
+  private readonly waiters: Array<(worker: Worker) => void> = [];
   private workerCounter = 0;
   private running = false;
 
@@ -129,11 +136,11 @@ export class WorkerPool {
     triggerEvent: BusEvent | null,
     attempt: number,
   ): Promise<ExecutionRecord> {
-    const worker = this.acquireWorker(job.agentId);
+    const worker = await this.acquireWorker(job.agentId);
     const executionId = this.generateExecutionId();
     const startedAt = new Date();
 
-    worker.status = 'busy';
+    // acquireWorker already reserved the worker (status === 'busy').
     worker.currentJobId = job.jobId;
 
     const timeoutMs = job.timeoutMs ?? this.config.defaultTimeoutMs;
@@ -155,13 +162,7 @@ export class WorkerPool {
     } finally {
       worker.totalExecutions++;
       worker.currentJobId = null;
-      // Return worker to idle (or stop if pool is shutting down)
-      if (this.running && this.workers.size > this.config.minWorkers) {
-        // Consider stopping this worker after idle timeout
-        worker.status = 'idle';
-      } else {
-        worker.status = this.running ? 'idle' : 'stopped';
-      }
+      this.releaseWorker(worker);
     }
 
     const completedAt = new Date();
@@ -223,36 +224,61 @@ export class WorkerPool {
   // ============================================================================
 
   /**
-   * Find an idle worker or spawn a new one.
-   * Enforces per-agent isolation if configured.
+   * Acquire a worker to run a job, reserving it (status → 'busy') before it is
+   * returned so it can never be handed to a second concurrent job.
+   *
+   * Resolution order:
+   *  1. Reuse an idle worker, if any.
+   *  2. Spawn a new worker while under maxWorkers.
+   *  3. Otherwise the pool is saturated: queue (back-pressure) and resolve once
+   *     a worker frees up. A busy worker is *never* handed out.
    */
-  private acquireWorker(agentId: string): Worker {
-    // Find idle worker not currently handling this agent (if isolation enabled)
+  private acquireWorker(_agentId: string): Promise<Worker> {
+    // 1. Reuse an idle worker.
     for (const worker of this.workers.values()) {
       if (worker.status === 'idle') {
-        if (!this.config.agentIsolation) return worker;
-        // Per-agent isolation: prefer workers not occupied by same agent
-        // (all idle workers are free — pick the first idle one)
-        return worker;
+        worker.status = 'busy';
+        return Promise.resolve(worker);
       }
     }
 
-    // No idle workers — spawn a new one if under limit
+    // 2. Spawn a new one if under the limit.
     const activeCount = Array.from(this.workers.values()).filter(
       (w) => w.status !== 'stopped',
     ).length;
 
     if (activeCount < this.config.maxWorkers) {
-      return this.spawnWorker();
+      const worker = this.spawnWorker();
+      worker.status = 'busy';
+      return Promise.resolve(worker);
     }
 
-    // Pool exhausted — reuse the least-loaded worker (best effort)
-    // In production this would queue the job; here we pick first busy worker
-    const first = Array.from(this.workers.values())[0];
-    if (!first) {
-      return this.spawnWorker();
+    // 3. Pool exhausted — wait until a worker is released (back-pressure).
+    return new Promise<Worker>((resolve) => {
+      this.waiters.push(resolve);
+    });
+  }
+
+  /**
+   * Return a worker to the pool once its job completes.
+   *
+   * If jobs are waiting (pool was saturated) the worker is immediately
+   * re-reserved and handed to the oldest waiter, sustaining the maxWorkers
+   * concurrency bound without over-subscription. This happens even while the
+   * pool is shutting down so the back-pressure queue drains instead of leaving
+   * queued jobs hung forever. Otherwise the worker goes idle, or stops if the
+   * pool is shutting down.
+   */
+  private releaseWorker(worker: Worker): void {
+    const next = this.waiters.shift();
+    if (next) {
+      // Hand the worker straight to the next queued job; keep it reserved.
+      worker.status = 'busy';
+      worker.currentJobId = null;
+      next(worker);
+      return;
     }
-    return first;
+    worker.status = this.running ? 'idle' : 'stopped';
   }
 
   /** Spawn a new worker and add it to the pool. */
