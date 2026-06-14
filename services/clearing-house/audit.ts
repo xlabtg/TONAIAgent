@@ -125,6 +125,8 @@ const DEFAULT_AUDIT_CONFIG: AuditConfig = {
   reportingFrequency: 'realtime',
 };
 
+const MAX_LIQUIDITY_SHORTFALL_MULTIPLE = 10;
+
 // ============================================================================
 // Default Clearing Audit Module Implementation
 // ============================================================================
@@ -305,13 +307,16 @@ export class DefaultClearingAuditModule implements ClearingAuditModule {
       1
     );
 
-    // Liquidity risk: margin utilization
-    const liquidityRisk = Math.min(
+    // Liquidity risk: margin pressure, with >1 preserving undercollateralization severity.
+    const liquidityRisk =
       params.totalMarginRequired > 0
-        ? params.totalMarginRequired / (params.collateralPosted || params.totalMarginRequired)
-        : 0,
-      1
-    );
+        ? Math.min(
+            params.collateralPosted > 0
+              ? params.totalMarginRequired / params.collateralPosted
+              : MAX_LIQUIDITY_SHORTFALL_MULTIPLE,
+            MAX_LIQUIDITY_SHORTFALL_MULTIPLE
+          )
+        : 0;
 
     // Counterparty risk: based on participants with defaults
     const defaultedCount = params.participantRiskSummaries.filter(
@@ -329,8 +334,15 @@ export class DefaultClearingAuditModule implements ClearingAuditModule {
     );
 
     // Overall risk score (0-100)
-    const overallRiskScore = Math.round(
-      (concentrationRisk * 25 + settlementRisk * 20 + liquidityRisk * 20 + counterpartyRisk * 20 + contagionRisk * 15)
+    const overallRiskScore = Math.min(
+      100,
+      Math.round(
+        concentrationRisk * 25 +
+          settlementRisk * 20 +
+          liquidityRisk * 20 +
+          counterpartyRisk * 20 +
+          contagionRisk * 15
+      )
     );
 
     let marketRegime: 'normal' | 'stressed' | 'crisis';

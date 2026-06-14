@@ -586,7 +586,7 @@ export interface SystemicRiskSnapshot {
   marketRegime: 'normal' | 'stressed' | 'crisis';
   concentrationRisk: number; // 0-1
   settlementRisk: number; // 0-1, % of value at risk in settlement
-  liquidityRisk: number; // 0-1
+  liquidityRisk: number; // 0-10, values >1 indicate undercollateralization
   counterpartyRisk: number; // 0-1
   contagionRisk: number; // 0-1, risk of cascade defaults
   topRisks: string[];
