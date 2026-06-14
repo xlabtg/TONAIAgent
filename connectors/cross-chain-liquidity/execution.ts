@@ -158,8 +158,14 @@ export class DefaultCrossChainTradeExecutor implements CrossChainTradeExecutor {
         totalFees += leg.feeUsd;
         totalGas += swapResult.gasUsd;
 
-        if (txDetails.status === 'failed') {
-          throw new Error(`Transaction failed: ${txDetails.hash}`);
+        // Fail-closed: only a positively confirmed transaction may advance the trade.
+        // A still-pending tx (timed out after maxAttempts), a dropped/replaced tx, or an
+        // explicit failure must all stop the leg so funds are never reported as moved when
+        // the on-chain state is unconfirmed.
+        if (txDetails.status !== 'confirmed') {
+          throw new Error(
+            `Transaction not confirmed: ${txDetails.hash} (status: ${txDetails.status})`
+          );
         }
       }
 
@@ -383,25 +389,24 @@ export class DefaultCrossChainTradeExecutor implements CrossChainTradeExecutor {
   ): Promise<TransactionDetails> {
     const connector = this.registry.get(chainId);
     if (!connector) {
-      return {
-        hash: txHash,
-        chainId,
-        status: 'confirmed',
-        confirmations: 1,
-        submittedAt: new Date(),
-      };
+      // Fail-closed: without a connector we cannot verify the on-chain state, so we must
+      // not synthesize a 'confirmed' result. The caller treats a thrown error as a failed leg.
+      throw new Error(`Cannot confirm transaction ${txHash}: no connector for chain ${chainId}`);
     }
 
+    let details = await connector.checkTransactionStatus(txHash);
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const details = await connector.checkTransactionStatus(txHash);
       if (details.status === 'confirmed' || details.status === 'failed') {
         return details;
       }
       // In real implementation, this would wait for block time
       await new Promise(resolve => setTimeout(resolve, 100));
+      details = await connector.checkTransactionStatus(txHash);
     }
 
-    return connector.checkTransactionStatus(txHash);
+    // Polling exhausted without a terminal status — return the last (still non-confirmed)
+    // result so the caller can detect that the tx never confirmed and fail the leg.
+    return details;
   }
 
   private emitEvent(
