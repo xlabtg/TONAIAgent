@@ -478,6 +478,39 @@ export class DefaultTreasuryManager implements TreasuryManager {
       throw new Error(`Disbursement cannot be executed in current status: ${disbursement.status}`);
     }
 
+    const amount = BigInt(disbursement.amount);
+    if (amount <= BigInt(0)) {
+      throw new Error('Disbursement amount must be positive');
+    }
+
+    // Determine how much of this disbursement is already reserved against the
+    // allocation (moved into `allocatedBalance` when the allocation was approved)
+    // versus how much must be debited from the unreserved available balance.
+    const allocation = this.allocations.get(disbursement.allocationId);
+    const isReserved =
+      !!allocation && (allocation.status === 'approved' || allocation.status === 'active');
+    const alreadyDisbursed = allocation
+      ? allocation.disbursements
+          .filter((d) => d.status === 'completed')
+          .reduce((sum, d) => sum + BigInt(d.amount), BigInt(0))
+      : BigInt(0);
+    const reservedRemaining =
+      isReserved && allocation
+        ? this.maxBigInt(BigInt(allocation.amount) - alreadyDisbursed, BigInt(0))
+        : BigInt(0);
+
+    // Assert the treasury can actually cover the outflow. Spendable funds are the
+    // unreserved available balance plus the portion still reserved for this
+    // allocation. Over-disbursement must be rejected before any state mutation.
+    const spendable = BigInt(this.treasury.availableBalance) + reservedRemaining;
+    if (amount > spendable) {
+      disbursement.status = 'failed';
+      this.disbursements.set(disbursementId, disbursement);
+      throw new Error(
+        `Insufficient treasury balance for disbursement: requested ${disbursement.amount}, spendable ${spendable.toString()}`
+      );
+    }
+
     // Execute disbursement (in real implementation, this would interact with blockchain)
     disbursement.status = 'processing';
 
@@ -486,9 +519,24 @@ export class DefaultTreasuryManager implements TreasuryManager {
     disbursement.disbursedAt = new Date();
     disbursement.txHash = this.generateId('tx');
 
+    // Debit the treasury atomically: total balance always drops by the disbursed
+    // amount; the reserved portion is released from `allocatedBalance` while any
+    // remainder is taken from `availableBalance`. This preserves the invariant
+    // availableBalance = balance - reserveBalance - allocatedBalance.
+    const releaseFromAllocated = amount <= reservedRemaining ? amount : reservedRemaining;
+    const debitFromAvailable = amount - releaseFromAllocated;
+
+    this.treasury.balance = (BigInt(this.treasury.balance) - amount).toString();
+    this.treasury.allocatedBalance = (
+      BigInt(this.treasury.allocatedBalance) - releaseFromAllocated
+    ).toString();
+    this.treasury.availableBalance = (
+      BigInt(this.treasury.availableBalance) - debitFromAvailable
+    ).toString();
+
     // Update treasury stats
     this.treasury.stats.totalDisbursed = (
-      BigInt(this.treasury.stats.totalDisbursed) + BigInt(disbursement.amount)
+      BigInt(this.treasury.stats.totalDisbursed) + amount
     ).toString();
 
     // Record transaction
@@ -798,6 +846,10 @@ export class DefaultTreasuryManager implements TreasuryManager {
 
   private generateId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  private maxBigInt(a: bigint, b: bigint): bigint {
+    return a > b ? a : b;
   }
 
   // ============================================================================
