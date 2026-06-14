@@ -567,24 +567,33 @@ export class DefaultDefaultResolutionManager implements DefaultResolutionManager
       };
     }
 
-    const lossPerParticipant = event.totalDeficit / participantIds.length;
+    // The socialized-loss cap limits how much of the deficit can actually be
+    // spread across participants. Honour the cap when reducing the deficit so
+    // any residual remains to drive the next waterfall step.
+    const socializationBasis = participantIds.length * 1_000_000; // Estimate based on participant size
     const lossPercent = Math.min(
       this.config.maxSocializedLossPercent,
-      event.totalDeficit / (participantIds.length * 1_000_000) // Estimate based on participant size
+      event.totalDeficit / socializationBasis
     );
+    const socializedAmount = Math.min(
+      event.totalDeficit,
+      this.config.maxSocializedLossPercent * socializationBasis
+    );
+    const lossPerParticipant = socializedAmount / participantIds.length;
+    const remainingDeficit = event.totalDeficit - socializedAmount;
 
     const step: DefaultResolutionStep = {
       step: event.resolutionSteps.length + 1,
       action: 'socialize_loss',
-      amountRecovered: event.totalDeficit,
-      remainingDeficit: 0,
+      amountRecovered: socializedAmount,
+      remainingDeficit,
       executedAt: new Date(),
       status: 'executed',
     };
 
     event.resolutionSteps.push(step);
-    event.socializedLoss = event.totalDeficit;
-    event.totalDeficit = 0;
+    event.socializedLoss = socializedAmount;
+    event.totalDeficit = remainingDeficit;
     event.status = 'loss_socialized';
     this.defaultEvents.set(defaultEventId, event);
 
