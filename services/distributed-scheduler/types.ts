@@ -533,6 +533,7 @@ export type SchedulerUnsubscribe = () => void;
 export type DistributedSchedulerErrorCode =
   | 'JOB_NOT_FOUND'
   | 'JOB_ALREADY_EXISTS'
+  | 'JOB_ALREADY_RUNNING'
   | 'LISTENER_NOT_FOUND'
   | 'QUEUE_FULL'
   | 'INVALID_CRON_EXPRESSION'

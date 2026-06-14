@@ -865,6 +865,41 @@ describe('DistributedScheduler — manual trigger', () => {
     expect(history.length).toBeGreaterThanOrEqual(1);
     expect(history[0].jobId).toBe(job.jobId);
   });
+
+  // Regression test for LOGIC-48 (issue #458): a manual trigger fired while a
+  // run is already in flight must be refused, not executed concurrently.
+  it('should reject a manual trigger while the job is already running', async () => {
+    const job = scheduler.registerJob(makeJobInput());
+
+    // First trigger — left in flight (status flips to "running" synchronously
+    // inside triggerJob before the worker await yields).
+    const first = scheduler.triggerJobManually(job.jobId);
+    expect(scheduler.getJob(job.jobId).status).toBe('running');
+
+    // Second trigger while the first is still executing must be refused.
+    await expect(scheduler.triggerJobManually(job.jobId)).rejects.toThrow(
+      DistributedSchedulerError,
+    );
+    await expect(scheduler.triggerJobManually(job.jobId)).rejects.toMatchObject({
+      code: 'JOB_ALREADY_RUNNING',
+    });
+
+    await first;
+
+    // Exactly one execution should have been recorded for the concurrent window.
+    const history = scheduler.getExecutionHistory(job.jobId);
+    expect(history.length).toBe(1);
+  });
+
+  it('should allow manual re-trigger after the previous run completes', async () => {
+    const job = scheduler.registerJob(makeJobInput());
+    await scheduler.triggerJobManually(job.jobId);
+    // Job is back to a non-running state, so a fresh manual trigger is allowed.
+    await expect(scheduler.triggerJobManually(job.jobId)).resolves.toMatchObject({
+      jobId: job.jobId,
+      trigger: 'manual',
+    });
+  });
 });
 
 // ============================================================================

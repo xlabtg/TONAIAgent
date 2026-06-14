@@ -557,11 +557,28 @@ export class DistributedScheduler {
 
   /**
    * Manually trigger a job immediately (regardless of schedule).
+   *
+   * Guards against concurrent execution: if the job is already in flight
+   * (queued or running — whether from a scheduled run or a prior manual
+   * trigger), the manual trigger is refused rather than dispatching a second
+   * concurrent run. This mirrors the scheduler's normal concurrency control
+   * (`tickCron`/`onBusEvent` only trigger jobs whose status is `pending`),
+   * preventing jobs with side effects from running twice simultaneously.
+   *
+   * @throws {DistributedSchedulerError} `JOB_NOT_FOUND` if the job does not exist
+   * @throws {DistributedSchedulerError} `JOB_ALREADY_RUNNING` if the job is already executing
    */
   async triggerJobManually(jobId: string): Promise<ExecutionRecord> {
     const job = this.jobs.get(jobId);
     if (!job) {
       throw new DistributedSchedulerError(`Job not found: ${jobId}`, 'JOB_NOT_FOUND', { jobId });
+    }
+    if (job.status === 'running' || job.status === 'queued') {
+      throw new DistributedSchedulerError(
+        `Job is already executing: ${jobId}`,
+        'JOB_ALREADY_RUNNING',
+        { jobId, status: job.status },
+      );
     }
     return this.triggerJob(job, 'manual', null);
   }
