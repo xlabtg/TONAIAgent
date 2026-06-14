@@ -582,6 +582,33 @@ describe('CollateralManager', () => {
       expect(released.status).toBe('released');
     });
 
+    it('should be idempotent: a second release throws and does not debit margin twice', () => {
+      const position = manager.postCollateral({
+        participantId,
+        assetId: 'USDT',
+        assetName: 'USDT',
+        collateralType: 'stablecoin',
+        quantity: 10000,
+        marketValue: 10000,
+        heldFor: 'initial_margin',
+      });
+
+      manager.releaseCollateral(position.id);
+
+      const accountAfterFirst = manager.getMarginAccount(participantId);
+      const initialMarginAfterFirst = accountAfterFirst?.initialMarginPosted;
+      const excessMarginAfterFirst = accountAfterFirst?.excessMargin;
+
+      // Second release must reject — the margin debit must run at most once.
+      expect(() => manager.releaseCollateral(position.id)).toThrow(
+        'Cannot release collateral in status: released',
+      );
+
+      const accountAfterSecond = manager.getMarginAccount(participantId);
+      expect(accountAfterSecond?.initialMarginPosted).toBe(initialMarginAfterFirst);
+      expect(accountAfterSecond?.excessMargin).toBe(excessMarginAfterFirst);
+    });
+
     it('should seize collateral', () => {
       const position = manager.postCollateral({
         participantId,

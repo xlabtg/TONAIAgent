@@ -197,7 +197,11 @@ export class DefaultCollateralManager implements CollateralManager {
       throw new Error(`Collateral position not found: ${collateralId}`);
     }
 
-    if (position.status === 'seized' || position.status === 'liquidated') {
+    if (
+      position.status === 'seized' ||
+      position.status === 'liquidated' ||
+      position.status === 'released'
+    ) {
       throw new Error(`Cannot release collateral in status: ${position.status}`);
     }
 
