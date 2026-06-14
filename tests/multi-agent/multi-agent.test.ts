@@ -708,6 +708,64 @@ describe('Shared Memory', () => {
     expect(lock3).not.toBeNull();
   });
 
+  it('should allow multiple concurrent read locks', async () => {
+    const read1 = await sharedMemory.acquireLock('resource_1', 'agent_1', 'read', 5000);
+    const read2 = await sharedMemory.acquireLock('resource_1', 'agent_2', 'read', 5000);
+
+    expect(read1).not.toBeNull();
+    expect(read2).not.toBeNull();
+    expect(read1?.holderId).toBe('agent_1');
+    expect(read2?.holderId).toBe('agent_2');
+  });
+
+  it('should release a single read lock without affecting other readers', async () => {
+    await sharedMemory.acquireLock('resource_1', 'agent_1', 'read', 5000);
+    await sharedMemory.acquireLock('resource_1', 'agent_2', 'read', 5000);
+
+    // The first reader can still release its own lock even though a second
+    // reader acquired the same key afterwards.
+    const released1 = await sharedMemory.releaseLock('resource_1', 'agent_1');
+    expect(released1).toBe(true);
+
+    // A write lock is still blocked because the second reader is active.
+    const blockedWrite = await sharedMemory.acquireLock('resource_1', 'agent_3', 'write', 5000);
+    expect(blockedWrite).toBeNull();
+
+    // The second reader still holds the lock and can release it.
+    const released2 = await sharedMemory.releaseLock('resource_1', 'agent_2');
+    expect(released2).toBe(true);
+  });
+
+  it('should grant a write lock only when no readers remain', async () => {
+    await sharedMemory.acquireLock('resource_1', 'agent_1', 'read', 5000);
+    await sharedMemory.acquireLock('resource_1', 'agent_2', 'read', 5000);
+
+    // Write is blocked while any reader is active.
+    expect(await sharedMemory.acquireLock('resource_1', 'agent_3', 'write', 5000)).toBeNull();
+
+    await sharedMemory.releaseLock('resource_1', 'agent_1');
+    expect(await sharedMemory.acquireLock('resource_1', 'agent_3', 'write', 5000)).toBeNull();
+
+    await sharedMemory.releaseLock('resource_1', 'agent_2');
+
+    // All readers released -> write lock can now be acquired.
+    const writeLock = await sharedMemory.acquireLock('resource_1', 'agent_3', 'write', 5000);
+    expect(writeLock).not.toBeNull();
+  });
+
+  it('should block read locks while a write lock is held', async () => {
+    const writeLock = await sharedMemory.acquireLock('resource_1', 'agent_1', 'write', 5000);
+    expect(writeLock).not.toBeNull();
+
+    const blockedRead = await sharedMemory.acquireLock('resource_1', 'agent_2', 'read', 5000);
+    expect(blockedRead).toBeNull();
+
+    await sharedMemory.releaseLock('resource_1', 'agent_1');
+
+    const read = await sharedMemory.acquireLock('resource_1', 'agent_2', 'read', 5000);
+    expect(read).not.toBeNull();
+  });
+
   it('should support subscriptions', async () => {
     const updates: Array<{ key: string; value: unknown }> = [];
 

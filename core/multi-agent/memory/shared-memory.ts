@@ -20,7 +20,9 @@ import {
 
 export class InMemorySharedMemoryStore implements SharedMemoryStore {
   private entries: Map<string, SharedMemoryEntry> = new Map();
-  private locks: Map<string, MemoryLock> = new Map();
+  // Each key tracks at most one write lock plus any number of concurrent read
+  // locks keyed by holderId, so readers no longer evict each other's bookkeeping.
+  private locks: Map<string, LockEntry> = new Map();
   private subscriptions: Map<string, SubscriptionEntry[]> = new Map();
   private eventCallback?: (event: MultiAgentEvent) => void;
 
@@ -45,10 +47,14 @@ export class InMemorySharedMemoryStore implements SharedMemoryStore {
   async set(key: string, entry: SharedMemoryEntry): Promise<void> {
     const existing = this.entries.get(key);
 
-    // Check for write lock
-    const lock = this.locks.get(key);
-    if (lock && lock.type === 'write' && lock.holderId !== entry.ownerId) {
-      throw new Error(`Key ${key} is write-locked by ${lock.holderId}`);
+    // Check for an active write lock held by another agent
+    const lockEntry = this.locks.get(key);
+    if (
+      lockEntry?.write &&
+      lockEntry.write.expiresAt > new Date() &&
+      lockEntry.write.holderId !== entry.ownerId
+    ) {
+      throw new Error(`Key ${key} is write-locked by ${lockEntry.write.holderId}`);
     }
 
     // Increment version
@@ -110,17 +116,19 @@ export class InMemorySharedMemoryStore implements SharedMemoryStore {
     type: 'read' | 'write',
     ttlMs: number
   ): Promise<MemoryLock | null> {
-    const existingLock = this.locks.get(key);
+    const now = new Date();
+    const existing = this.pruneLockEntry(key, now);
 
-    // Check if lock is expired
-    if (existingLock && existingLock.expiresAt > new Date()) {
-      // Write lock blocks all other locks
-      if (existingLock.type === 'write') {
+    if (type === 'write') {
+      // A write lock requires exclusive access: block while any active write
+      // lock or any active read lock is held.
+      if (existing && (existing.write || existing.readers.size > 0)) {
         return null;
       }
-
-      // Read lock blocks write locks
-      if (type === 'write') {
+    } else {
+      // A read lock is only blocked by an active write lock; multiple readers
+      // may hold the lock concurrently.
+      if (existing?.write) {
         return null;
       }
     }
@@ -128,12 +136,18 @@ export class InMemorySharedMemoryStore implements SharedMemoryStore {
     const lock: MemoryLock = {
       key,
       holderId,
-      acquiredAt: new Date(),
-      expiresAt: new Date(Date.now() + ttlMs),
+      acquiredAt: now,
+      expiresAt: new Date(now.getTime() + ttlMs),
       type,
     };
 
-    this.locks.set(key, lock);
+    const target = existing ?? { readers: new Map<string, MemoryLock>() };
+    if (type === 'write') {
+      target.write = lock;
+    } else {
+      target.readers.set(holderId, lock);
+    }
+    this.locks.set(key, target);
 
     this.emitEvent('lock_acquired', {
       key,
@@ -146,13 +160,29 @@ export class InMemorySharedMemoryStore implements SharedMemoryStore {
   }
 
   async releaseLock(key: string, holderId: string): Promise<boolean> {
-    const lock = this.locks.get(key);
+    const entry = this.locks.get(key);
 
-    if (!lock || lock.holderId !== holderId) {
+    if (!entry) {
       return false;
     }
 
-    this.locks.delete(key);
+    let released = false;
+    if (entry.write && entry.write.holderId === holderId) {
+      entry.write = undefined;
+      released = true;
+    } else if (entry.readers.has(holderId)) {
+      entry.readers.delete(holderId);
+      released = true;
+    }
+
+    if (!released) {
+      return false;
+    }
+
+    // Drop the bookkeeping entry once no locks remain for the key.
+    if (!entry.write && entry.readers.size === 0) {
+      this.locks.delete(key);
+    }
 
     this.emitEvent('lock_released', {
       key,
@@ -311,9 +341,14 @@ export class InMemorySharedMemoryStore implements SharedMemoryStore {
       entriesByType[entry.type] = (entriesByType[entry.type] ?? 0) + 1;
     }
 
-    for (const [, lock] of this.locks) {
-      if (lock.expiresAt >= now) {
+    for (const [, lockEntry] of this.locks) {
+      if (lockEntry.write && lockEntry.write.expiresAt >= now) {
         totalLocks++;
+      }
+      for (const [, lock] of lockEntry.readers) {
+        if (lock.expiresAt >= now) {
+          totalLocks++;
+        }
       }
     }
 
@@ -375,12 +410,38 @@ export class InMemorySharedMemoryStore implements SharedMemoryStore {
       }
     }
 
-    // Cleanup expired locks
-    for (const [key, lock] of this.locks) {
-      if (lock.expiresAt < now) {
-        this.locks.delete(key);
+    // Cleanup expired locks (per write lock and per reader)
+    for (const key of [...this.locks.keys()]) {
+      this.pruneLockEntry(key, now);
+    }
+  }
+
+  /**
+   * Remove expired write/read locks for a key and drop the entry when empty.
+   * Returns the surviving lock entry, or undefined if none remain.
+   */
+  private pruneLockEntry(key: string, now: Date): LockEntry | undefined {
+    const entry = this.locks.get(key);
+    if (!entry) {
+      return undefined;
+    }
+
+    if (entry.write && entry.write.expiresAt <= now) {
+      entry.write = undefined;
+    }
+
+    for (const [holderId, lock] of entry.readers) {
+      if (lock.expiresAt <= now) {
+        entry.readers.delete(holderId);
       }
     }
+
+    if (!entry.write && entry.readers.size === 0) {
+      this.locks.delete(key);
+      return undefined;
+    }
+
+    return entry;
   }
 
   private emitEvent(
@@ -439,6 +500,13 @@ export interface CreateSharedMemoryEntryParams {
 // ============================================================================
 // Types
 // ============================================================================
+
+interface LockEntry {
+  /** Exclusive write lock, if currently held. */
+  write?: MemoryLock;
+  /** Concurrent read locks keyed by holderId. */
+  readers: Map<string, MemoryLock>;
+}
 
 interface SubscriptionEntry {
   id: string;
