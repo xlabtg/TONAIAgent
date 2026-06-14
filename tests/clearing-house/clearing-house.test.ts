@@ -873,6 +873,64 @@ describe('DefaultResolutionManager', () => {
       expect(result.lossPerParticipant).toBeGreaterThan(0);
     });
 
+    it('should leave a residual deficit when the socialized-loss cap binds', () => {
+      // Default config: maxSocializedLossPercent = 0.02, basis 1_000_000/participant.
+      // Cap = 0.02 * 3 * 1_000_000 = 60_000, so a 100_000 deficit cannot be
+      // fully socialized and 40_000 must remain for the next waterfall step.
+      const event = manager.declareDefault({
+        participantId: 'participant_001',
+        participantName: 'Defaulted Fund',
+        defaultType: 'insolvency',
+        totalDeficit: 100000,
+        affectedTrades: [],
+        affectedObligations: [],
+      });
+
+      const result = manager.socializeLoss(event.id, [
+        'participant_002',
+        'participant_003',
+        'participant_004',
+      ]);
+
+      // amountRecovered / socializedLoss equal the capped amount, not the full deficit.
+      expect(result.totalLoss).toBe(60000);
+      expect(result.lossPerParticipant).toBe(20000);
+
+      // The deficit is reduced only by the actually-socialized amount.
+      const updated = manager.getDefaultEvent(event.id);
+      expect(updated?.socializedLoss).toBe(60000);
+      expect(updated?.totalDeficit).toBe(40000);
+
+      const lastStep = updated?.resolutionSteps[updated.resolutionSteps.length - 1];
+      expect(lastStep?.action).toBe('socialize_loss');
+      expect(lastStep?.amountRecovered).toBe(60000);
+      expect(lastStep?.remainingDeficit).toBe(40000);
+    });
+
+    it('should clear the deficit when the socialized-loss cap does not bind', () => {
+      // Cap = 0.02 * 3 * 1_000_000 = 60_000; a 30_000 deficit is fully socialized.
+      const event = manager.declareDefault({
+        participantId: 'participant_001',
+        participantName: 'Defaulted Fund',
+        defaultType: 'insolvency',
+        totalDeficit: 30000,
+        affectedTrades: [],
+        affectedObligations: [],
+      });
+
+      const result = manager.socializeLoss(event.id, [
+        'participant_002',
+        'participant_003',
+        'participant_004',
+      ]);
+
+      expect(result.totalLoss).toBe(30000);
+
+      const updated = manager.getDefaultEvent(event.id);
+      expect(updated?.socializedLoss).toBe(30000);
+      expect(updated?.totalDeficit).toBe(0);
+    });
+
     it('should resolve a default event', () => {
       const event = manager.declareDefault({
         participantId: 'participant_001',
