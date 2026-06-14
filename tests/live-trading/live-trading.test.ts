@@ -554,6 +554,52 @@ describe('RiskControlsService', () => {
 
     expect(events.some(e => e.type === 'risk.violation')).toBe(true);
   });
+
+  it('should trigger stop-loss against the real portfolio value, not the trade notional', () => {
+    const service = createRiskControlsService();
+    const profile = buildRiskProfile('agent_001', { maxDailyLossPercent: 5 });
+    service.setRiskProfile('agent_001', profile);
+
+    // A single trade with notional 1000 and a 400 loss. Against the trade
+    // notional the loss is 40% (would spuriously trip), but against the real
+    // 100000 portfolio it is only 0.4% — well under the 5% limit.
+    service.recordTrade('agent_001', 1000, -400, 100000);
+
+    const status = service.getAgentRiskStatus('agent_001');
+    expect(status.dailyLossUSD).toBe(400);
+    // Portfolio-relative loss (0.4%) is below the limit, so no stop-loss.
+    expect(status.stopLossTriggered).toBe(false);
+  });
+
+  it('should trigger stop-loss when cumulative loss reaches the portfolio-relative limit', () => {
+    const service = createRiskControlsService();
+    const profile = buildRiskProfile('agent_001', { maxDailyLossPercent: 5 });
+    service.setRiskProfile('agent_001', profile);
+
+    const portfolioValue = 10000;
+    // 5.5% of the portfolio lost across two trades exceeds the 5% limit.
+    service.recordTrade('agent_001', 2000, -300, portfolioValue); // 3%
+    service.recordTrade('agent_001', 2000, -250, portfolioValue); // cumulative 5.5%
+
+    const status = service.getAgentRiskStatus('agent_001');
+    const dailyLossPercent = (status.dailyLossUSD / portfolioValue) * 100;
+    expect(dailyLossPercent).toBeCloseTo(5.5, 5);
+    expect(status.stopLossTriggered).toBe(true);
+  });
+
+  it('should not trip stop-loss from recordTrade when the portfolio value is omitted', () => {
+    const service = createRiskControlsService();
+    const profile = buildRiskProfile('agent_001', { maxDailyLossPercent: 5 });
+    service.setRiskProfile('agent_001', profile);
+
+    // A large single-trade loss with no portfolio value supplied must not be
+    // used as its own portfolio proxy to trip the breaker.
+    service.recordTrade('agent_001', 1000, -900);
+
+    const status = service.getAgentRiskStatus('agent_001');
+    expect(status.dailyLossUSD).toBe(900);
+    expect(status.stopLossTriggered).toBe(false);
+  });
 });
 
 describe('buildRiskProfile', () => {
