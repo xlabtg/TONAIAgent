@@ -35,6 +35,39 @@ export interface ListDownloaderConfig {
   downloadTimeoutMs?: number;
   /** Callback invoked on stale list alert */
   onStaleAlert?: (list: SanctionsList, lastSuccessAt: Date | null) => void;
+  /**
+   * Minimum acceptable parsed entry count. A download that parses to fewer
+   * entries than this is rejected as truncated/empty. Default: 1
+   */
+  minEntryCount?: number;
+  /**
+   * Maximum tolerated shrink versus the previous snapshot, expressed as the
+   * smallest fraction of the prior entry count the new list may have. A value
+   * of 0.5 rejects any download with fewer than 50% of the previous entries.
+   * Set to 0 to disable the shrink check. Default: 0.5
+   */
+  maxShrinkRatio?: number;
+  /**
+   * Pinned expected SHA-256 hex checksums per list. When a list has a pinned
+   * value, the downloaded content must hash to it or the download is rejected.
+   */
+  pinnedChecksums?: Partial<Record<SanctionsList, string>>;
+  /**
+   * Callback invoked when a download is rejected by integrity validation.
+   * The last-known-good snapshot is retained when this fires.
+   */
+  onIntegrityAlert?: (list: SanctionsList, reason: string) => void;
+}
+
+/** Raised when a downloaded list fails integrity/size-sanity validation. */
+export class IntegrityValidationError extends Error {
+  constructor(
+    public readonly list: SanctionsList,
+    public readonly reason: string,
+  ) {
+    super(`Integrity validation failed for ${list}: ${reason}`);
+    this.name = 'IntegrityValidationError';
+  }
 }
 
 export interface ListSnapshot {
@@ -280,6 +313,10 @@ export class ListDownloader {
   private readonly staleAlertThresholdMs: number;
   private readonly downloadTimeoutMs: number;
   private readonly onStaleAlert?: (list: SanctionsList, lastSuccessAt: Date | null) => void;
+  private readonly minEntryCount: number;
+  private readonly maxShrinkRatio: number;
+  private readonly pinnedChecksums: Partial<Record<SanctionsList, string>>;
+  private readonly onIntegrityAlert?: (list: SanctionsList, reason: string) => void;
 
   private snapshots: Map<SanctionsList, ListSnapshot> = new Map();
   private lastSuccessAt: Map<SanctionsList, Date> = new Map();
@@ -289,6 +326,10 @@ export class ListDownloader {
     this.staleAlertThresholdMs = config.staleAlertThresholdMs ?? 48 * 60 * 60 * 1000;
     this.downloadTimeoutMs = config.downloadTimeoutMs ?? 30_000;
     this.onStaleAlert = config.onStaleAlert;
+    this.minEntryCount = config.minEntryCount ?? 1;
+    this.maxShrinkRatio = config.maxShrinkRatio ?? 0.5;
+    this.pinnedChecksums = config.pinnedChecksums ?? {};
+    this.onIntegrityAlert = config.onIntegrityAlert;
   }
 
   // ============================================================================
@@ -311,11 +352,23 @@ export class ListDownloader {
     });
   }
 
-  /** Refresh a single list. */
+  /**
+   * Refresh a single list.
+   *
+   * The downloaded payload is integrity-validated before it replaces the
+   * current snapshot. A truncated, empty, abnormally-shrunk, or checksum-
+   * mismatched download is rejected with an {@link IntegrityValidationError}
+   * and the last-known-good snapshot is left untouched.
+   */
   async refreshList(src: UrlConfig): Promise<ListSnapshot> {
     const content = await this.download(src.url);
     const checksum = crypto.createHash('sha256').update(content).digest('hex');
     const entries = parseContent(content, src.format);
+
+    // Validate before mutating any state so a bad download cannot replace the
+    // last-known-good list.
+    this.validateDownload(src.list, content, checksum, entries);
+
     const version = new Date().toISOString();
 
     const snapshot: ListSnapshot = {
@@ -331,6 +384,57 @@ export class ListDownloader {
     this.lastSuccessAt.set(src.list, new Date());
     this.persistSnapshot(snapshot);
     return snapshot;
+  }
+
+  /**
+   * Validate a freshly downloaded payload before it is accepted as a snapshot.
+   *
+   * Throws {@link IntegrityValidationError} (and fires {@link onIntegrityAlert})
+   * when the download looks truncated/empty/tampered:
+   *   - empty body or zero parsed entries,
+   *   - fewer entries than `minEntryCount`,
+   *   - a checksum that does not match a pinned expected hash,
+   *   - an abnormally large shrink versus the previous snapshot.
+   */
+  private validateDownload(
+    list: SanctionsList,
+    content: string,
+    checksum: string,
+    entries: ParsedEntry[],
+  ): void {
+    const reject = (reason: string): never => {
+      this.onIntegrityAlert?.(list, reason);
+      throw new IntegrityValidationError(list, reason);
+    };
+
+    // 1. Empty / unparseable payload.
+    if (!content.trim()) {
+      reject('empty download body');
+    }
+    if (entries.length === 0) {
+      reject('parsed zero entries');
+    }
+    if (entries.length < this.minEntryCount) {
+      reject(`parsed ${entries.length} entries, below minimum of ${this.minEntryCount}`);
+    }
+
+    // 2. Pinned checksum verification, where a source publishes an expected hash.
+    const pinned = this.pinnedChecksums[list];
+    if (pinned && pinned.toLowerCase() !== checksum.toLowerCase()) {
+      reject(`checksum mismatch: expected ${pinned}, got ${checksum}`);
+    }
+
+    // 3. Abnormal shrink versus the previous snapshot.
+    const prev = this.snapshots.get(list);
+    if (prev && prev.entryCount > 0 && this.maxShrinkRatio > 0) {
+      const minAllowed = Math.floor(prev.entryCount * this.maxShrinkRatio);
+      if (entries.length < minAllowed) {
+        reject(
+          `entry count ${entries.length} dropped below ${Math.round(this.maxShrinkRatio * 100)}% ` +
+            `of previous snapshot (${prev.entryCount}, min allowed ${minAllowed})`,
+        );
+      }
+    }
   }
 
   /** Get all parsed entries for a list. Returns [] if list not loaded. */
