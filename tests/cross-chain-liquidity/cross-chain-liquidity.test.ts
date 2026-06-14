@@ -55,6 +55,7 @@ import {
   type ConnectorConfig,
   type TradeRequest,
   type CrossChainLiquidityEvent,
+  type TransactionDetails,
 } from '../../connectors/cross-chain-liquidity';
 
 // ============================================================================
@@ -479,6 +480,75 @@ describe('DefaultCrossChainTradeExecutor', () => {
       expect(opp.sellChainId).toBeDefined();
       expect(opp.spreadPercent).toBeGreaterThan(0);
     }
+  });
+});
+
+// ============================================================================
+// Confirmation Safety Tests (LOGIC-31)
+// ============================================================================
+
+/** Connector whose transactions never reach a terminal status (always pending). */
+class NeverConfirmingConnector extends SimulatedChainConnector {
+  async checkTransactionStatus(txHash: string): Promise<TransactionDetails> {
+    return {
+      hash: txHash,
+      chainId: this.chainId,
+      status: 'pending',
+      confirmations: 0,
+      submittedAt: new Date(),
+    };
+  }
+}
+
+describe('DefaultCrossChainTradeExecutor — confirmation safety (LOGIC-31)', () => {
+  it('does not mark a trade completed when the tx stays pending past maxAttempts', async () => {
+    // Registry whose connector never confirms transactions.
+    const registry = new CrossChainConnectorRegistry();
+    const tonConnector = new NeverConfirmingConnector(makeConfig('ton'));
+    await tonConnector.connect();
+    registry.register(tonConnector);
+
+    const aggregator = createLiquidityAggregationEngine(registry);
+    const executor = createCrossChainTradeExecutor(aggregator, registry);
+
+    const from = makeTonToken();
+    const to = makeUsdtToken();
+    const quote = await aggregator.getQuote(from, to, 100);
+
+    const request: TradeRequest = {
+      id: 'pending-trade',
+      type: 'same_chain_swap',
+      fromToken: from,
+      toToken: to,
+      amountIn: 100,
+      minAmountOut: 1,
+      slippageTolerance: 0.05,
+      priority: 'medium',
+    };
+
+    const execution = await executor.executeTrade(request, quote.bestRoute);
+
+    expect(execution.status).toBe('failed');
+    expect(execution.status).not.toBe('completed');
+    expect(execution.error).toMatch(/not confirmed/i);
+  });
+
+  it('fails closed when no connector is registered for the chain', async () => {
+    // Empty registry: waitForConfirmation must throw rather than synthesize a confirmed result.
+    const registry = new CrossChainConnectorRegistry();
+    const aggregator = createLiquidityAggregationEngine(registry);
+    const executor = createCrossChainTradeExecutor(aggregator, registry);
+
+    await expect(
+      // Access the private helper to exercise the missing-connector branch directly.
+      (executor as unknown as {
+        waitForConfirmation(
+          chainId: string,
+          txHash: string,
+          maxAttempts: number
+        ): Promise<TransactionDetails>;
+      }).waitForConfirmation('ton', '0xdeadbeef', 3)
+    ).rejects.toThrow(/no connector/i);
   });
 });
 
