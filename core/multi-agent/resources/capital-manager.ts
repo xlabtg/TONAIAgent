@@ -15,6 +15,21 @@ import {
 } from '../types';
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * Highest numeric `TaskPriority` value (inclusive) that is still eligible for a
+ * partial capital allocation when the pool cannot fully fund the request.
+ *
+ * `TaskPriority` is ordered `1 = highest`, so requests with `priority <=`
+ * this threshold (i.e. priorities 1..3) are partially funded under capital
+ * contention, while lower-priority requests (4..5) are rejected outright.
+ * This favours higher-priority requests as intended by the priority ordering.
+ */
+export const PARTIAL_ALLOCATION_MAX_PRIORITY: TaskPriority = 3;
+
+// ============================================================================
 // Default Capital Manager Implementation
 // ============================================================================
 
@@ -89,8 +104,11 @@ export class DefaultCapitalManager implements CapitalManager {
 
     // Check available capital
     if (request.amount > pool.availableCapital) {
-      // Try partial allocation for lower priority requests
-      if (request.priority >= 3 && pool.availableCapital > 0) {
+      // Try partial allocation for sufficiently high-priority requests.
+      // TaskPriority is `1 = highest`, so eligibility is gated with `<=`:
+      // requests at or above this priority threshold (1..N) are partially
+      // funded under contention, while lower-priority ones are rejected.
+      if (request.priority <= PARTIAL_ALLOCATION_MAX_PRIORITY && pool.availableCapital > 0) {
         request.amount = pool.availableCapital;
       } else {
         request.status = 'rejected';

@@ -102,6 +102,7 @@ export {
   DefaultCapitalManager,
   createCapitalManager,
   createCapitalRequest,
+  PARTIAL_ALLOCATION_MAX_PRIORITY,
   DefaultConflictResolver,
   createConflictResolver,
   type CapitalManagerOptions,

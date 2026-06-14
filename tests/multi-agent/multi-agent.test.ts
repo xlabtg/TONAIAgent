@@ -1018,6 +1018,86 @@ describe('Capital Manager', () => {
     const stats = capitalManager.getStats();
     expect(stats.totalPerformance).toBe(100);
   });
+
+  // Regression for LOGIC-41: under capital contention, partial allocation must
+  // favour higher-priority requests per the documented `1 = highest` ordering.
+  describe('partial allocation priority (LOGIC-41)', () => {
+    const contendedLimits = {
+      maxPerAgent: 100000,
+      maxPerOperation: 100000,
+      dailyLimit: 100000,
+      reserveRatio: 0,
+      rebalanceThreshold: 0.1,
+    };
+
+    const createContendedManager = async () => {
+      const manager = createCapitalManager();
+      await manager.createPool({
+        id: 'contended_pool',
+        totalCapital: 1000,
+        limits: contendedLimits,
+      });
+      return manager;
+    };
+
+    it('partially funds a highest-priority (1) request when capital is short', async () => {
+      const manager = await createContendedManager();
+
+      const allocation = await manager.requestCapital(
+        createCapitalRequest({
+          agentId: 'high_priority_agent',
+          amount: 5000, // far exceeds the 1000 available
+          purpose: 'Trading',
+          priority: 1,
+        })
+      );
+
+      expect(allocation).not.toBeNull();
+      expect(allocation?.amount).toBe(1000); // partially filled with all available capital
+    });
+
+    it('rejects a lowest-priority (5) request when capital is short', async () => {
+      const manager = await createContendedManager();
+
+      const allocation = await manager.requestCapital(
+        createCapitalRequest({
+          agentId: 'low_priority_agent',
+          amount: 5000, // far exceeds the 1000 available
+          purpose: 'Trading',
+          priority: 5,
+        })
+      );
+
+      expect(allocation).toBeNull();
+    });
+
+    it('favours the priority-1 request over the priority-5 request on the same limited pool', async () => {
+      const manager = await createContendedManager();
+
+      const lowPriority = await manager.requestCapital(
+        createCapitalRequest({
+          agentId: 'low_priority_agent',
+          amount: 5000,
+          purpose: 'Trading',
+          priority: 5,
+        })
+      );
+
+      const highPriority = await manager.requestCapital(
+        createCapitalRequest({
+          agentId: 'high_priority_agent',
+          amount: 5000,
+          purpose: 'Trading',
+          priority: 1,
+        })
+      );
+
+      // Low priority is rejected, high priority receives the contended capital.
+      expect(lowPriority).toBeNull();
+      expect(highPriority).not.toBeNull();
+      expect(highPriority?.amount).toBe(1000);
+    });
+  });
 });
 
 // ============================================================================
