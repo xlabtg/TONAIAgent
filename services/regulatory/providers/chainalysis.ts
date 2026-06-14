@@ -20,6 +20,18 @@ export interface ChainalysisConfig {
   baseUrl?: string;
   /** Request timeout in ms. Default: 10 000 */
   timeoutMs?: number;
+  /**
+   * Numeric risk score (0-100) at or above which an address is blocked even
+   * without a sanction/illicit identification. `severe`→100, `high`→85.
+   * Default: 85 (blocks `severe` and `high`).
+   */
+  riskScoreThreshold?: number;
+  /**
+   * Additional illicit cluster/identification categories that should trigger a
+   * block, beyond the built-in sanction + illicit defaults. Matched after
+   * normalisation (lower-cased, spaces/hyphens → underscores).
+   */
+  illicitCategories?: string[];
 }
 
 export interface ChainalysisScreeningResult {
@@ -66,9 +78,44 @@ const SANCTIONS_CATEGORY_MAP: Record<string, SanctionsList> = {
   'un_sanctions': 'un_security_council',
 };
 
+/**
+ * Non-sanction categories that nevertheless represent illicit activity and must
+ * gate the block decision. Chainalysis surfaces these as cluster/identification
+ * categories. Keys are stored normalised (lower-cased, spaces/hyphens → `_`).
+ */
+const DEFAULT_ILLICIT_CATEGORIES: readonly string[] = [
+  'terrorist_financing',
+  'terrorism',
+  'stolen_funds',
+  'theft',
+  'ransomware',
+  'child_abuse_material',
+  'child_sexual_abuse_material',
+  'csam',
+  'darknet_market',
+  'dark_market',
+  'human_trafficking',
+  'scam',
+  'fraud_shop',
+  'malware',
+  'illicit_actor',
+  'illicit',
+  'mixing',
+  'mixer',
+];
+
+/** Normalise a category for map/list lookup. */
+function normaliseCategory(category: string): string {
+  return category.toLowerCase().trim().replace(/[\s-]+/g, '_');
+}
+
 function categoryToList(category: string): SanctionsList {
-  const key = category.toLowerCase().replace(/[\s-]/g, '_');
-  return SANCTIONS_CATEGORY_MAP[key] ?? 'ofac_sdn';
+  return SANCTIONS_CATEGORY_MAP[normaliseCategory(category)] ?? 'ofac_sdn';
+}
+
+/** True when the category maps to a known sanctions list. */
+function isSanctionCategory(category: string): boolean {
+  return normaliseCategory(category) in SANCTIONS_CATEGORY_MAP;
 }
 
 function riskStringToScore(risk: string): number {
@@ -81,6 +128,9 @@ function riskStringToScore(risk: string): number {
   }
 }
 
+/** Score assigned to a definitive (sanction/cluster/identification) match. */
+const DEFINITIVE_MATCH_SCORE = 100;
+
 // ============================================================================
 // Provider
 // ============================================================================
@@ -89,11 +139,25 @@ export class ChainalysisProvider {
   private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
+  private readonly riskScoreThreshold: number;
+  private readonly illicitCategories: Set<string>;
 
   constructor(config: ChainalysisConfig) {
     this.apiKey = config.apiKey;
     this.baseUrl = (config.baseUrl ?? 'https://api.chainalysis.com').replace(/\/$/, '');
     this.timeoutMs = config.timeoutMs ?? 10_000;
+    this.riskScoreThreshold = config.riskScoreThreshold ?? 85;
+    // Illicit set = sanction-list keys ∪ built-in illicit defaults ∪ caller extras.
+    this.illicitCategories = new Set<string>([
+      ...Object.keys(SANCTIONS_CATEGORY_MAP),
+      ...DEFAULT_ILLICIT_CATEGORIES,
+      ...(config.illicitCategories ?? []).map(normaliseCategory),
+    ]);
+  }
+
+  /** True when a category is a sanction OR otherwise-illicit category. */
+  private isIllicitCategory(category: string): boolean {
+    return this.illicitCategories.has(normaliseCategory(category));
   }
 
   /**
@@ -140,9 +204,16 @@ export class ChainalysisProvider {
     const data: ChainalysisAddressResponse = await response.json() as ChainalysisAddressResponse;
     const riskScore = riskStringToScore(data.risk ?? '');
     const identifications = data.identifications ?? [];
-    const sanctioned = identifications.some((id) =>
-      id.category.toLowerCase().includes('sanction')
-    );
+
+    // Drive the block decision from ALL available signals, not a bare
+    // `includes('sanction')` substring:
+    //   1. identification categories mapped via the illicit/sanctions list,
+    //   2. the cluster category against the same list,
+    //   3. a numeric risk score at/above the configured threshold.
+    const identificationHit = identifications.some((id) => this.isIllicitCategory(id.category));
+    const clusterHit = data.cluster ? this.isIllicitCategory(data.cluster.category) : false;
+    const riskHit = riskScore >= this.riskScoreThreshold;
+    const sanctioned = identificationHit || clusterHit || riskHit;
 
     return {
       address: data.address ?? address,
@@ -159,20 +230,64 @@ export class ChainalysisProvider {
 
   /**
    * Convert a Chainalysis result to the internal SanctionsMatch[] format.
+   *
+   * Matches are derived from every blocking signal — illicit/sanctioned
+   * identifications (mapped via the category list), an illicit cluster category,
+   * and, when nothing else matches, a high numeric risk score — so that a
+   * `severe`/`high` risk address or a flagged illicit cluster is not silently
+   * passed through just because no identification literally says "sanction".
    */
   toSanctionsMatches(result: ChainalysisScreeningResult): SanctionsMatch[] {
-    return result.identifications
-      .filter((id) => id.category.toLowerCase().includes('sanction'))
-      .map((id) => ({
+    const matches: SanctionsMatch[] = [];
+
+    // 1. Identifications whose category is in the illicit/sanctions list.
+    for (const id of result.identifications) {
+      if (!this.isIllicitCategory(id.category)) continue;
+      matches.push({
         list: categoryToList(id.category),
         entityName: id.name,
-        entityType: 'crypto_address' as const,
-        matchScore: result.riskScore,
+        entityType: 'crypto_address',
+        matchScore: isSanctionCategory(id.category)
+          ? DEFINITIVE_MATCH_SCORE
+          : Math.max(result.riskScore, this.riskScoreThreshold),
         sanctionedSince: new Date(0), // Chainalysis doesn't expose listing date in this endpoint
         programs: [],
         aliases: [],
-        notes: id.description,
-      }));
+        notes: id.description ?? `Chainalysis category: ${id.category}`,
+      });
+    }
+
+    // 2. Illicit cluster category.
+    if (result.cluster && this.isIllicitCategory(result.cluster.category)) {
+      matches.push({
+        list: categoryToList(result.cluster.category),
+        entityName: result.cluster.name,
+        entityType: 'crypto_address',
+        matchScore: isSanctionCategory(result.cluster.category)
+          ? DEFINITIVE_MATCH_SCORE
+          : Math.max(result.riskScore, this.riskScoreThreshold),
+        sanctionedSince: new Date(0),
+        programs: [],
+        aliases: [],
+        notes: `Illicit cluster category: ${result.cluster.category}`,
+      });
+    }
+
+    // 3. High numeric risk score with no categorical match — still block.
+    if (matches.length === 0 && result.riskScore >= this.riskScoreThreshold) {
+      matches.push({
+        list: 'ofac_sdn',
+        entityName: result.address,
+        entityType: 'crypto_address',
+        matchScore: result.riskScore,
+        sanctionedSince: new Date(0),
+        programs: [],
+        aliases: [],
+        notes: `Chainalysis risk score ${result.riskScore} ≥ threshold ${this.riskScoreThreshold}`,
+      });
+    }
+
+    return matches;
   }
 }
 

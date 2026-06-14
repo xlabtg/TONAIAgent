@@ -666,6 +666,177 @@ describe('ChainalysisProvider', () => {
 });
 
 // ============================================================================
+// LOGIC-36 — multi-signal block decision (risk score, cluster, category map)
+// Regression: previously `sanctioned` only fired on category.includes('sanction').
+// ============================================================================
+
+function mockChainalysisOnce(body: Record<string, unknown>): void {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  );
+}
+
+describe('Chainalysis multi-signal screening (LOGIC-36)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('blocks on severe risk score even without a sanction identification', async () => {
+    mockChainalysisOnce({ address: 'EQC_severe', risk: 'severe', identifications: [] });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_severe');
+    expect(result.isMatch).toBe(true);
+    expect(result.riskScore).toBe(100);
+    expect(result.matches.length).toBeGreaterThan(0);
+  });
+
+  it('blocks on high risk score (at threshold) without any identification', async () => {
+    mockChainalysisOnce({ address: 'EQC_high', risk: 'high', identifications: [] });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_high');
+    expect(result.isMatch).toBe(true);
+    expect(result.riskScore).toBe(85);
+  });
+
+  it('does NOT block a medium risk score below threshold', async () => {
+    mockChainalysisOnce({ address: 'EQC_medium', risk: 'medium', identifications: [] });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_medium');
+    expect(result.isMatch).toBe(false);
+    expect(result.riskScore).toBe(60);
+  });
+
+  it('respects a custom riskScoreThreshold', async () => {
+    mockChainalysisOnce({ address: 'EQC_medium2', risk: 'medium', identifications: [] });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key', riskScoreThreshold: 60 },
+      matchThreshold: 60,
+    });
+
+    const result = await screener.screenAddress('EQC_medium2');
+    expect(result.isMatch).toBe(true);
+  });
+
+  it('blocks on a flagged illicit cluster category (no risk, no identification)', async () => {
+    mockChainalysisOnce({
+      address: 'EQC_cluster',
+      risk: 'low',
+      identifications: [],
+      cluster: { name: 'Hydra Market', category: 'darknet market' },
+    });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_cluster');
+    expect(result.isMatch).toBe(true);
+    expect(result.matches.some((m) => /cluster/i.test(m.notes ?? ''))).toBe(true);
+  });
+
+  it('blocks an identification mapped via the category map (no "sanction" substring)', async () => {
+    mockChainalysisOnce({
+      address: 'EQC_ofac',
+      risk: 'low',
+      identifications: [{ category: 'OFAC SDN', name: 'Lazarus Group' }],
+    });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_ofac');
+    expect(result.isMatch).toBe(true);
+    expect(result.matches.some((m) => m.list === 'ofac_sdn')).toBe(true);
+  });
+
+  it('blocks a non-sanction illicit identification (e.g. stolen funds)', async () => {
+    mockChainalysisOnce({
+      address: 'EQC_stolen',
+      risk: 'low',
+      identifications: [{ category: 'stolen funds', name: 'Bridge Hack' }],
+    });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_stolen');
+    expect(result.isMatch).toBe(true);
+  });
+
+  it('does NOT block a clean address (low risk, benign cluster, exchange id)', async () => {
+    mockChainalysisOnce({
+      address: 'EQC_clean2',
+      risk: 'low',
+      identifications: [{ category: 'exchange', name: 'Binance' }],
+      cluster: { name: 'Binance', category: 'exchange' },
+    });
+
+    const screener = createSanctionsScreener({
+      provider: 'chainalysis',
+      chainalysis: { apiKey: 'test-key' },
+    });
+
+    const result = await screener.screenAddress('EQC_clean2');
+    expect(result.isMatch).toBe(false);
+    expect(result.matches).toHaveLength(0);
+  });
+
+  it('toSanctionsMatches maps multiple illicit categories via the list', () => {
+    const provider = createChainalysisProvider({ apiKey: 'key' });
+    const matches = provider.toSanctionsMatches({
+      address: 'A',
+      identifications: [
+        { category: 'eu sanctions', name: 'Entity EU' },
+        { category: 'un sanctions', name: 'Entity UN' },
+      ],
+      riskScore: 100,
+      sanctioned: true,
+    });
+    const lists = matches.map((m) => m.list);
+    expect(lists).toContain('eu_consolidated');
+    expect(lists).toContain('un_security_council');
+  });
+
+  it('toSanctionsMatches emits a risk-only match when no category matches', () => {
+    const provider = createChainalysisProvider({ apiKey: 'key' });
+    const matches = provider.toSanctionsMatches({
+      address: 'EQC_riskonly',
+      identifications: [],
+      riskScore: 100,
+      sanctioned: true,
+    });
+    expect(matches).toHaveLength(1);
+    expect(matches[0]!.matchScore).toBe(100);
+    expect(matches[0]!.entityName).toBe('EQC_riskonly');
+  });
+});
+
+// ============================================================================
 // OpenSanctionsProvider Unit Tests
 // ============================================================================
 
