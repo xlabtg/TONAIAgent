@@ -421,6 +421,12 @@ export interface UsageTracking {
   currentPeriodUsage: Record<string, number>;
   billedUsage: Record<string, number>;
   lastReportedAt: Date;
+  /**
+   * Idempotency keys of usage reports already applied to this subscription.
+   * Used to deduplicate at-least-once usage deliveries (network/client retries)
+   * so each logical usage event is counted exactly once.
+   */
+  processedIdempotencyKeys?: string[];
 }
 
 export interface UsageMetric {

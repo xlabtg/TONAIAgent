@@ -235,6 +235,73 @@ describe('SubscriptionEngine', () => {
   it('should have default trial days', () => {
     expect(subscriptions.config.defaultTrialDays).toBe(14);
   });
+
+  // ==========================================================================
+  // reportUsage idempotency — LOGIC-39
+  // ==========================================================================
+
+  describe('reportUsage idempotency — LOGIC-39', () => {
+    async function createActiveSubscription() {
+      const plan = await subscriptions.createPlan({
+        merchantId: 'merchant_1',
+        name: 'Metered Plan',
+        description: 'Usage-based plan',
+        features: [{ name: 'api_calls', included: true }],
+        pricing: { type: 'usage_based', baseAmount: '0', currency: 'TON' },
+      });
+
+      return subscriptions.createSubscription({
+        subscriberId: 'subscriber_1',
+        merchantId: 'merchant_1',
+        planId: plan.id,
+        paymentMethod: 'ton_wallet',
+      });
+    }
+
+    it('records usage once for duplicate idempotencyKey', async () => {
+      const subscription = await createActiveSubscription();
+
+      await subscriptions.reportUsage(subscription.id, {
+        metric: 'api_calls',
+        value: 100,
+        idempotencyKey: 'usage-key-1',
+      });
+      // Retried/duplicated delivery with the same key must be ignored.
+      const result = await subscriptions.reportUsage(subscription.id, {
+        metric: 'api_calls',
+        value: 100,
+        idempotencyKey: 'usage-key-1',
+      });
+
+      expect(result.usage?.currentPeriodUsage['api_calls']).toBe(100);
+    });
+
+    it('accumulates usage for distinct idempotencyKeys', async () => {
+      const subscription = await createActiveSubscription();
+
+      await subscriptions.reportUsage(subscription.id, {
+        metric: 'api_calls',
+        value: 100,
+        idempotencyKey: 'usage-key-1',
+      });
+      const result = await subscriptions.reportUsage(subscription.id, {
+        metric: 'api_calls',
+        value: 50,
+        idempotencyKey: 'usage-key-2',
+      });
+
+      expect(result.usage?.currentPeriodUsage['api_calls']).toBe(150);
+    });
+
+    it('accumulates every report when no idempotencyKey is provided', async () => {
+      const subscription = await createActiveSubscription();
+
+      await subscriptions.reportUsage(subscription.id, { metric: 'api_calls', value: 100 });
+      const result = await subscriptions.reportUsage(subscription.id, { metric: 'api_calls', value: 100 });
+
+      expect(result.usage?.currentPeriodUsage['api_calls']).toBe(200);
+    });
+  });
 });
 
 // ============================================================================

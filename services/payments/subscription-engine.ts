@@ -814,7 +814,21 @@ export class DefaultSubscriptionEngine implements SubscriptionEngine {
         currentPeriodUsage: {},
         billedUsage: {},
         lastReportedAt: new Date(),
+        processedIdempotencyKeys: [],
       };
+    }
+
+    // Idempotency guard: if this usage report was already applied (e.g. retried
+    // at-least-once delivery), short-circuit and return the subscription unchanged
+    // so the same logical usage event is never counted twice.
+    if (usage.idempotencyKey) {
+      if (!subscription.usage.processedIdempotencyKeys) {
+        subscription.usage.processedIdempotencyKeys = [];
+      }
+      if (subscription.usage.processedIdempotencyKeys.includes(usage.idempotencyKey)) {
+        return subscription;
+      }
+      subscription.usage.processedIdempotencyKeys.push(usage.idempotencyKey);
     }
 
     // Add or update metric
