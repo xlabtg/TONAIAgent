@@ -61,6 +61,8 @@ import {
   AgentMessage,
   MultiAgentEvent,
   ConflictContext,
+  AgentState,
+  CapitalAllocation,
 } from '../../core/multi-agent';
 
 // ============================================================================
@@ -1243,6 +1245,89 @@ describe('Conflict Resolver', () => {
 
     expect(stats.totalConflicts).toBe(1);
     expect(stats.resolvedConflicts).toBe(1);
+  });
+
+  // Regression for LOGIC-44: capital contention between exactly two agents must
+  // be detected. The detector previously required `> 2` (three+) significant
+  // allocations before checking for simultaneous execution, so the most common
+  // case — two agents competing for the same capital pool — went unnoticed.
+  describe('capital contention with two agents (LOGIC-44)', () => {
+    const buildExecutingAgent = (agentId: string): AgentState => ({
+      agentId,
+      status: 'executing',
+      activeOperations: [],
+      resourceUsage: {
+        capitalAllocated: 0,
+        activePositions: 0,
+        pendingTransactions: 0,
+        memoryUsageBytes: 0,
+        lastUpdated: new Date(),
+      },
+      performance: {
+        tasksCompleted: 0,
+        tasksSuccessful: 0,
+        averageTaskDurationMs: 0,
+        profitLossTon: 0,
+        riskScore: 0,
+        uptime: 0,
+        period: 'daily',
+      },
+      lastHeartbeat: new Date(),
+      errorCount: 0,
+    });
+
+    const buildAllocation = (agentId: string, amount: number): CapitalAllocation => ({
+      agentId,
+      amount,
+      purpose: 'trade',
+      status: 'active',
+      allocatedAt: new Date(),
+      performance: 0,
+    });
+
+    it('detects contention when exactly two executing agents compete for capital', async () => {
+      const context: ConflictContext = {
+        agents: [buildExecutingAgent('agent_1'), buildExecutingAgent('agent_2')],
+        pendingOperations: [],
+        sharedResources: new Map(),
+        capitalAllocations: [
+          buildAllocation('agent_1', 5000),
+          buildAllocation('agent_2', 5000),
+        ],
+      };
+
+      const conflicts = await conflictResolver.detect(context);
+      const capitalConflicts = conflicts.filter((c) => c.type === 'capital_contention');
+
+      expect(capitalConflicts.length).toBe(1);
+      expect(capitalConflicts[0].parties).toEqual(
+        expect.arrayContaining(['agent_1', 'agent_2'])
+      );
+      expect(capitalConflicts[0].parties.length).toBe(2);
+      expect(capitalConflicts[0].severity).toBe('high');
+    });
+
+    it('does not flag contention when only one agent is executing', async () => {
+      const waitingAgent: AgentState = {
+        ...buildExecutingAgent('agent_2'),
+        status: 'waiting',
+      };
+
+      const context: ConflictContext = {
+        agents: [buildExecutingAgent('agent_1'), waitingAgent],
+        pendingOperations: [],
+        sharedResources: new Map(),
+        capitalAllocations: [
+          buildAllocation('agent_1', 5000),
+          buildAllocation('agent_2', 5000),
+        ],
+      };
+
+      const conflicts = await conflictResolver.detect(context);
+      const capitalConflicts = conflicts.filter((c) => c.type === 'capital_contention');
+
+      expect(capitalConflicts.length).toBe(0);
+    });
   });
 });
 

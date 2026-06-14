@@ -193,7 +193,7 @@ export class DefaultConflictResolver implements ConflictResolver {
     const significantAllocations = Array.from(agentAllocations.entries())
       .filter(([, amount]) => amount > 1000);
 
-    if (significantAllocations.length > 2) {
+    if (significantAllocations.length >= 2) {
       // Check if they're all trying to execute simultaneously
       const executingAgents = context.agents
         .filter((a) => a.status === 'executing')
