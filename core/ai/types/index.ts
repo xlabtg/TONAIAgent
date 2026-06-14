@@ -321,7 +321,7 @@ export interface SafetyCheckResult {
   category?: ContentCategory;
   reason?: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  action: 'allow' | 'warn' | 'block' | 'escalate';
+  action: 'allow' | 'warn' | 'block' | 'escalate' | 'redact';
   metadata?: Record<string, unknown>;
 }
 

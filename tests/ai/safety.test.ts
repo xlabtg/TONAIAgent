@@ -182,6 +182,28 @@ describe('OutputValidator', () => {
     expect(result.metadata?.piiType).toBe('api_key');
   });
 
+  it('should emit a redact action for PII when redactSensitive is enabled', () => {
+    // Regression for LOGIC-25: with redactSensitive on, the PII check must drive
+    // redaction (action 'redact'), not the inert 'warn' the engine ignored.
+    const result = validator.validate('Contact me at john.doe@example.com');
+
+    expect(result.passed).toBe(false);
+    expect(result.action).toBe('redact');
+  });
+
+  it('should emit a block action for PII when redactSensitive is disabled', () => {
+    const noRedactValidator = new OutputValidator({
+      maxLength: 10000,
+      detectHallucination: false,
+      detectPii: true,
+      redactSensitive: false,
+    });
+    const result = noRedactValidator.validate('Contact me at john.doe@example.com');
+
+    expect(result.passed).toBe(false);
+    expect(result.action).toBe('block');
+  });
+
   it('should redact sensitive information', () => {
     const output = 'Email: test@example.com, Phone: 555-123-4567';
     const redacted = validator.redactSensitive(output);

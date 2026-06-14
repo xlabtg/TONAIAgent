@@ -238,11 +238,23 @@ export class OrchestrationEngine {
           const outputChecks = this.safetyManager.validateResponse(response);
           safetyChecks.push(...outputChecks);
 
-          const blocked = outputChecks.find((c) => c.action === 'block');
-          if (blocked) {
-            // Redact and continue rather than fail
+          // Redact output when a check requests it (e.g. PII with redactSensitive on)
+          const needsRedaction = outputChecks.some((c) => c.action === 'redact');
+          if (needsRedaction) {
             response.choices[0].message.content = this.safetyManager.redactOutput(
               response.choices[0].message.content
+            );
+          }
+
+          // Fail closed on blocking violations rather than returning the content verbatim
+          const blocked = outputChecks.find((c) => c.action === 'block');
+          if (blocked) {
+            throw new AIError(
+              blocked.reason ?? 'Output blocked by safety check',
+              'SAFETY_VIOLATION',
+              undefined,
+              false,
+              { check: blocked }
             );
           }
         }

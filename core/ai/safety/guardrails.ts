@@ -301,7 +301,7 @@ export class OutputValidator {
           passed: false,
           reason: `Potential ${type} detected in output`,
           severity: 'medium',
-          action: this.config.redactSensitive ? 'warn' : 'block',
+          action: this.config.redactSensitive ? 'redact' : 'block',
           metadata: { piiType: type, count: matches.length },
         };
       }
