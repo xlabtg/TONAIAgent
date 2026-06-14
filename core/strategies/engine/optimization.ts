@@ -788,7 +788,7 @@ class BayesianOptimizer implements Optimizer {
   }
 }
 
-class GeneticOptimizer implements Optimizer {
+export class GeneticOptimizer implements Optimizer {
   private population: Array<{ params: ParameterSet; fitness: number; evaluated: boolean }> = [];
   private generation = 0;
   private readonly populationSize = 20;
@@ -834,8 +834,20 @@ class GeneticOptimizer implements Optimizer {
     }
   }
 
+  /** Number of generations this optimizer has evolved (0 = only the initial population). */
+  get generationCount(): number {
+    return this.generation;
+  }
+
   isComplete(): boolean {
-    return this.generation >= Math.floor(this.config.maxIterations / this.populationSize);
+    // `maxIterations` is a function-evaluation budget shared across optimizers.
+    // Convert it to a generation budget (one generation costs `populationSize`
+    // evaluations) and always allow at least one generation. Without the
+    // `max(1, ...)` guard, any `maxIterations < populationSize` floors to 0 and
+    // the optimizer reports completion at generation 0 — performing no search
+    // at all (LOGIC-42).
+    const maxGenerations = Math.max(1, Math.floor(this.config.maxIterations / this.populationSize));
+    return this.generation >= maxGenerations;
   }
 
   hasConverged(threshold: number): boolean {
