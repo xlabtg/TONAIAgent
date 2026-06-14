@@ -35,6 +35,16 @@ export interface ProtectedAgent {
   portfolioValueUsd: number;
   /** Peak portfolio value (for drawdown calculation) */
   peakValueUsd: number;
+  /**
+   * Portfolio value at the start of the current trading day.
+   *
+   * This is the denominator for the daily-loss percentage so that a fixed
+   * dollar loss maps to the correct percentage of the equity actually at risk
+   * today — not the historical peak (which would understate the loss after a
+   * drawdown and trip the daily-loss breaker too late). Reset at each day
+   * boundary via {@link PortfolioProtection.resetDailyCounters}.
+   */
+  dayStartValueUsd: number;
   /** Current drawdown percentage */
   currentDrawdownPercent: number;
   /** Today's realized PnL */
@@ -211,6 +221,7 @@ export class DefaultPortfolioProtection implements PortfolioProtection {
       status: 'active',
       portfolioValueUsd: initialValueUsd,
       peakValueUsd: initialValueUsd,
+      dayStartValueUsd: initialValueUsd,
       currentDrawdownPercent: 0,
       dailyPnlUsd: 0,
       dailyLossUsd: 0,
@@ -425,9 +436,7 @@ export class DefaultPortfolioProtection implements PortfolioProtection {
     }
 
     // Check daily loss limit
-    const dailyLossPercent = agent.peakValueUsd > 0
-      ? (agent.dailyLossUsd / agent.peakValueUsd) * 100
-      : 0;
+    const dailyLossPercent = this.computeDailyLossPercent(agent);
 
     if (dailyLossPercent >= this.config.dailyLossLimitPercent) {
       if (!agent.tradingDisabledToday) {
@@ -520,6 +529,9 @@ export class DefaultPortfolioProtection implements PortfolioProtection {
       agent.dailyPnlUsd = 0;
       agent.dailyLossUsd = 0;
       agent.tradingDisabledToday = false;
+      // Re-base the daily-loss denominator to the equity at the start of the
+      // new trading day, so today's loss percentage reflects today's equity.
+      agent.dayStartValueUsd = agent.portfolioValueUsd;
     }
 
     this.emitEvent({
@@ -543,6 +555,25 @@ export class DefaultPortfolioProtection implements PortfolioProtection {
   // Private Helpers
   // ============================================================================
 
+  /**
+   * Daily loss as a percentage of the equity actually at risk today.
+   *
+   * The denominator is the day's starting equity ({@link ProtectedAgent.dayStartValueUsd}),
+   * NOT the historical peak. Using the peak would understate the loss whenever
+   * the portfolio has drawn down from its peak, tripping the daily-loss breaker
+   * later than its configured threshold. Falls back to the current portfolio
+   * value if the day-start equity is unavailable (e.g. zero/negative).
+   */
+  private computeDailyLossPercent(agent: ProtectedAgent): number {
+    const denominator = agent.dayStartValueUsd > 0
+      ? agent.dayStartValueUsd
+      : agent.portfolioValueUsd;
+
+    return denominator > 0
+      ? (agent.dailyLossUsd / denominator) * 100
+      : 0;
+  }
+
   private calculateRiskScore(agent: ProtectedAgent): number {
     // Weighted components:
     // - Drawdown: 40%
@@ -554,9 +585,7 @@ export class DefaultPortfolioProtection implements PortfolioProtection {
       100,
     );
 
-    const dailyLossPercent = agent.peakValueUsd > 0
-      ? (agent.dailyLossUsd / agent.peakValueUsd) * 100
-      : 0;
+    const dailyLossPercent = this.computeDailyLossPercent(agent);
     const dailyLossScore = Math.min(
       (dailyLossPercent / this.config.dailyLossLimitPercent) * 100,
       100,
