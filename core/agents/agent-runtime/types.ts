@@ -229,6 +229,8 @@ export interface RuntimeAgentState {
   transitionHistory: LifecycleTransition[];
   /** Current simulated or real balance in nanoTON */
   balance: bigint;
+  /** Start of the UTC day used for daily risk limits */
+  dailyWindowStart: Date;
   /** Gas used today in nanoTON */
   dailyGasUsed: bigint;
   /** Daily loss accumulated in nanoTON */

@@ -404,6 +404,52 @@ describe('AgentRuntimeOrchestrator - execution pipeline', () => {
 // ============================================================================
 
 describe('AgentRuntimeOrchestrator - risk validation', () => {
+  it('should reset daily limits at the next UTC day boundary', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-07-13T23:59:59.000Z'));
+
+    try {
+      const runtime = makeSilentRuntime();
+      runtime.start();
+      runtime.registerAgent(
+        makeAgentConfig({
+          agentId: 'daily-limits-agent',
+          riskLimits: {
+            maxLossPerExecutionNano: BigInt(1_000_000_000),
+            maxDailyLossNano: BigInt(5_000_000_000),
+            maxDailyGasBudgetNano: BigInt(500_000_000),
+            maxTransactionSizeNano: BigInt(2_000_000_000),
+            maxTransactionsPerDay: 100,
+            maxConsecutiveFailures: 3,
+          },
+        })
+      );
+      runtime.fundAgent('daily-limits-agent', BigInt(1_000_000_000));
+      await runtime.startAgent('daily-limits-agent');
+
+      const state = runtime.getAgentState('daily-limits-agent')!;
+      state.dailyGasUsed = BigInt(500_000_000);
+      state.dailyLoss = BigInt(1_000_000_000);
+      state.dailyTransactionCount = 100;
+
+      const blocked = await runtime.runPipeline('daily-limits-agent');
+      expect(blocked.success).toBe(false);
+      expect(blocked.error).toContain('Daily gas budget exhausted');
+      expect(blocked.error).toContain('Daily transaction limit reached');
+
+      vi.setSystemTime(new Date('2026-07-14T00:00:00.000Z'));
+
+      const resumed = await runtime.runPipeline('daily-limits-agent');
+      expect(resumed.success).toBe(true);
+      expect(state.dailyWindowStart).toEqual(new Date('2026-07-14T00:00:00.000Z'));
+      expect(state.dailyGasUsed).toBeLessThanOrEqual(BigInt(50_000_000));
+      expect(state.dailyLoss).toBe(BigInt(0));
+      expect(state.dailyTransactionCount).toBeLessThanOrEqual(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('should block trading after realized losses reach the daily limit', async () => {
     const runtime = makeSilentRuntime();
     runtime.start();

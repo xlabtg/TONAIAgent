@@ -188,6 +188,7 @@ export class AgentRuntimeOrchestrator {
       lifecycleState: 'created',
       transitionHistory: [],
       balance: config.simulation.enabled ? config.simulation.fakeBalance : BigInt(0),
+      dailyWindowStart: this.getUtcDayStart(),
       dailyGasUsed: BigInt(0),
       dailyLoss: BigInt(0),
       dailyTransactionCount: 0,
@@ -573,6 +574,8 @@ export class AgentRuntimeOrchestrator {
   ): Promise<Record<string, unknown>> {
     this.log('debug', `[${agentId}] validate_risk`);
 
+    this.resetDailyLimitsIfNeeded(state);
+
     const checks: Array<{ rule: string; passed: boolean; reason?: string }> = [];
     const aiStep = previousSteps.find((s) => s.step === 'call_ai');
     const decision = aiStep?.output?.['decision'] as Record<string, unknown> | undefined;
@@ -611,6 +614,23 @@ export class AgentRuntimeOrchestrator {
     }
 
     return { allPassed, checks };
+  }
+
+  private resetDailyLimitsIfNeeded(state: RuntimeAgentState): void {
+    const currentWindowStart = this.getUtcDayStart();
+    if (state.dailyWindowStart.getTime() === currentWindowStart.getTime()) {
+      return;
+    }
+
+    state.dailyWindowStart = currentWindowStart;
+    state.dailyGasUsed = BigInt(0);
+    state.dailyLoss = BigInt(0);
+    state.dailyTransactionCount = 0;
+  }
+
+  private getUtcDayStart(): Date {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   }
 
   /** Step 5: Generate execution plan from AI decision */
