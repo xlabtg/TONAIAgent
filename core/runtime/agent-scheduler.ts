@@ -415,7 +415,9 @@ export class AgentScheduler {
     const scheduled = this.scheduledAgents.get(agentId);
     const callback = this.executionCallbacks.get(agentId);
 
-    if (!scheduled || !callback || !this.running || scheduled.isPaused) return;
+    if (!scheduled || !callback || !this.running || scheduled.isPaused || scheduled.isRunning) {
+      return;
+    }
 
     // Check concurrent execution limit
     if (this.currentExecutions >= this.config.maxConcurrentExecutions) {

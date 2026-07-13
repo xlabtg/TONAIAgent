@@ -437,6 +437,41 @@ describe('AgentScheduler', () => {
         vi.useRealTimers();
       }
     });
+
+    it('should not re-enter an agent execution already in progress (LOGIC-77)', async () => {
+      let executionCount = 0;
+      let releaseExecution: (() => void) | undefined;
+      const executionStarted = new Promise<void>((resolve) => {
+        scheduler.scheduleAgent(
+          'agent-001',
+          { value: 5000, unit: 'milliseconds' },
+          async () => {
+            executionCount++;
+            resolve();
+            await new Promise<void>((release) => {
+              releaseExecution = release;
+            });
+          }
+        );
+      });
+
+      const firstTrigger = scheduler.triggerNow('agent-001');
+      await executionStarted;
+
+      expect(scheduler.getCurrentExecutionCount()).toBe(1);
+
+      const secondTrigger = scheduler.triggerNow('agent-001');
+      await Promise.resolve();
+
+      expect(executionCount).toBe(1);
+      expect(scheduler.getCurrentExecutionCount()).toBe(1);
+
+      releaseExecution?.();
+      await Promise.all([firstTrigger, secondTrigger]);
+
+      expect(executionCount).toBe(1);
+      expect(scheduler.getCurrentExecutionCount()).toBe(0);
+    });
   });
 
   describe('control methods', () => {
