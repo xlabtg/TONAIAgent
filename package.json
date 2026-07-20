@@ -617,14 +617,14 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "@types/node": "^26.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@types/node": "^26.1.1",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
     "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^10.6.0",
-    "prettier": "^3.9.1",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
     "tsup": "^8.5.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"
